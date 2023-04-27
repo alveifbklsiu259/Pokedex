@@ -14,6 +14,6 @@ export default function Search() {
                 </div>
                 <button className="btn btn-primary btn-lg btn-block w-100 mt-3 mb-5" type="submit">Search</button>
             </form>
-        </div>  
+        </div>
     )
 }

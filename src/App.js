@@ -41,4 +41,13 @@ export default App;
 6. pokemonInfo ( moves, species, height,weight evolution, abilities, stat...), button to next and previous pokmon
 7. loader
 
+----
+api:
+pokemons: all pokemon entries (name, types, images)
+
+pokemon: pokemons species, if i can cache the pokemons api result, i don't have to make another request
+
+
+
 */
+

@@ -1,11 +1,11 @@
-import BasicInfo from "./BasicInfo"
 
-import { Link } from "react-router-dom"
+import BasicInfo from "./BasicInfo"
+import { usePokemonData } from "./PokemonsProvider"
+import { Link, useParams } from "react-router-dom"
 import { useState, useEffect } from "react"
 
-
-
 export default function Pokemon() {
+    const {dispatch, state} = usePokemonData();
     const [data, setData] = useState({})
     const [data2, setData2] = useState({})
     const [data3, setData3] = useState({})
@@ -29,29 +29,16 @@ export default function Pokemon() {
         getInfo()
     }, [])
 
+    console.log(state.pokemons)
+    const {pokeId} = useParams();
+    console.log(pokeId)
+    
     return (
-        // <div className="container-sm">
-        //     <div className="pokemonInfo row ">
-        //         <img className="col-md-3" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png`} alt="Bulbizarre" />
-        //         <div className="info col-md-9">
-        //             <h1 className="name">{data.name}</h1>
-        //             <p className="name">#00{data.id}</p>
-        //             <p>
-        //                 {(data?.flavor_text_entries && data?.flavor_text_entries[0].flavor_text) ? data?.flavor_text_entries[0].flavor_text : ''}
-        //             </p>
-        //         </div>
-        //         <div className="col-md-6">
-        //         </div>
-        //         <div className="col-md-6"></div>
-        //     </div>
-        // </div>
-        
-        
         <>
             <div className="container p-0">
                 <div className="row justify-content-center">
                     {/* Basic info */}
-                        {/* <BasicInfo/> */}
+                        <BasicInfo pokemon={state.pokemons[pokeId - 1]}/>
                         <div className='basic-info row col-12 col-sm-6 justify-content-center'>
                             <img className="poke-img mx-auto p-0 w-50" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png`} alt="Bulbizarre" />
                             <div className="p-0 row text-center">
@@ -59,7 +46,7 @@ export default function Pokemon() {
                                 <h1 className="p-0 text-capitalize">{data.name}</h1>
                                 <div className="types p-0 d-flex justify-content-center">
                                     <span className="type-grass">Grass</span>
-                                    <span className="type-poision">Poision</span>
+                                    <span className="type-poison">Poision</span>
                                     {/* make types its own component */}
                                 </div>
                             </div>
@@ -70,7 +57,7 @@ export default function Pokemon() {
                         <p className="my-4 col-6">Height <br />  <span>{data2.height * 10 } cm</span></p>
                         <p className="my-4 col-6">Weight <br /> <span>{data2.weight * 100 / 1000 } kg</span></p>
                         <p className="col-6">Gender <br />
-                        <span><i class="fa-solid fa-mars"></i> <i class="fa-solid fa-venus"></i></span>
+                        <span><i className="fa-solid fa-mars"></i> <i className="fa-solid fa-venus"></i></span>
                         </p>
                         <p className="col-6">Abilities <br /><span>chlorophyll</span><br /><span>overgrow</span></p>
                         <p className="col-12 m-3 p-2 text-start description">{(data?.flavor_text_entries && data?.flavor_text_entries[0].flavor_text) ? data?.flavor_text_entries[0].flavor_text : ''}</p>
@@ -109,18 +96,16 @@ export default function Pokemon() {
                         <h1 className="text-center">Evolutions</h1>
                         <ul className="p-0 m-0 mx-auto">
                             <li>
-                            <BasicInfo testId={1} />
+                            {/* <BasicInfo testId={1} /> */}
                             </li>
                             <li>
-                            <BasicInfo testId={2} />
+                            {/* <BasicInfo testId={2} /> */}
                             </li>
                             <li>
-                            <BasicInfo testId={3} />
+                            {/* <BasicInfo testId={3} /> */}
                             </li>
                         </ul>
                     </div>
-
-                    
 
                     {/* Button */}
                     <div className="row justify-content-center">
