@@ -1,38 +1,160 @@
-.App {
-  text-align: center;
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap');
+
+* {
+    box-sizing: border-box;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-weight: 400;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+html, body {
+    overflow-x: hidden;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+img {
+    width: 100%
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+p {
+    margin: 0;
+    font-size: 1.5em
 }
 
-.App-link {
-  color: #61dafb;
+a {
+    text-decoration: none;
+    color: #000
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+li {
+    list-style-type: none;
+}
+
+h1 {
+    font-weight: bold;
+}
+
+
+.card {
+    background-color: #2021240f;
+    transition: transform .3s;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+}
+
+
+/* Types */
+
+/* .types {
+    display: flex;
+    text-align: center;
+} */
+
+.types span {
+    padding: 0 10px;
+    border-radius: 10px;
+    margin-right: 3px;
+    height: fit-content;
+}
+
+.type-poision {
+    background-color: #b97fc9;
+    color: #fff;
+}
+
+.type-grass {
+    background-color: #9bcc50;
+    color: #000;
+}
+
+/* ------------------- */
+
+/* basic-info */
+.poke-img {
+    max-width: 350px;
+    height: auto;
+    object-fit: contain;
+}
+
+.basic-info h1 {
+    font-weight: bold;
+}
+
+/* detail */
+.detail p {
+    font-size: 1.2em
+}
+
+.detail span {
+    font-size: 1.3em;
+    font-weight: bold;
+}
+
+.detail .description {
+    font-size: 1.6em
+}
+
+.fa-mars {
+    color: #0072b0;
+}
+
+.fa-venus {
+    color: #dd2d51;
+}
+
+/* stats */
+
+.stats table {
+    background-color: antiquewhite;
+    border-radius: 10px;
+    width: 90%;
+}
+
+.stats td {
+    padding: 7px;
+    font-size: 1.4em;
+}
+
+.stat-hp {
+    background-color: #FF0000;
+}
+
+.stat-attack {
+    background-color: #f08030;
+}
+
+.stat-defense {
+    background-color: #f8d030;
+}
+
+.stat-special-attack {
+    background-color: #6890f0;
+}
+
+.stat-special-defense {
+    background-color: #78c850;
+}
+
+.stat-speed {
+    background-color: #f85888;
+}
+
+.stat-bar-bg {
+    background-color: #fff;
+    height: 10px;
+}
+
+.stat-bar {
+    height: 10px;
+    border-radius: 10px;
+
+}
+
+
+@media(min-width: 576px) {
+
+    /* basic-info */
+    .basic-info {
+        text-align: initial;
+    }
 }
