@@ -142,16 +142,6 @@ h1 {
     color: #fff;
 }
 
-
-
-
-
-
-
-
-
-
-
 .type-poison {
     background-color: #b97fc9;
     color: #fff;
@@ -180,6 +170,10 @@ h1 {
 
 .basic-info h1 {
     font-weight: bold;
+}
+
+.id {
+    font-size: 1.3em;
 }
 
 /* detail */

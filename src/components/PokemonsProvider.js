@@ -1,12 +1,13 @@
-import { useReducer, createContext, useContext} from 'react'
+import { useReducer, createContext, useContext, useEffect} from 'react'
 
 const PokemonContext = createContext(null);
 
 const initialState = {
     pokemons: [],
-    pokemon_species: [],
+    pokemon_species: {},
     generation: {name:'', pokesAmount: 0 },
     status: null,
+    evolution_chain: {}
 }
 
 const reducer = (state, action) => {
@@ -28,7 +29,12 @@ const reducer = (state, action) => {
         }
         case 'pokemonSpeciesLoaded' : {
             return {
-                ...state, status: 'idle', pokemon_species: action.payload
+                ...state, status: 'idle', pokemon_species: {...state.pokemon_species, [action.payload.id]: action.payload.data}
+            }
+        }
+        case "evolutionChainLoaded" : {
+            return {
+                ...state, status: 'idle', evolution_chain: {...state.evolution_chain, [action.payload.id]:action.payload.chain}
             }
         }
         default : 
@@ -36,9 +42,22 @@ const reducer = (state, action) => {
     }
 }
 
-
 export default function PokemonsProvider({children}) {
-    const [state, dispatch] = useReducer(reducer, initialState)
+    const [state, dispatch] = useReducer(reducer, initialState);
+    
+    useEffect(()=> {
+        const getPokemons = async () => {
+            dispatch({type:'dataLoading'})
+            const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?limit=151`);
+            const data = await response.json();
+            const pokemonsResponses = await Promise.all(data.results.map(result => fetch(result.url)));
+            const pokemonsPromises = pokemonsResponses.map(pokemonsResponse => pokemonsResponse.json());
+            const finalData = await Promise.all(pokemonsPromises);
+            dispatch({type: 'pokemonsLoaded', payload: finalData})
+        };
+        getPokemons()
+    }, [dispatch])
+
     return (
         <>
             <PokemonContext.Provider value={{state, dispatch}}>
