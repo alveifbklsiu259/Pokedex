@@ -3,7 +3,7 @@ export default function Detail({pokemon, speciesInfo}) {
 	function getGender() {
 		switch(speciesInfo.gender_rate) {
 			case -1 :
-				return <i class="fa-regular fa-question"></i>
+				return <i className="fa-regular fa-question"></i>
 			case 0 :
 				return <i className="fa-solid fa-mars"></i>;
 			case 8 :
