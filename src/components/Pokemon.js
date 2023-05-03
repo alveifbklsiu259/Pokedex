@@ -17,7 +17,7 @@ export default function Pokemon() {
 	// const evolutionChain = evolutionChainURL?.slice(evolutionChainURL?.indexOf('/', 40) + 1,
 	// evolutionChainURL.length - 1);
 	// console.log(evolutionChain)
-
+	console.log(pokemon)
 	useEffect(()=>{
 		const getInfo = async () => {
 			dispatch({type:'dataLoading'});

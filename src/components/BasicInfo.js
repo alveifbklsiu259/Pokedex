@@ -7,7 +7,6 @@ export default function BasicInfo({pokemon}) {
 	const { dispatch, state } = usePokemonData();
 	let pokemonData = pokemon;
 	useEffect(() => {
-		// console.log(typeof pokemon)
 		const getIndividualPokemon = async () => {
 			if (typeof pokemon === 'string') {
 				dispatch({type: 'dataLoading'});
@@ -27,11 +26,11 @@ export default function BasicInfo({pokemon}) {
 		content =  (
 			<>
 				<img className="poke-img mx-auto p-0" src={pokemonData.sprites.other['official-artwork'].front_default} alt={pokemonData.name} />
-				<div className="p-0 row text-center">
+				<div className="p-0 row text-center justify-content-center">
 					<span className="id p-0">#{String(pokemonData.id).padStart(4 ,'0')}</span>
 					<h1 className="p-0 text-capitalize">{pokemonData.name}</h1>
-					<div className="types">
-						{pokemonData.types.map(type => <span key={type.type.name} className={`type-${type.type.name}`}>{type.type.name}</span>)}
+					<div className="types row justify-content-center">
+						{pokemonData.types.map(type => <span key={type.type.name} className={`type-${type.type.name} type col-5 m-1`}>{type.type.name}</span>)}
 					</div>
 				</div>
 			</>

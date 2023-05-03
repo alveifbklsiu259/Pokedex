@@ -47,9 +47,13 @@ h1 {
 
 .types span {
     padding: 0 10px;
-    border-radius: 10px;
-    margin-right: 3px;
     height: fit-content;
+    min-width: 75px;
+    max-width: 100px;
+}
+
+.type {
+    border-radius: 10px;
 }
 
 .type-bug {
@@ -298,6 +302,43 @@ h1 {
 
 .evolutionChain ul.multiplePath.specialCase li:not(:last-child):after {
     content: '\f0d7';
+}
+
+/* filter */
+.filter li {
+    cursor: pointer;
+}
+
+/* advanced search */
+.advancedSearch button {
+    border: none;
+    background-color: inherit;
+}
+
+.advancedSearch .pokeBall {
+    width: 15px
+}
+
+.advancedSearch .generation li {
+    border: 1px solid #000;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 80px;
+}
+
+.advancedSearch .generation li.selected {
+    background-color: #3dc7ef;
+    border: 1px solid #0072b0;
+}
+
+.advancedSearch .typesFilter li {
+    cursor: pointer;
+    width: 80px;
+}
+
+.advancedSearch .typesFilter li.selected {
+    outline-offset: 3px;
+    outline: 2px solid #FF5722;
 }
 
 

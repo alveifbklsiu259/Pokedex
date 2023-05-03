@@ -14,7 +14,7 @@ export default function EvolutionChains() {
 		const getEvolutionChains = async () => {
 			
 			if (state?.evolution_chain?.[chianId]) {
-				return 
+				return
 			} else {
 				dispatch({type: 'dataLoading'});
 				const response = await fetch(evolutionChainURL);

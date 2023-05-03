@@ -6,7 +6,13 @@ const initialState = {
 	pokemon_species: {},
 	generation: {name:'', pokesAmount: 0 },
 	status: null,
-	evolution_chain: {}
+	evolution_chain: {},
+	searchParam: '',
+	sortBy: 'numberAsc',
+	advancedSearch: {
+		generation: [''],
+		types: []
+	}
 }
 
 const reducer = (state, action) => {
@@ -39,6 +45,52 @@ const reducer = (state, action) => {
 		case "individualPokemonLoaded" : {
 			return {
 				...state, status: 'idle', pokemons: {...state.pokemons, [action.payload.id]: action.payload}
+			}
+		}
+		case "searchParamChanged" : {
+			return {
+				...state, searchParam: action.payload
+			}
+		}
+		//  sort
+		case 'numberAsc' : {
+			return {
+				...state, sortBy: 'numberAsc'
+			}
+		}
+		case 'numberDesc' : {
+			return {
+				...state, sortBy: 'numberDesc'
+			}
+		}
+		case 'nameAsc' : {
+			return {
+				...state, sortBy: 'nameAsc'
+			}
+		}
+		case 'nameDesc' : {
+			return {
+				...state, sortBy: 'nameDesc'
+			}
+		}
+		case 'heightAsc' : {
+			return {
+				...state, sortBy: 'heightAsc'
+			}
+		}
+		case 'heightDesc' : {
+			return {
+				...state, sortBy: 'heightDesc'
+			}
+		}
+		case 'weightAsc' : {
+			return {
+				...state, sortBy: 'weightAsc'
+			}
+		}
+		case 'weightDesc' : {
+			return {
+				...state, sortBy: 'weightDesc'
 			}
 		}
 		default : 
