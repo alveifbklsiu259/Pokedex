@@ -327,8 +327,9 @@ h1 {
 }
 
 .advancedSearch .generation li.selected {
-    background-color: #3dc7ef;
-    border: 1px solid #0072b0;
+    background-color: #FFC107;
+    border: 1px solid #FF9800;
+    outline: 1px solid red;
 }
 
 .advancedSearch .typesFilter li {
