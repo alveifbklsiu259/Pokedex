@@ -4,13 +4,12 @@ const PokemonContext = createContext(null);
 const initialState = {
 	pokemons: {},
 	pokemon_species: {},
-	generation: {name:'', pokesAmount: 0 },
 	status: null,
 	evolution_chain: {},
 	searchParam: '',
 	sortBy: 'numberAsc',
 	advancedSearch: {
-		generation: [''],
+		generations: ['generation-i'],
 		types: []
 	}
 }

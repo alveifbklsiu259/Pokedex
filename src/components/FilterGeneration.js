@@ -3,14 +3,29 @@ import { useState, useEffect } from 'react'
 
 export default function FilterGeneration() {
 	const [generationOptions, setGenerationOptions] = useState([]);
-	const handleSelect = (e,generation) => {
+	const [selectedGenerations, setSelectedGenerations] = useState([]);
+	let selectedArray = [];
+
+	const handleSelect = (e, generation) => {
 		e.target.classList.toggle('selected')
-		console.log(generation)
+		setSelectedGenerations( prevSelectedGenerations => {
+			console.log(prevSelectedGenerations)
+			if (prevSelectedGenerations.includes(generation.name)) {
+				return [...prevSelectedGenerations].splice(prevSelectedGenerations.indexOf[generation.name] ,1)
+			} else {
+				return [...prevSelectedGenerations, generation.name]
+			}
+		})
 	}
+
 	useEffect(() => {
 		const getGeneration = async () => {
 			const response = await fetch('https://pokeapi.co/api/v2/generation');
 			const data = await response.json();
+			// const responses = await Promise.all(data.results.map(generation => fetch(generation.url)));
+			// const datas = responses.map(response => response.json());
+			// const finalData = await Promise.all(datas);
+			// console.log(finalData.map(generation => generation.main_region.name))
 			setGenerationOptions(data.results)
 		};
 		getGeneration();

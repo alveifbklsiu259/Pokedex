@@ -24,6 +24,7 @@ export default function AdvancedSearch() {
 					<FilterGeneration />
 					<FilterTypes />
 							{/* reset button */}
+							{/* region //https://pokeapi.co/api/v2/region */}
 				</div>
 			</div>
 		</div>
