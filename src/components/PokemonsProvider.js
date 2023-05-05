@@ -2,14 +2,18 @@ import { useReducer, createContext, useContext, useEffect} from 'react'
 const PokemonContext = createContext(null);
 
 const initialState = {
+	pokemonsRange:[],
 	pokemons: {},
+	// common multiple of 2, 3, 4 (which are the amount of cards diplayed on each row in different viewports)
+	// displayAmount: 24,
+	nextRequest: '',
 	pokemon_species: {},
 	status: null,
 	evolution_chain: {},
 	searchParam: '',
 	sortBy: 'numberAsc',
 	advancedSearch: {
-		generations: ['generation-i'],
+		generations: [],
 		types: []
 	}
 }
@@ -23,7 +27,7 @@ const reducer = (state, action) => {
 		}
 		case 'pokemonsLoaded' : {
 			return {
-				...state, pokemons: action.payload, status:'idle'
+				...state, pokemons: {...state.pokemons ,...action.payload.data}, status:'idle', nextRequest: action.payload.nextRequest
 			}
 		}
 		case 'generationLoaded' : {
@@ -51,47 +55,35 @@ const reducer = (state, action) => {
 				...state, searchParam: action.payload
 			}
 		}
-		//  sort
-		case 'numberAsc' : {
+		case 'sortByChanged' : {
 			return {
-				...state, sortBy: 'numberAsc'
+				...state, sortBy: action.payload
 			}
 		}
-		case 'numberDesc' : {
+		case 'advancedSearchChanged' : {
+			const {field, data} = action.payload;
+			const update = [...state.advancedSearch[field]];
+			if (update.includes(data)) {
+				update.splice(update.indexOf(data), 1)
+			} else {
+				update.push(data)
+			}
 			return {
-				...state, sortBy: 'numberDesc'
+				...state, advancedSearch: {...state.advancedSearch, [field]: update}
 			}
 		}
-		case 'nameAsc' : {
+		case 'pokemonsRangeChanged' : {
+			const update = [...state.pokemonsRange];
+			if (update.includes(action.payload)) {
+				update.splice(update.indexOf(action.payload), 1)
+			} else {
+				update.push(action.payload)
+			}
 			return {
-				...state, sortBy: 'nameAsc'
+				...state, pokemonsRange: update
 			}
 		}
-		case 'nameDesc' : {
-			return {
-				...state, sortBy: 'nameDesc'
-			}
-		}
-		case 'heightAsc' : {
-			return {
-				...state, sortBy: 'heightAsc'
-			}
-		}
-		case 'heightDesc' : {
-			return {
-				...state, sortBy: 'heightDesc'
-			}
-		}
-		case 'weightAsc' : {
-			return {
-				...state, sortBy: 'weightAsc'
-			}
-		}
-		case 'weightDesc' : {
-			return {
-				...state, sortBy: 'weightDesc'
-			}
-		}
+		
 		default : 
 			return state
 	}
@@ -99,11 +91,16 @@ const reducer = (state, action) => {
 
 export default function PokemonsProvider({children}) {
 	const [state, dispatch] = useReducer(reducer, initialState);
-	
+
 	useEffect(()=> {
+		console.log()
+		if (state.advancedSearch.generations.length === 0 ) {
+
+		}
+
 		const getPokemons = async () => {
 			dispatch({type:'dataLoading'})
-			const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?limit=151`);
+			const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?limit=24`);
 			const data = await response.json();
 			const pokemonsResponses = await Promise.all(data.results.map(result => fetch(result.url)));
 			const pokemonsPromises = pokemonsResponses.map(pokemonsResponse => pokemonsResponse.json());
@@ -112,11 +109,10 @@ export default function PokemonsProvider({children}) {
 			for (let i of finalData) {
 				pokemonsObj[i.id] = i
 			};
-			dispatch({type: 'pokemonsLoaded', payload: pokemonsObj})
+			dispatch({type: 'pokemonsLoaded', payload: {data: pokemonsObj, nextRequest: data.next }})
 		};
 			getPokemons()
 	}, [dispatch]);
-
 	return (
 		<>
 			<PokemonContext.Provider value={{state, dispatch}}>

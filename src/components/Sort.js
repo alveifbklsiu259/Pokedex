@@ -1,6 +1,6 @@
 import { usePokemonData } from "./PokemonsProvider"
 
-export default function Filter() {
+export default function Sort() {
 	const dropdownOptions = [
 		{text:'Number(low - high)' , value: 'numberAsc'},
 		{text:'Number(high - low)' , value: 'numberDesc'},
@@ -15,13 +15,13 @@ export default function Filter() {
 
 	return (
 		<>
-			<div className="filter dropdown text-end mb-4">
+			<div className="sort dropdown text-end mb-4">
 				<button className="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
 					Sort By {dropdownOptions.filter(option => option.value === state.sortBy)[0].text}
 				</button>
 				<ul className="dropdown-menu dropdown-menu-dark">
 					{dropdownOptions.map(option => (
-						<li key={option.value} onClick={() => dispatch({type: option.value})} className={`dropdown-item ${state.sortBy === option.value ? 'active' : ''}`} >{option.text}</li>
+						<li key={option.value} onClick={() => dispatch({type: 'sortByChanged', payload: option.value})} className={`dropdown-item ${state.sortBy === option.value ? 'active' : ''}`} >{option.text}</li>
 					))}
 				</ul>
 			</div>

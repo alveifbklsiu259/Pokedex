@@ -18,21 +18,22 @@ export default function BasicInfo({pokemon}) {
 		}
 		getIndividualPokemon();
 	}, [pokemon, dispatch]);
-	
+
 	let content;
-	if (state.status === 'loading') {
-		content =  <Spinner />
-	} else if (state.status === 'idle' && state.pokemons[pokemonData?.id]) {
+	if (typeof pokemonData === 'string') {
+		content = <Spinner />
+	} else {
 		content =  (
 			<>
+				<div className="d-flex flex-column align-items-center text-center p-0 h-100 justify-content-between">
 				<img className="poke-img mx-auto p-0" src={pokemonData.sprites.other['official-artwork'].front_default} alt={pokemonData.name} />
-				<div className="p-0 row text-center justify-content-center">
-					<span className="id p-0">#{String(pokemonData.id).padStart(4 ,'0')}</span>
-					<h1 className="p-0 text-capitalize">{pokemonData.name}</h1>
-					<div className="types row justify-content-center">
-						{pokemonData.types.map(type => <span key={type.type.name} className={`type-${type.type.name} type col-5 m-1`}>{type.type.name}</span>)}
-					</div>
+				<span className="id p-0">#{String(pokemonData.id).padStart(4 ,'0')}</span>
+				<h1 className="p-0 text-capitalize">{pokemonData.name}</h1>
+				<div className="types row justify-content-center">
+					{pokemonData.types.map(type => <span key={type.type.name} className={`type-${type.type.name} type col-5 m-1`}>{type.type.name}</span>)}
+				</div>	
 				</div>
+				
 			</>
 		)
 	}

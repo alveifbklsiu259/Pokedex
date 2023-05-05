@@ -6,6 +6,10 @@
     font-weight: 400;
 }
 
+#root {
+    min-height: 100vh;
+}
+
 html, body {
     overflow-x: hidden;
 }
@@ -288,7 +292,7 @@ h1 {
 .evolutionChain ul.multiplePath {
     display: flex;
     justify-content: center;
-    align-items: end;
+    align-items: flex-end;
 }
 
 .evolutionChain .specialCase {
@@ -304,8 +308,8 @@ h1 {
     content: '\f0d7';
 }
 
-/* filter */
-.filter li {
+/* sort */
+.sort li {
     cursor: pointer;
 }
 

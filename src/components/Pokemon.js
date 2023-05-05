@@ -17,7 +17,7 @@ export default function Pokemon() {
 	// const evolutionChain = evolutionChainURL?.slice(evolutionChainURL?.indexOf('/', 40) + 1,
 	// evolutionChainURL.length - 1);
 	// console.log(evolutionChain)
-	console.log(pokemon)
+
 	useEffect(()=>{
 		const getInfo = async () => {
 			dispatch({type:'dataLoading'});
@@ -28,6 +28,19 @@ export default function Pokemon() {
 		getInfo()
 	}, [dispatch, pokeId])
 
+	useEffect(() => {
+		const getIndividualPokemon = async () => {
+			if (Object.keys(state.pokemons).length === 0 && !state.pokemons[pokeId]) {
+				dispatch({type: 'dataLoading'});
+				const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
+				const data = await response.json();
+				dispatch({type: 'individualPokemonLoaded', payload: data})
+			}
+		};
+		getIndividualPokemon()
+	}, [state.pokemons, dispatch])
+
+	console.log(state.pokemons)
 	let content;
 	if (pokemon && Object.keys(speciesInfo).length > 0 ) {
 		content = (

@@ -1,35 +1,33 @@
 import ball from '../assets/ball.svg'
 import { useState, useEffect } from 'react'
+import { usePokemonData } from './PokemonsProvider';
 
 export default function FilterGeneration() {
+	const {state, dispatch} = usePokemonData();
 	const [generationOptions, setGenerationOptions] = useState([]);
-	const [selectedGenerations, setSelectedGenerations] = useState([]);
-	let selectedArray = [];
 
 	const handleSelect = (e, generation) => {
-		e.target.classList.toggle('selected')
-		setSelectedGenerations( prevSelectedGenerations => {
-			console.log(prevSelectedGenerations)
-			if (prevSelectedGenerations.includes(generation.name)) {
-				return [...prevSelectedGenerations].splice(prevSelectedGenerations.indexOf[generation.name] ,1)
-			} else {
-				return [...prevSelectedGenerations, generation.name]
-			}
-		})
+		e.target.classList.toggle('selected');
+		dispatch({type: 'advancedSearchChanged', payload: {field: 'generations', data: generation.name}})
+		// console.log(generation)
+		dispatch({type: 'pokemonsRangeChanged', payload: generation.pokemon_species});
 	}
+
+	console.log(state)
 
 	useEffect(() => {
 		const getGeneration = async () => {
 			const response = await fetch('https://pokeapi.co/api/v2/generation');
 			const data = await response.json();
-			// const responses = await Promise.all(data.results.map(generation => fetch(generation.url)));
-			// const datas = responses.map(response => response.json());
-			// const finalData = await Promise.all(datas);
-			// console.log(finalData.map(generation => generation.main_region.name))
-			setGenerationOptions(data.results)
+			const responses = await Promise.all(data.results.map(generation => fetch(generation.url)));
+			const datas = responses.map(response => response.json());
+			const finalData = await Promise.all(datas);
+			setGenerationOptions(finalData.map(generation => generation))
 		};
 		getGeneration();
 	}, [setGenerationOptions])
+
+
 
 
 	return (
@@ -38,7 +36,7 @@ export default function FilterGeneration() {
 				<h3 ><img className="pokeBall" src={ball} alt="pokeBall" /> Generations</h3>
 			</div>
 			{generationOptions.map(generation => (
-				<li onClick={(e) => handleSelect(e, generation)} key={generation.name} className="d-flex justify-content-center align-items-center">
+				<li onClick={(e) => handleSelect(e, generation)} key={generation.name} className={`d-flex justify-content-center align-items-center ${state.advancedSearch.generations.includes(generation.name) ? 'selected' : ''}`}>
 					{(generation.name.replace('generation-', '')).toUpperCase()}
 				</li>
 			))}
