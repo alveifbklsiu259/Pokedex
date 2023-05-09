@@ -7,6 +7,7 @@ import { usePokemonData } from "./PokemonsProvider"
 import { Link, useParams } from "react-router-dom"
 import { useEffect } from "react"
 import Spinner from "./Spinner";
+import { getIndividualPokemon } from "../api"
 
 export default function Pokemon() {
 	const {dispatch, state} = usePokemonData();
@@ -29,18 +30,11 @@ export default function Pokemon() {
 	}, [dispatch, pokeId])
 
 	useEffect(() => {
-		const getIndividualPokemon = async () => {
-			if (Object.keys(state.pokemons).length === 0 && !state.pokemons[pokeId]) {
-				dispatch({type: 'dataLoading'});
-				const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokeId}`);
-				const data = await response.json();
-				dispatch({type: 'individualPokemonLoaded', payload: data})
-			}
-		};
-		getIndividualPokemon()
-	}, [state.pokemons, dispatch])
+		if (Object.keys(state.pokemons).length === 0 && !state.pokemons[pokeId]) {
+			getIndividualPokemon(pokeId, dispatch)
+		}
+	}, [state.pokemons, dispatch, getIndividualPokemon]);
 
-	console.log(state.pokemons)
 	let content;
 	if (pokemon && Object.keys(speciesInfo).length > 0 ) {
 		content = (

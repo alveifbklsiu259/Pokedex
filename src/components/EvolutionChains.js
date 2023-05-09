@@ -3,13 +3,13 @@ import { useParams } from "react-router-dom"
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import BasicInfo from "./BasicInfo";
+import { getIdFromURL } from "../util";
 
 export default function EvolutionChains() {
 	const {pokeId} = useParams();
 	const {state, dispatch} = usePokemonData();
 	const evolutionChainURL = state.pokemon_species[pokeId].evolution_chain.url;
-	const chianId = evolutionChainURL.slice(evolutionChainURL.indexOf('/', 40) + 1,
-	evolutionChainURL.length - 1);
+	const chianId = getIdFromURL(evolutionChainURL);
 	useEffect(() => {
 		const getEvolutionChains = async () => {
 			
@@ -20,7 +20,7 @@ export default function EvolutionChains() {
 				const response = await fetch(evolutionChainURL);
 				const data = await response.json();
 				function getSpeciesId(speciesURL) {
-					return speciesURL.slice(speciesURL.indexOf('/', 40) + 1, speciesURL.length - 1)
+					return getIdFromURL(speciesURL)
 				}
 	
 				function mapArr(arr) {

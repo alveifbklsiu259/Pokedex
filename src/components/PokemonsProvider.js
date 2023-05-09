@@ -2,7 +2,6 @@ import { useReducer, createContext, useContext, useEffect} from 'react'
 const PokemonContext = createContext(null);
 
 const initialState = {
-	pokemonsRange:[],
 	pokemons: {},
 	// common multiple of 2, 3, 4 (which are the amount of cards diplayed on each row in different viewports)
 	// displayAmount: 24,
@@ -13,9 +12,10 @@ const initialState = {
 	searchParam: '',
 	sortBy: 'numberAsc',
 	advancedSearch: {
-		generations: [],
-		types: []
-	}
+		generations: {},
+		types: [],
+	},
+	display: [],
 }
 
 const reducer = (state, action) => {
@@ -27,7 +27,7 @@ const reducer = (state, action) => {
 		}
 		case 'pokemonsLoaded' : {
 			return {
-				...state, pokemons: {...state.pokemons ,...action.payload.data}, status:'idle', nextRequest: action.payload.nextRequest
+				...state, pokemons: {...state.pokemons, ...action.payload.data}, status:'idle', nextRequest: action.payload.nextRequest
 			}
 		}
 		case 'generationLoaded' : {
@@ -62,28 +62,20 @@ const reducer = (state, action) => {
 		}
 		case 'advancedSearchChanged' : {
 			const {field, data} = action.payload;
-			const update = [...state.advancedSearch[field]];
-			if (update.includes(data)) {
-				update.splice(update.indexOf(data), 1)
-			} else {
-				update.push(data)
-			}
 			return {
-				...state, advancedSearch: {...state.advancedSearch, [field]: update}
+				...state, advancedSearch: {...state.advancedSearch, [field]: data}, status: 'loading'
 			}
 		}
-		case 'pokemonsRangeChanged' : {
-			const update = [...state.pokemonsRange];
-			if (update.includes(action.payload)) {
-				update.splice(update.indexOf(action.payload), 1)
-			} else {
-				update.push(action.payload)
-			}
+		case 'advancedSearchReset' : {
 			return {
-				...state, pokemonsRange: update
+				...state, advancedSearch: { generations: {}, types: [] }, searchParam: ''
 			}
 		}
-		
+		case 'displayChanged' : {
+			return {
+				...state, display: action.payload, status: 'idle'
+			}
+		}
 		default : 
 			return state
 	}
@@ -93,11 +85,6 @@ export default function PokemonsProvider({children}) {
 	const [state, dispatch] = useReducer(reducer, initialState);
 
 	useEffect(()=> {
-		console.log()
-		if (state.advancedSearch.generations.length === 0 ) {
-
-		}
-
 		const getPokemons = async () => {
 			dispatch({type:'dataLoading'})
 			const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?limit=24`);
@@ -109,7 +96,8 @@ export default function PokemonsProvider({children}) {
 			for (let i of finalData) {
 				pokemonsObj[i.id] = i
 			};
-			dispatch({type: 'pokemonsLoaded', payload: {data: pokemonsObj, nextRequest: data.next }})
+			dispatch({type: 'pokemonsLoaded', payload: {data: pokemonsObj, nextRequest: data.next }});
+			dispatch({type: 'displayChanged', payload: finalData.map(pokemon => pokemon.id)})
 		};
 			getPokemons()
 	}, [dispatch]);

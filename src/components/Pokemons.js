@@ -9,7 +9,6 @@ export default function Pokemons() {
 	const {state, dispatch} = usePokemonData();
 	let searchParam = state.searchParam
 	let searchResult = [];
-	let sortedPokemons = [];
 
 	// sorting:
 	/* 
@@ -42,19 +41,20 @@ export default function Pokemons() {
 		// advanced show differnt forms on pokemons page or not
 	*/
 
-	// check range
-	if (state.advancedSearch.generations.length === 0 ) {
+	// handle types search
 
-	}
 
+// still dispaly state.pokemons in pokemons component,
+// handle cached pokemons in the submit event
+// handle sorting in the sort event
 
 
 
 	useEffect(()=> {
-		console.log()
-		if (state.advancedSearch.generations.length === 0 ) {
+		// console.log()
+		// if (state.advancedSearch.generations.length === 0 ) {
 
-		}
+		// }
 
 		// const getPokemons = async () => {
 		// 	dispatch({type:'dataLoading'})
@@ -72,17 +72,47 @@ export default function Pokemons() {
 		// 	getPokemons()
 	}, [dispatch]);
 
+	const displayPokemons = Object.values(state.pokemons).filter(pokemon => state.display.includes(pokemon.id));
+	console.log(displayPokemons)
+	let sortedPokemons = [];
+	console.log(displayPokemons)
+	console.log(state)
 
-
-
-
-
-
-
-
-
-
-
+	// sort 
+	switch(state.sortBy) {
+		case 'numberAsc' : {
+			sortedPokemons = displayPokemons.sort((a, b) => a.id - b.id)
+			break;
+		}
+		case 'numberDesc' : {
+			sortedPokemons = displayPokemons.sort((a, b) => b.id - a.id)
+			break;
+		}
+		case 'nameAsc' : {
+			sortedPokemons = displayPokemons.sort((a, b) => a.name.localeCompare(b.name))
+			break;
+		}
+		case 'nameDesc' : {
+			sortedPokemons = displayPokemons.sort((a, b) => b.name.localeCompare(a.name))
+			break;
+		}
+		case 'heightAsc' : {
+			sortedPokemons = displayPokemons.sort((a, b) => a.height - b.height)
+			break;
+		}
+		case 'heightDesc' : {
+			sortedPokemons = displayPokemons.sort((a, b) => b.height - a.height)
+			break;
+		}
+		case 'weightAsc' : {
+			sortedPokemons = displayPokemons.sort((a, b) => a.weight - b.weight)
+			break;
+		}
+		case 'weightDesc' : {
+			sortedPokemons = displayPokemons.sort((a, b) => b.weight - a.weight)
+			break;
+		}
+	}
 
 
 
@@ -92,7 +122,6 @@ export default function Pokemons() {
 
 
 	const handleDisplay = async() => {
-		if (state.nextRequest !== null) {
 			dispatch({type: 'dataLoading'})
 			const response = await fetch(state.nextRequest);
 			const data = await response.json();
@@ -103,19 +132,15 @@ export default function Pokemons() {
 			for (let i of finalData) {
 				pokemonsObj[i.id] = i
 			};
-				dispatch({type: 'pokemonsLoaded', payload: {data: pokemonsObj, nextRequest: data.next }})
-		}
-		
-		// exceptions
-		// what about last?
-		// order of sorting
-
-
+			dispatch({type: 'pokemonsLoaded', payload: {data: pokemonsObj, nextRequest: data.next }})
+			dispatch({type: 'displayChanged', payload: [...state.display, ...finalData.map(pokemon => pokemon.id)]})
 	}
 
 	const handleScroll = useCallback(() => {
 		if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight && state.status === 'idle' ) {
-			handleDisplay()
+			if (state.nextRequest !== null) {
+				handleDisplay();
+			}
 		}
 	}, [state.status])
 
@@ -125,78 +150,21 @@ export default function Pokemons() {
 	}, [handleScroll])
 
 
-	// have to know the next fetch url
-	// only show a specific amount of cards
-	// infinite scroll
-
-
 	// bf cache, when comes back, the filter still exists
 	// show possible search options (dropdown)
 	// automatically submit when not typing // suspense?
-
-	// search function
-	// using reducer
-	if (searchParam === '') {
-		searchResult = Object.values(state.pokemons) || [];
-	} else if (isNaN(Number(searchParam))) {
-		// sort by name
-		searchParam = searchParam.toLowerCase();
-		const pokemonsArray = Object.values(state.pokemons)
-		searchResult = pokemonsArray.filter(pokemon => pokemon.name.includes(searchParam));
-	} else {
-		// sort by id
-		// dealing with param with preceding 0
-		searchParam = Number(searchParam);
-		const filterArray = Object.keys(state.pokemons).filter(id => id.includes(searchParam));
-		for (let i = 0; i < filterArray.length; i ++) {
-			searchResult.push(state.pokemons[filterArray[i]])
-		};
-	}
-	// sort function
-	switch(state.sortBy) {
-		case 'numberAsc' : {
-			sortedPokemons = searchResult.sort((a, b) => a.id - b.id)
-			break;
-		}
-		case 'numberDesc' : {
-			sortedPokemons = searchResult.sort((a, b) => b.id - a.id)
-			break;
-		}
-		case 'nameAsc' : {
-			sortedPokemons = searchResult.sort((a, b) => a.name.localeCompare(b.name))
-			break;
-		}
-		case 'nameDesc' : {
-			sortedPokemons = searchResult.sort((a, b) => b.name.localeCompare(a.name))
-			break;
-		}
-		case 'heightAsc' : {
-			sortedPokemons = searchResult.sort((a, b) => a.height - b.height)
-			break;
-		}
-		case 'heightDesc' : {
-			sortedPokemons = searchResult.sort((a, b) => b.height - a.height)
-			break;
-		}
-		case 'weightAsc' : {
-			sortedPokemons = searchResult.sort((a, b) => a.weight - b.weight)
-			break;
-		}
-		case 'weightDesc' : {
-			sortedPokemons = searchResult.sort((a, b) => b.weight - a.weight)
-			break;
-		}
-	}
+	
+	
 
 	let content;
 
-	if (state.status === 'idle' && sortedPokemons.length === 0) {
+	if (state.status === 'idle' && displayPokemons.length === 0) {
 		content = <p className="text-center">No Pokémons to show</p>
 	} else {
 		content = (
 			<>
 				{
-					sortedPokemons.map(pokemon => (
+					displayPokemons.map(pokemon => (
 						<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
 							<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
 								<BasicInfo pokemon={pokemon}/>

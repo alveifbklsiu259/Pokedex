@@ -12,7 +12,7 @@ export default function Sort() {
 		{text:'Weight(heavy - light)' , value: 'weightDesc'}
 	];
 	const {state, dispatch} = usePokemonData();
-
+	
 	return (
 		<>
 			<div className="sort dropdown text-end mb-4">

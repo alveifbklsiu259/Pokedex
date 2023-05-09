@@ -32,7 +32,7 @@ export default function Detail({pokemon, speciesInfo}) {
 				</React.Fragment>
 			))}
 			</p>
-			<p className="col-12 m-3 p-2 text-start description">{(speciesInfo?.flavor_text_entries && speciesInfo?.flavor_text_entries[0].flavor_text) ? speciesInfo?.flavor_text_entries[0].flavor_text : ''}</p>
+			<p className="col-12 m-3 p-2 text-start description">{(speciesInfo?.flavor_text_entries && speciesInfo?.flavor_text_entries[0]?.flavor_text) ? speciesInfo.flavor_text_entries[0].flavor_text : ''}</p>
 		</div>
 	)
 }
