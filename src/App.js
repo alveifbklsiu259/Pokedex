@@ -56,6 +56,7 @@ pokemons: all pokemon entries (name, types, images)
 // 268 evolution chain error
 
 
+
 pokemon: pokemons species, if i can cache the pokemons api result, i don't have to make another request
 
 

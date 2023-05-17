@@ -17,7 +17,6 @@ const FilterGeneration = memo(({generations:{selectedGenerations, setSelectedGen
 			return update
 		});
 	};
-	console.log(selectedGenerations)
 
 	useEffect(() => {
 		const getGenerationInfo = async () => {

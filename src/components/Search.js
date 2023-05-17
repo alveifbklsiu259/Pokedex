@@ -1,7 +1,8 @@
 import pokeBall from '../assets/pokeBall.png'
 import { usePokemonData } from './PokemonsProvider'
-import { useState, useEffect } from 'react';
+import { useState, useEffect} from 'react';
 import AdvancedSearch from './AdvancedSearch';
+import Input from './Input';
 import { getMultiplePokemons } from '../api';
 import { getIdFromURL } from '../util';
 
@@ -75,8 +76,12 @@ export default function Search() {
 		const flattenedCachedPokemons = Object.values(state.pokemons).map(pokemon => pokemon.id);
 		const pokemonsToFetch = intersection.filter(pokemon => !flattenedCachedPokemons.includes(pokemon));
 		await getMultiplePokemons(pokemonsToFetch, dispatch, null);
-		console.log(intersection)
+		// console.log(intersection)
 	}
+
+
+
+
 
 	return (
 		<div style={{background: 'blanchedalmond'}} className="card-body mb-4 p-4">
@@ -85,9 +90,7 @@ export default function Search() {
 			</h1>
 			<p className="lead text-center">By Name or the National Pokédex number</p>
 			<form onSubmit={(e) => handleSearch(e)}>
-				<div className="form-group">
-					<input type="text" className="form-control form-control-lg" placeholder="Name or the National Pokédex number..." name="searchResult" value={searchParam} onChange={e => setSearchParam(e.target.value)} />
-				</div>
+				<Input searchParam={{searchParam, setSearchParam}}/>
 				<AdvancedSearch param={{setSearchParam, searchParam}} types={{selectedTypes, setSelectedTypes}} generations={{selectedGenerations, setSelectedGenerations}} />
 				<button className="btn btn-primary btn-lg btn-block w-100 my-3" type="submit">Search</button>
 			</form>

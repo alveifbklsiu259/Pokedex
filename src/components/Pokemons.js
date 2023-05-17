@@ -73,10 +73,7 @@ export default function Pokemons() {
 	}, [dispatch]);
 
 	const displayPokemons = Object.values(state.pokemons).filter(pokemon => state.display.includes(pokemon.id));
-	console.log(displayPokemons)
 	let sortedPokemons = [];
-	console.log(displayPokemons)
-	console.log(state)
 
 	// sort 
 	switch(state.sortBy) {
