@@ -24,14 +24,15 @@ const DataList = forwardRef(({matchList, inputRef, searchParam, setSearchParam, 
 	};
 
 	const colorMatching = (pokemonName, searchParam) => {
+		const lowerCaseSearchParam = searchParam.toLowerCase();
 		return (
 			<>
 				{
-					pokemonName.split(searchParam).reduce((previousReturn, currentElement, index) => {
+					pokemonName.split(lowerCaseSearchParam).reduce((previousReturn, currentElement, index) => {
 						if (index === 0) {
 							return [currentElement];
 						} else {
-							return previousReturn.concat(<span className="nameMatch" key={index}>{searchParam}</span>, currentElement);
+							return previousReturn.concat(<span className="nameMatch" key={index}>{lowerCaseSearchParam}</span>, currentElement);
 						}
 					}, [])
 				}

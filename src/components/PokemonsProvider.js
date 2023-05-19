@@ -3,6 +3,7 @@ const PokemonContext = createContext(null);
 
 const initialState = {
 	pokemons: {},
+	pokemonCount: null,
 	// common multiple of 2, 3, 4 (which are the amount of cards diplayed on each row in different viewports)
 	// displayAmount: 24,
 	nextRequest: '',
@@ -23,6 +24,11 @@ const reducer = (state, action) => {
 		case 'dataLoading' : {
 			return {
 				...state, status: 'loading'
+			}
+		}
+		case 'getPokemonCount' : {
+			return {
+				...state, pokemonCount: action.payload
 			}
 		}
 		case 'pokemonsLoaded' : {
@@ -89,6 +95,7 @@ export default function PokemonsProvider({children}) {
 			dispatch({type:'dataLoading'})
 			const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?limit=24`);
 			const data = await response.json();
+			dispatch({type: 'getPokemonCount', payload: data.count});
 			const pokemonsResponses = await Promise.all(data.results.map(result => fetch(result.url)));
 			const pokemonsPromises = pokemonsResponses.map(pokemonsResponse => pokemonsResponse.json());
 			const finalData = await Promise.all(pokemonsPromises);
@@ -101,6 +108,7 @@ export default function PokemonsProvider({children}) {
 		};
 			getPokemons()
 	}, [dispatch]);
+
 	return (
 		<>
 			<PokemonContext.Provider value={{state, dispatch}}>

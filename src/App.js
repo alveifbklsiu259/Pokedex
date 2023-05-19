@@ -9,7 +9,6 @@ const router = createBrowserRouter(createRoutesFromElements(
     <Route path="/" element={<Index />}/>
     <Route path="/pokemons/:pokeId" element={<Pokemon />}/>
   </>
-
 ))
 
 
@@ -33,6 +32,7 @@ export default App;
 //Layout: (components)
 /* 
 1. search (name, id , types, reset button, optional(weakness, ability, height weight, location))
+// implement the search as React Docs' search/ or advanced search (types show number like https://www.algolia.com/developers/)
 1-2. advanced-search  // advanced search cause all pokemons to re-render???
 2. filter section (sort by type, weight, number, height, generation, random pokemon, location, shape)
 3. left navbar ( pokemons, berries ) 
@@ -46,6 +46,7 @@ export default App;
 by default, show all pokemons + infinite scroll or pagination, by filtering different generation, we still have infinite scroll or pagination
 
 api:
+// useEffect cleanup function after fetching
 pokemons: all pokemon entries (name, types, images)
 // I want to show pokemon options when searching, but that may require all pokemons being fetched.
 // see if there's any way to prefetch

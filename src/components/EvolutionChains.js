@@ -20,7 +20,7 @@ export default function EvolutionChains() {
 				const response = await fetch(evolutionChainURL);
 				const data = await response.json();
 				function getSpeciesId(speciesURL) {
-					return getIdFromURL(speciesURL)
+					return String(getIdFromURL(speciesURL))
 				}
 	
 				function mapArr(arr) {
@@ -107,6 +107,7 @@ export default function EvolutionChains() {
 	sortEvolutionChain(evolution_chain, pathArr)
 
 	let content;
+	console.log(pathArr)
 	if (pathArr.length === 1) {
 		content = (
 			<p className="text-center">This Pokémon does not evolve.</p>

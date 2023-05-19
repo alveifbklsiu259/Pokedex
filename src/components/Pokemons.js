@@ -73,44 +73,42 @@ export default function Pokemons() {
 	}, [dispatch]);
 
 	const displayPokemons = Object.values(state.pokemons).filter(pokemon => state.display.includes(pokemon.id));
-	let sortedPokemons = [];
-
+	console.log(state.display)
 	// sort 
 	switch(state.sortBy) {
 		case 'numberAsc' : {
-			sortedPokemons = displayPokemons.sort((a, b) => a.id - b.id)
+			displayPokemons.sort((a, b) => a.id - b.id)
 			break;
 		}
 		case 'numberDesc' : {
-			sortedPokemons = displayPokemons.sort((a, b) => b.id - a.id)
+			displayPokemons.sort((a, b) => b.id - a.id)
 			break;
 		}
 		case 'nameAsc' : {
-			sortedPokemons = displayPokemons.sort((a, b) => a.name.localeCompare(b.name))
+			displayPokemons.sort((a, b) => a.name.localeCompare(b.name))
 			break;
 		}
 		case 'nameDesc' : {
-			sortedPokemons = displayPokemons.sort((a, b) => b.name.localeCompare(a.name))
+			displayPokemons.sort((a, b) => b.name.localeCompare(a.name))
 			break;
 		}
 		case 'heightAsc' : {
-			sortedPokemons = displayPokemons.sort((a, b) => a.height - b.height)
+			displayPokemons.sort((a, b) => a.height - b.height)
 			break;
 		}
 		case 'heightDesc' : {
-			sortedPokemons = displayPokemons.sort((a, b) => b.height - a.height)
+			displayPokemons.sort((a, b) => b.height - a.height)
 			break;
 		}
 		case 'weightAsc' : {
-			sortedPokemons = displayPokemons.sort((a, b) => a.weight - b.weight)
+			displayPokemons.sort((a, b) => a.weight - b.weight)
 			break;
 		}
 		case 'weightDesc' : {
-			sortedPokemons = displayPokemons.sort((a, b) => b.weight - a.weight)
+			displayPokemons.sort((a, b) => b.weight - a.weight)
 			break;
 		}
 	}
-
 
 
 

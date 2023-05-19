@@ -3,7 +3,7 @@ import { usePokemonData } from './PokemonsProvider'
 import { useState, useEffect} from 'react';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
-import { getMultiplePokemons } from '../api';
+import { getMultiplePokemons, getPokemonsToFetch } from '../api';
 import { getIdFromURL } from '../util';
 
 export default function Search() {
@@ -73,15 +73,9 @@ export default function Search() {
 		};
 
 		dispatch({type: 'displayChanged', payload: intersection});
-		const flattenedCachedPokemons = Object.values(state.pokemons).map(pokemon => pokemon.id);
-		const pokemonsToFetch = intersection.filter(pokemon => !flattenedCachedPokemons.includes(pokemon));
+		const pokemonsToFetch = getPokemonsToFetch(state.pokemons, intersection);
 		await getMultiplePokemons(pokemonsToFetch, dispatch, null);
-		// console.log(intersection)
 	}
-
-
-
-
 
 	return (
 		<div style={{background: 'blanchedalmond'}} className="card-body mb-4 p-4">

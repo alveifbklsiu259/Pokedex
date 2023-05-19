@@ -9,10 +9,30 @@ export const getIndividualPokemon = async (pokemon, dispatch) => {
     return data
 };
 
-export const getMultiplePokemons = async (pokemons, dispatch, nextRequest) => {
+/**
+ * 
+ * @param {Object} cachedPokemons - The pokemons in cached
+ * @param {Array} pokemonsToDisplay 
+ * @returns 
+ */
+
+export const getPokemonsToFetch = (cachedPokemons, pokemonsToDisplay) => {
+    const flattenedCachedPokemons = Object.values(cachedPokemons).map(pokemon => pokemon.id);
+    return pokemonsToDisplay.filter(pokemon => !flattenedCachedPokemons.includes(pokemon));
+};
+
+/**
+ * 
+ * @param {*} pokemonsToFetch 
+ * @param {*} dispatch 
+ * @param {*} nextRequest 
+ * @returns 
+ */
+
+export const getMultiplePokemons = async (pokemonsToFetch, dispatch, nextRequest) => {
     //pass in id or name
     dispatch({type: 'dataLoading'});
-    const dataResponses = await Promise.all(pokemons.map(pokemon => fetch(`${BASE_URL}/pokemon/${pokemon}`)));
+    const dataResponses = await Promise.all(pokemonsToFetch.map(pokemon => fetch(`${BASE_URL}/pokemon/${pokemon}`)));
     const datas = dataResponses.map(response => response.json());
     const finalData = await Promise.all(datas);
     const obj = {};
@@ -22,6 +42,8 @@ export const getMultiplePokemons = async (pokemons, dispatch, nextRequest) => {
     dispatch({type: 'pokemonsLoaded', payload: {data: obj, nextRequest: nextRequest}})
     return finalData;
 };
+
+
 
 
 

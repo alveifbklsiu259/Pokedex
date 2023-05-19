@@ -1,7 +1,9 @@
 import { useRef, useEffect, useState } from "react"
 import DataList from './DataList';
+import { usePokemonData } from "./PokemonsProvider";
 
 export default function Input({searchParam: {searchParam, setSearchParam}}) {
+	const {state} = usePokemonData();
 	const [pokemonNames, setPokemonNames] = useState([]);
 	const [showDataList, setShowDataList] = useState(false);
 	const [hoveredPokemon, setHoveredPokemon] = useState('');
@@ -12,12 +14,14 @@ export default function Input({searchParam: {searchParam, setSearchParam}}) {
 
 	useEffect(() => {
 		const getPokemonNames = async () => {
-			const response = await fetch('https://pokeapi.co/api/v2/pokemon-species?limit=2000');
+			const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species?limit=${state.pokemonCount}`);
 			const data = await response.json();
 			setPokemonNames(data.results.map(pokemon => pokemon.name))
 		};
-		getPokemonNames();
-	}, []);
+		if (state.pokemonCount) {
+			getPokemonNames();
+		}
+	}, [state.pokemonCount]);
 
 	const resetFocus = datalist => {
 		setCurrentFocus(-1);
