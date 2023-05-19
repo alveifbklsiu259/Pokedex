@@ -1,4 +1,6 @@
 import { usePokemonData } from "./PokemonsProvider"
+import { getPokemonsToFetch, getMultiplePokemons } from "../api";
+import { getIdFromURL } from "../util";
 
 export default function Sort() {
 	const {state, dispatch} = usePokemonData();
@@ -25,34 +27,51 @@ export default function Sort() {
 		switch (sortOption) {
 			case "numberAsc" : {
 				// pokemons are already fetched
-				// dispatch({type: 'displayChanged', payload:})
+				dispatch({type:'dataLoading'})
+				//getting next request
+				const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=24`);
+				const data = await response.json();
+				const nextRequest = data.next.replace('pokemon-species', 'pokemon');
 
+				//getting pokemons to fetch
 
-
+				const pokemonsToDisplay = data.results.map(pokemon => getIdFromURL(pokemon.url));
+				
+				dispatch({type: 'nextRequestChanged', payload: nextRequest});
+				dispatch({type: 'displayChanged', payload: pokemonsToDisplay});
+				break;
 			}
 			case "numberDesc" : {
-				const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/`);
+				dispatch({type: 'dataLoading'});
+				//getting next request
+				const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=24&offset=${state.pokemonCount - 24}`);
 				const data = await response.json();
-				console.log(data)
-				
-				// const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?limit=24`);
-				// const data = await response.json();
-				// const pokemonsResponses = await Promise.all(data.results.map(result => fetch(result.url)));
-				// const pokemonsPromises = pokemonsResponses.map(pokemonsResponse => pokemonsResponse.json());
-				// const finalData = await Promise.all(pokemonsPromises);
-				// const pokemonsObj = {};
-				// console.log(finalData)
-				// for (let i of finalData) {
-				// 	pokemonsObj[i.id] = i
-				// };
-				// dispatch({type: 'pokemonsLoaded', payload: {data: pokemonsObj, nextRequest: data.next }});
-				// dispatch({type: 'displayChanged', payload: finalData.map(pokemon => pokemon.id)})
+				const nextRequest = data.previous.replace('pokemon-species', 'pokemon');
+
+				//getting pokemons to fetch
+				const pokemonsToDisplay = data.results.map(pokemon => getIdFromURL(pokemon.url));
+				const pokemonsToFetch = getPokemonsToFetch(state.pokemons, pokemonsToDisplay);
+				// get pokemons
+				const pokemons = await getMultiplePokemons(pokemonsToFetch, undefined);
+
+				dispatch({type: 'pokemonsLoaded', payload: {data: pokemons, nextRequest: nextRequest}});
+				dispatch({type: 'displayChanged', payload: pokemonsToDisplay});
+				break;
 
 
 				// if i'm gonna show only 24 pokemons + infinite scroll, notice if the Pokemons component gets re-render after scroll
 
 			}
 			case "nameAsc" : {
+				const sortedPokemonNames = Object.keys(state.allPokemonNamesAndId).sort((a, b) => a.localeCompare(b));
+	
+				const sortedPokemonNamesAndId = sortedPokemonNames.reduce((prev, cur) => {
+					prev[cur] = state.allPokemonNamesAndId[cur];
+					return prev
+				}, {});
+
+				// pokemons to fetch, but we only want to fetch the first 24 pokemons, and fetch the reset after scrolling
+				console.log(Object.values(sortedPokemonNamesAndId))
 
 			}
 			case "nameDesc" : {

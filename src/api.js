@@ -31,7 +31,9 @@ export const getPokemonsToFetch = (cachedPokemons, pokemonsToDisplay) => {
 
 export const getMultiplePokemons = async (pokemonsToFetch, dispatch, nextRequest) => {
     //pass in id or name
-    dispatch({type: 'dataLoading'});
+    if (dispatch) {
+        dispatch({type: 'dataLoading'});
+    }
     const dataResponses = await Promise.all(pokemonsToFetch.map(pokemon => fetch(`${BASE_URL}/pokemon/${pokemon}`)));
     const datas = dataResponses.map(response => response.json());
     const finalData = await Promise.all(datas);
@@ -39,8 +41,10 @@ export const getMultiplePokemons = async (pokemonsToFetch, dispatch, nextRequest
     for (let i of finalData) {
         obj[i.id] = i
     };
-    dispatch({type: 'pokemonsLoaded', payload: {data: obj, nextRequest: nextRequest}})
-    return finalData;
+    if (dispatch) {
+        dispatch({type: 'pokemonsLoaded', payload: {data: obj, nextRequest: nextRequest}})
+    }
+    return obj;
 };
 
 

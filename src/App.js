@@ -47,6 +47,8 @@ by default, show all pokemons + infinite scroll or pagination, by filtering diff
 
 api:
 // useEffect cleanup function after fetching
+// some pokemons have multiple same abilities
+
 pokemons: all pokemon entries (name, types, images)
 // I want to show pokemon options when searching, but that may require all pokemons being fetched.
 // see if there's any way to prefetch

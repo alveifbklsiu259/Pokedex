@@ -16,7 +16,6 @@ export default function Detail({pokemon, speciesInfo}) {
 				)
 		}
 	}
-
 	return (
 		<div className="detail row text-center col-12 col-sm-6">
 			<p className="my-4 col-6">Height <br /> <span>{pokemon.height * 10 } cm</span></p>
@@ -26,7 +25,8 @@ export default function Detail({pokemon, speciesInfo}) {
 			</p>
 			<p className="col-6">Abilities <br />
 			{pokemon.abilities.map(ability => (
-				<React.Fragment key={ability.ability.name}>
+				// to fix: some pokemons have multiple same abilities 
+				<React.Fragment key={ability.ability.name + ability.slot}>
 					<span>{ability.ability.name}</span>
 					<br/>
 				</React.Fragment>

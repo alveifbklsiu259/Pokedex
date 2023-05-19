@@ -1,9 +1,10 @@
 import { useRef, useEffect, useState } from "react"
 import DataList from './DataList';
 import { usePokemonData } from "./PokemonsProvider";
+import { getIdFromURL } from "../util";
 
 export default function Input({searchParam: {searchParam, setSearchParam}}) {
-	const {state} = usePokemonData();
+	const {state, dispatch} = usePokemonData();
 	const [pokemonNames, setPokemonNames] = useState([]);
 	const [showDataList, setShowDataList] = useState(false);
 	const [hoveredPokemon, setHoveredPokemon] = useState('');
@@ -13,13 +14,18 @@ export default function Input({searchParam: {searchParam, setSearchParam}}) {
 	let matchList = [];
 
 	useEffect(() => {
-		const getPokemonNames = async () => {
+		const getPokemonNamesAndId = async () => {
 			const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species?limit=${state.pokemonCount}`);
 			const data = await response.json();
-			setPokemonNames(data.results.map(pokemon => pokemon.name))
+			const pokemonsNamesAndId = {};
+			for (let pokemon of data.results) {
+				pokemonsNamesAndId[pokemon.name] = getIdFromURL(pokemon.url);
+			};
+			dispatch({type: 'getAllPokemonNamesAndId', payload: pokemonsNamesAndId});
+			setPokemonNames(data.results.map(pokemon => pokemon.name));
 		};
 		if (state.pokemonCount) {
-			getPokemonNames();
+			getPokemonNamesAndId();
 		}
 	}, [state.pokemonCount]);
 

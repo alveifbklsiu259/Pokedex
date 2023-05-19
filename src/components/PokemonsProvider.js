@@ -1,4 +1,7 @@
 import { useReducer, createContext, useContext, useEffect} from 'react'
+import { getMultiplePokemons, getPokemonsToFetch } from '../api';
+import { getIdFromURL } from '../util';
+
 const PokemonContext = createContext(null);
 
 const initialState = {
@@ -17,6 +20,7 @@ const initialState = {
 		types: [],
 	},
 	display: [],
+	allPokemonNamesAndId: {}
 }
 
 const reducer = (state, action) => {
@@ -82,6 +86,16 @@ const reducer = (state, action) => {
 				...state, display: action.payload, status: 'idle'
 			}
 		}
+		case 'nextRequestChanged' : {
+			return {
+				...state, nextRequest: action.payload
+			}
+		}
+		case 'getAllPokemonNamesAndId' : {
+			return {
+				...state, allPokemonNamesAndId: action.payload
+			}
+		}
 		default : 
 			return state
 	}
@@ -91,22 +105,18 @@ export default function PokemonsProvider({children}) {
 	const [state, dispatch] = useReducer(reducer, initialState);
 
 	useEffect(()=> {
-		const getPokemons = async () => {
+		const getInitialPokemons = async () => {
 			dispatch({type:'dataLoading'})
-			const response = await fetch(`https://pokeapi.co/api/v2/pokemon/?limit=24`);
+			const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=24`);
 			const data = await response.json();
 			dispatch({type: 'getPokemonCount', payload: data.count});
-			const pokemonsResponses = await Promise.all(data.results.map(result => fetch(result.url)));
-			const pokemonsPromises = pokemonsResponses.map(pokemonsResponse => pokemonsResponse.json());
-			const finalData = await Promise.all(pokemonsPromises);
-			const pokemonsObj = {};
-			for (let i of finalData) {
-				pokemonsObj[i.id] = i
-			};
-			dispatch({type: 'pokemonsLoaded', payload: {data: pokemonsObj, nextRequest: data.next }});
-			dispatch({type: 'displayChanged', payload: finalData.map(pokemon => pokemon.id)})
+			const pokemonsToFetch = data.results.map(pokemon => getIdFromURL(pokemon.url));
+			const pokemons = await getMultiplePokemons(pokemonsToFetch, undefined);
+			const nextRequest = data.next.replace('pokemon-species', 'pokemon')
+			dispatch({type: 'pokemonsLoaded', payload: {data: pokemons, nextRequest: nextRequest}});
+			dispatch({type: 'displayChanged', payload: pokemonsToFetch})
 		};
-			getPokemons()
+			getInitialPokemons()
 	}, [dispatch]);
 
 	return (

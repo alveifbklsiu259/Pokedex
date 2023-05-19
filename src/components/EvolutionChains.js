@@ -107,7 +107,6 @@ export default function EvolutionChains() {
 	sortEvolutionChain(evolution_chain, pathArr)
 
 	let content;
-	console.log(pathArr)
 	if (pathArr.length === 1) {
 		content = (
 			<p className="text-center">This Pokémon does not evolve.</p>

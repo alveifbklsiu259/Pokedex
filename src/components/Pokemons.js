@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import Sort from "./Sort";
 import { useEffect, useState, useCallback } from "react";
 import Spinner from "./Spinner";
+import { getMultiplePokemons, getPokemonsToFetch } from "../api";
+import { getIdFromURL } from "../util";
 
 export default function Pokemons() {
 	const {state, dispatch} = usePokemonData();
@@ -73,7 +75,6 @@ export default function Pokemons() {
 	}, [dispatch]);
 
 	const displayPokemons = Object.values(state.pokemons).filter(pokemon => state.display.includes(pokemon.id));
-	console.log(state.display)
 	// sort 
 	switch(state.sortBy) {
 		case 'numberAsc' : {
@@ -110,25 +111,23 @@ export default function Pokemons() {
 		}
 	}
 
-
-
-
-
-
-
 	const handleDisplay = async() => {
 			dispatch({type: 'dataLoading'})
 			const response = await fetch(state.nextRequest);
 			const data = await response.json();
-			const pokemonsResponses = await Promise.all(data.results.map(result => fetch(result.url)));
-			const pokemonsPromises = pokemonsResponses.map(pokemonsResponse => pokemonsResponse.json());
-			const finalData = await Promise.all(pokemonsPromises);
-			const pokemonsObj = {};
-			for (let i of finalData) {
-				pokemonsObj[i.id] = i
-			};
-			dispatch({type: 'pokemonsLoaded', payload: {data: pokemonsObj, nextRequest: data.next }})
-			dispatch({type: 'displayChanged', payload: [...state.display, ...finalData.map(pokemon => pokemon.id)]})
+			const pokemonsToDisplay = data.results.map(pokemon => getIdFromURL(pokemon.url));
+			const pokemonsToFetch = getPokemonsToFetch(state.pokemons, pokemonsToDisplay)
+			const pokemons = await getMultiplePokemons(pokemonsToFetch, undefined);
+			let nextRequest;
+			if (state.sortBy === 'numberAsc') {
+				nextRequest = data.next
+			} else if (state.sortBy === 'numberDesc') {
+				nextRequest = data.previous
+			} else {
+				nextRequest = null
+			}
+			dispatch({type: 'pokemonsLoaded', payload: {data: pokemons, nextRequest: nextRequest}})
+			dispatch({type: 'displayChanged', payload: [...state.display, ...pokemonsToDisplay]})
 	}
 
 	const handleScroll = useCallback(() => {
@@ -170,6 +169,7 @@ export default function Pokemons() {
 				{
 					state.status === 'loading' && <Spinner />
 				}
+				{/* the above loading will cause flicker when changing order method */}
 			</>
 		)
 	}
