@@ -3,7 +3,7 @@ import { usePokemonData } from './PokemonsProvider'
 import { useState, useEffect} from 'react';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
-import { getMultiplePokemons, getPokemonsToFetch } from '../api';
+import { getMultiplePokemons, getPokemonsToFetch, getPokemons } from '../api';
 import { getIdFromURL } from '../util';
 
 export default function Search() {
@@ -58,6 +58,7 @@ export default function Search() {
 			searchResult = pokemonsRange.filter(pokemon => String(getIdFromURL(pokemon.url)).includes(String(Number(searchParam))) )
 		}
 
+
 		// types
 		const flattenedRange = searchResult.map(pokemon => getIdFromURL(pokemon.url));
 		const dataResponses = await Promise.all(selectedTypes.map(type => fetch(`https://pokeapi.co/api/v2/type/${type}`)));
@@ -65,16 +66,18 @@ export default function Search() {
 		const finalData = await Promise.all(datas);
 		const typesArrayToCompare = finalData.map(type => type.pokemon);
 		const flattenedTypesArrayToCompare = typesArrayToCompare.map(type => type.map(pokemon => getIdFromURL(pokemon.pokemon.url)));
-
 		let intersection = flattenedRange
 		for (let i = 0; i < flattenedTypesArrayToCompare.length; i ++) {
 			intersection = intersection.filter(pokemon => flattenedTypesArrayToCompare[i].includes(pokemon));
 			// intersection = intersection.filter(pokemon => flattenedTypesArrayToCompare[i].filter(comparePokemon => comparePokemon.startsWith(pokemon)).length !== 0);
 		};
 
-		dispatch({type: 'displayChanged', payload: intersection});
+		// dispatch({type: 'displayChanged', payload: intersection});
 		const pokemonsToFetch = getPokemonsToFetch(state.pokemons, intersection);
-		await getMultiplePokemons(pokemonsToFetch, dispatch, null);
+		// console.log(intersection)
+		// await getMultiplePokemons(pokemonsToFetch, dispatch, null);
+
+		getPokemons(dispatch, state, intersection, state.sortBy, false)
 	}
 
 	return (

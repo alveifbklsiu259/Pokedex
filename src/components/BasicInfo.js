@@ -5,7 +5,7 @@ import Spinner from "./Spinner";
 import { getIndividualPokemon } from "../api";
 
 export default function BasicInfo({pokemon}) {
-	const { dispatch, state } = usePokemonData();
+	const { dispatch} = usePokemonData();
 
 	useEffect(() => {
 		const prepareDate = async() => {

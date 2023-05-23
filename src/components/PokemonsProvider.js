@@ -1,5 +1,5 @@
 import { useReducer, createContext, useContext, useEffect} from 'react'
-import { getMultiplePokemons, getPokemonsToFetch } from '../api';
+import { getMultiplePokemons } from '../api';
 import { getIdFromURL } from '../util';
 
 const PokemonContext = createContext(null);
@@ -7,8 +7,7 @@ const PokemonContext = createContext(null);
 const initialState = {
 	pokemons: {},
 	pokemonCount: null,
-	// common multiple of 2, 3, 4 (which are the amount of cards diplayed on each row in different viewports)
-	// displayAmount: 24,
+	// nextRequest can be string or array
 	nextRequest: '',
 	pokemon_species: {},
 	status: null,
@@ -107,6 +106,7 @@ export default function PokemonsProvider({children}) {
 	useEffect(()=> {
 		const getInitialPokemons = async () => {
 			dispatch({type:'dataLoading'})
+			// 24 is the common multiple of 2, 3, 4 (which are the amount of cards diplayed on each row in different viewports)
 			const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=24`);
 			const data = await response.json();
 			dispatch({type: 'getPokemonCount', payload: data.count});

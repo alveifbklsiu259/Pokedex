@@ -33,7 +33,7 @@ export default function Pokemon() {
 		if (Object.keys(state.pokemons).length === 0 && !state.pokemons[pokeId]) {
 			getIndividualPokemon(pokeId, dispatch)
 		}
-	}, [state.pokemons, dispatch, getIndividualPokemon]);
+	}, [state.pokemons, dispatch, pokeId]);
 
 	let content;
 	if (pokemon && Object.keys(speciesInfo).length > 0 ) {

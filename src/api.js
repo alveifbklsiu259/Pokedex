@@ -1,3 +1,5 @@
+import { getIdFromURL } from "./util";
+
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
 export const getIndividualPokemon = async (pokemon, dispatch) => {
@@ -47,26 +49,54 @@ export const getMultiplePokemons = async (pokemonsToFetch, dispatch, nextRequest
     return obj;
 };
 
+export const getPokemons = async (dispatch, state, request, sortOption, isScroll) => {
+    dispatch({type:'dataLoading'});
+    let nextRequest, pokemonsToDisplay, fetchedPokemons;
+    //get next request
+    if (typeof request === 'string') { // if nextRequest is url
+        const response = await fetch(request);
+        const data = await response.json();
+        if (sortOption === 'numberAsc') {
+            nextRequest = data.next;
+            if (nextRequest !== null && nextRequest.includes('pokemon-species')) {
+                nextRequest.replace('pokemon-species', 'pokemon');
+            };
+            const offset = Number(nextRequest.slice(nextRequest.indexOf('=') + 1, nextRequest.indexOf('&')));
+            if (offset >= state.pokemonCount) {
+                nextRequest = null;
+            } else if ( offset < state.pokemonCount && offset + 24 > state.pokemonCount) {
+                nextRequest = nextRequest.replace('limit=24', `limit=${state.pokemonCount - offset}`)
+            };
+        } else if (sortOption === 'numberDesc') {
+            nextRequest = data.previous?.replace('pokemon-species', 'pokemon') || null;
+        };
+        pokemonsToDisplay = data.results.map(pokemon => getIdFromURL(pokemon.url));
+    } else if (request instanceof Array) {
+        pokemonsToDisplay = request.splice(0, 24);
+        console.log(pokemonsToDisplay)
 
+        nextRequest = request;
+        if (nextRequest.length === 0) {
+            nextRequest = null
+        }
+    }
 
+    //get not cached pokemons
+    const pokemonsToFetch = getPokemonsToFetch(state.pokemons, pokemonsToDisplay);
+    if (pokemonsToFetch.length) {
+        fetchedPokemons = await getMultiplePokemons(pokemonsToFetch, undefined);
+        dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: nextRequest}});
+    } else {
+        dispatch({type: 'nextRequestChanged', payload: nextRequest});
+    };
 
+    if (isScroll === true) {
+        // console.log(pokemonsToDisplay)
+        dispatch({type: 'displayChanged', payload: [...state.display, ...pokemonsToDisplay]});
+    } else {
+        dispatch({type: 'displayChanged', payload: pokemonsToDisplay});
+    }
 
+};
 
-
-
-
-
-
-// const getPokemonNumberPerGen = async (num) => {
-//     const response = await fetch(`${BASE_URL}generation/${num}`);
-//     const data = await response.json();
-//     return data.pokemon_species.length
-// }
-
-// const a = getPokemonNumberPerGen(1)
-// console.log(a)
-
-
-// export const fetchPokemons = async gen => {
-//     const response = await fetch(BASE_URL + `pokemon`)
-// }
+// custom async hooks

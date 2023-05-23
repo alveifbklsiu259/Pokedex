@@ -2,15 +2,14 @@ import BasicInfo from "./BasicInfo";
 import { usePokemonData } from "./PokemonsProvider";
 import { Link } from "react-router-dom";
 import Sort from "./Sort";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import Spinner from "./Spinner";
-import { getMultiplePokemons, getPokemonsToFetch } from "../api";
-import { getIdFromURL } from "../util";
+import { getPokemons } from "../api";
 
 export default function Pokemons() {
 	const {state, dispatch} = usePokemonData();
-	let searchParam = state.searchParam
-	let searchResult = [];
+	// let searchParam = state.searchParam
+	// let searchResult = [];
 
 	// sorting:
 	/* 
@@ -74,13 +73,11 @@ export default function Pokemons() {
 		// 	getPokemons()
 	}, [dispatch]);
 
+// console.log(state)
+
 	const displayPokemons = Object.values(state.pokemons).filter(pokemon => state.display.includes(pokemon.id));
 	// sort 
 	switch(state.sortBy) {
-		case 'numberAsc' : {
-			displayPokemons.sort((a, b) => a.id - b.id)
-			break;
-		}
 		case 'numberDesc' : {
 			displayPokemons.sort((a, b) => b.id - a.id)
 			break;
@@ -109,26 +106,19 @@ export default function Pokemons() {
 			displayPokemons.sort((a, b) => b.weight - a.weight)
 			break;
 		}
+		default : {
+			// 'numberAsc'
+			displayPokemons.sort((a, b) => a.id - b.id)
+		}
 	}
 
-	const handleDisplay = async() => {
-			dispatch({type: 'dataLoading'})
-			const response = await fetch(state.nextRequest);
-			const data = await response.json();
-			const pokemonsToDisplay = data.results.map(pokemon => getIdFromURL(pokemon.url));
-			const pokemonsToFetch = getPokemonsToFetch(state.pokemons, pokemonsToDisplay)
-			const pokemons = await getMultiplePokemons(pokemonsToFetch, undefined);
-			let nextRequest;
-			if (state.sortBy === 'numberAsc') {
-				nextRequest = data.next
-			} else if (state.sortBy === 'numberDesc') {
-				nextRequest = data.previous
-			} else {
-				nextRequest = null
-			}
-			dispatch({type: 'pokemonsLoaded', payload: {data: pokemons, nextRequest: nextRequest}})
-			dispatch({type: 'displayChanged', payload: [...state.display, ...pokemonsToDisplay]})
-	}
+	const handleDisplay = useCallback(async() => {
+		getPokemons(dispatch, state, state.nextRequest, state.sortBy, true);
+	}, [dispatch, state]) 
+
+// encapsulate the fetching logic 
+// nextRequest can take string or array, or just array
+
 
 	const handleScroll = useCallback(() => {
 		if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight && state.status === 'idle' ) {
@@ -136,7 +126,7 @@ export default function Pokemons() {
 				handleDisplay();
 			}
 		}
-	}, [state.status])
+	}, [state.status, state.nextRequest, handleDisplay])
 
 	useEffect(() => {
 		window.addEventListener('scroll', handleScroll);

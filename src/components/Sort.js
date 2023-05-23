@@ -1,6 +1,5 @@
 import { usePokemonData } from "./PokemonsProvider"
-import { getPokemonsToFetch, getMultiplePokemons } from "../api";
-import { getIdFromURL } from "../util";
+import { getPokemons, getMultiplePokemons, getPokemonsToFetch } from "../api";
 
 export default function Sort() {
 	const {state, dispatch} = usePokemonData();
@@ -14,129 +13,94 @@ export default function Sort() {
 		{text:'Weight(light - heavy)', value: 'weightAsc'},
 		{text:'Weight(heavy - light)', value: 'weightDesc'}
 	];
+console.log(state)
+
+
+	// select sort first --> change type --> search --> no pokemons
+	// change types --> search --> change sort --> not correct
+	// if there's any advanced search, you can find the range in dispaly + nextRequest
+
+	// sort : no advanced search --> sort based on all pokemons else based on range
+	// search: original sorting logic + based on sort
+	// when should the pokemons being sort?
+	// ---------------1. Pokemons --> when displaying
+	// 2. api / Sort --> before fetching --> then you don;t have to sort pokemons in Pokemon.js
+	
 
 	const handleSortByChanged = async sortOption => {
 		dispatch({type: 'sortByChanged', payload: sortOption});
-
-		// check pokemons to fetch (range) / nextRequest
-		// dispatch displayChanged
-
-		// set display list --> check cache pokemons --> pokemons to fetch list --> fetch individual pokemons
-
-
-		switch (sortOption) {
-			case "numberAsc" : {
-				// pokemons are already fetched
-				dispatch({type:'dataLoading'})
-				//getting next request
-				const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=24`);
-				const data = await response.json();
-				const nextRequest = data.next.replace('pokemon-species', 'pokemon');
-
-				//getting pokemons to fetch
-
-				const pokemonsToDisplay = data.results.map(pokemon => getIdFromURL(pokemon.url));
-				
-				dispatch({type: 'nextRequestChanged', payload: nextRequest});
-				dispatch({type: 'displayChanged', payload: pokemonsToDisplay});
-				break;
+		const sortPokemonsByName = async sortingOrder => {
+			let sortedNames;
+			if (sortingOrder === 'asc') {
+				sortedNames = Object.keys(state.allPokemonNamesAndId).sort((a, b) => a.localeCompare(b));
+			} else if(sortingOrder === 'desc') {
+				sortedNames = Object.keys(state.allPokemonNamesAndId).sort((a, b) => b.localeCompare(a));
 			}
-			case "numberDesc" : {
-				dispatch({type: 'dataLoading'});
-				//getting next request
-				const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=24&offset=${state.pokemonCount - 24}`);
-				const data = await response.json();
-				const nextRequest = data.previous.replace('pokemon-species', 'pokemon');
+			const sortedPokemons = sortedNames.reduce((prev, cur) => {
+				prev[cur] = state.allPokemonNamesAndId[cur];
+				return prev;
+			}, {});
+			const sortedId = Object.values(sortedPokemons);
+			getPokemons(dispatch, state, sortedId, sortOption, false);
+		};
 
-				//getting pokemons to fetch
-				const pokemonsToDisplay = data.results.map(pokemon => getIdFromURL(pokemon.url));
-				const pokemonsToFetch = getPokemonsToFetch(state.pokemons, pokemonsToDisplay);
-				// get pokemons
-				const pokemons = await getMultiplePokemons(pokemonsToFetch, undefined);
-
-				dispatch({type: 'pokemonsLoaded', payload: {data: pokemons, nextRequest: nextRequest}});
-				dispatch({type: 'displayChanged', payload: pokemonsToDisplay});
-				break;
-
-
-				// if i'm gonna show only 24 pokemons + infinite scroll, notice if the Pokemons component gets re-render after scroll
-
-			}
-			case "nameAsc" : {
-				const sortedPokemonNames = Object.keys(state.allPokemonNamesAndId).sort((a, b) => a.localeCompare(b));
-	
-				const sortedPokemonNamesAndId = sortedPokemonNames.reduce((prev, cur) => {
-					prev[cur] = state.allPokemonNamesAndId[cur];
-					return prev
-				}, {});
-
-				// pokemons to fetch, but we only want to fetch the first 24 pokemons, and fetch the reset after scrolling
-				console.log(Object.values(sortedPokemonNamesAndId))
-
-			}
-			case "nameDesc" : {
-
-			}
-			case "heightAsc" : {
-
-			}
-			case "heightDesc" : {
-				
-			}
-			case "weightAsc" : {
-
-			}
-			case "weightDesc" : {
-				
-			}
+		const sortPokemons = async (sortBy, sortingOrder) => {
+			const request = [];
+			for (let i = 1; i <= state.pokemonCount; i ++) {
+				request.push(i);
+			};
+			const pokemonsToFetch = getPokemonsToFetch(state.pokemons, request);
+			const fetchedPokemons = await getMultiplePokemons(pokemonsToFetch, dispatch, null);
+			const allPokemons = {...state.pokemons, ...fetchedPokemons};
+			let sortedPokemons;
+			if (sortingOrder === 'asc') {
+				sortedPokemons = Object.values(allPokemons).sort((a, b) => a[sortBy] - b[sortBy]);
+			} else if (sortingOrder === 'desc') {
+				sortedPokemons = Object.values(allPokemons).sort((a, b) => b[sortBy] - a[sortBy]);
+			};
+			const sortedId = sortedPokemons.map(pokemon => pokemon.id);
+			getPokemons(dispatch, state, sortedId, sortOption, false);
 		}
 
+		switch (sortOption) {
+			case "numberDesc" : {
 
-
-
-
-		// function sort(displayPokemons) {
-		// 	switch(state.sortBy) {
-		// 		case 'numberAsc' : {
-		// 			displayPokemons.sort((a, b) => a.id - b.id)
-		// 			break;
-		// 		}
-		// 		case 'numberDesc' : {
-		// 			displayPokemons.sort((a, b) => b.id - a.id)
-		// 			break;
-		// 		}
-		// 		case 'nameAsc' : {
-		// 			displayPokemons.sort((a, b) => a.name.localeCompare(b.name))
-		// 			break;
-		// 		}
-		// 		case 'nameDesc' : {
-		// 			displayPokemons.sort((a, b) => b.name.localeCompare(a.name))
-		// 			break;
-		// 		}
-		// 		case 'heightAsc' : {
-		// 			displayPokemons.sort((a, b) => a.height - b.height)
-		// 			break;
-		// 		}
-		// 		case 'heightDesc' : {
-		// 			displayPokemons.sort((a, b) => b.height - a.height)
-		// 			break;
-		// 		}
-		// 		case 'weightAsc' : {
-		// 			displayPokemons.sort((a, b) => a.weight - b.weight)
-		// 			break;
-		// 		}
-		// 		case 'weightDesc' : {
-		// 			displayPokemons.sort((a, b) => b.weight - a.weight)
-		// 			break;
-		// 		}
-		// 	}
-		// }
-
-
-
-		
-
-
+				// no sorting logic yet
+				if (state.advancedSearch.types.length === 0 && Object.keys(state.advancedSearch.generations).length === 0) {
+					
+				}
+				getPokemons(dispatch, state, `https://pokeapi.co/api/v2/pokemon-species/?limit=24&offset=${state.pokemonCount - 24}`, sortOption, false);
+				break;
+			}
+			case "nameAsc" : {
+				sortPokemonsByName('asc');
+				break;
+			}
+			case "nameDesc" : {
+				sortPokemonsByName('desc');
+				break;
+			}
+			case "heightAsc" : {
+				sortPokemons('height', 'asc');
+				break;
+			}
+			case "heightDesc" : {
+				sortPokemons('height', 'desc');
+				break;
+			}
+			case "weightAsc" : {
+				sortPokemons('weight', 'asc');
+				break;
+			}
+			case "weightDesc" : {
+				sortPokemons('weight', 'desc');
+				break;
+			}
+			default : {
+				// "numberAsc"
+				getPokemons(dispatch, state, `https://pokeapi.co/api/v2/pokemon-species/?limit=24`, sortOption, false)
+			}
+		}
 	}
 	
 	return (
