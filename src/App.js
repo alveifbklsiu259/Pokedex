@@ -45,6 +45,14 @@ export default App;
 ----
 by default, show all pokemons + infinite scroll or pagination, by filtering different generation, we still have infinite scroll or pagination
 
+	// automatically submit when not typing // suspense?
+
+sort by stats/colors/shapes
+		add forms
+		numbers starting 10000 are different form, should not appear on the pokedex, and when click them to their page will have an error
+		if we go direct to /pokemons/999, since we don't have data in our pokemons state, we want to do individual fetch
+		some poekons don't have flavor text (999...)
+		// advanced show differnt forms on pokemons page or not
 api:
 // useEffect cleanup function after fetching
 // some pokemons have multiple same abilities

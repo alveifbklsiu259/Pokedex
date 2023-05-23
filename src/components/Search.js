@@ -3,7 +3,7 @@ import { usePokemonData } from './PokemonsProvider'
 import { useState, useEffect} from 'react';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
-import { getMultiplePokemons, getPokemonsToFetch, getPokemons } from '../api';
+import { getPokemons } from '../api';
 import { getIdFromURL } from '../util';
 
 export default function Search() {
@@ -38,7 +38,7 @@ export default function Search() {
 			}	
 		}
 		getPokemonsRange()
-	}, [selectedGenerations, setPokemonsRange]);
+	}, [selectedGenerations]);
 
 	const handleSearch = async (e) => {
 		e.preventDefault();
@@ -71,15 +71,11 @@ export default function Search() {
 			intersection = intersection.filter(pokemon => flattenedTypesArrayToCompare[i].includes(pokemon));
 			// intersection = intersection.filter(pokemon => flattenedTypesArrayToCompare[i].filter(comparePokemon => comparePokemon.startsWith(pokemon)).length !== 0);
 		};
+		dispatch({type:'intersectionChanged', payload: intersection});
 
-		// dispatch({type: 'displayChanged', payload: intersection});
-		const pokemonsToFetch = getPokemonsToFetch(state.pokemons, intersection);
-		// console.log(intersection)
-		// await getMultiplePokemons(pokemonsToFetch, dispatch, null);
-
+		// intersection (range), --> sorting order --> sort pokemonsTofetch --> fetch
 		getPokemons(dispatch, state, intersection, state.sortBy, false)
 	}
-
 	return (
 		<div style={{background: 'blanchedalmond'}} className="card-body mb-4 p-4">
 			<h1  className="display-4 text-center">

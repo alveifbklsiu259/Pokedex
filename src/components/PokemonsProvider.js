@@ -1,14 +1,11 @@
 import { useReducer, createContext, useContext, useEffect} from 'react'
-import { getMultiplePokemons } from '../api';
-import { getIdFromURL } from '../util';
+import { getPokemons } from '../api';
 
 const PokemonContext = createContext(null);
-
 const initialState = {
 	pokemons: {},
 	pokemonCount: null,
-	// nextRequest can be string or array
-	nextRequest: '',
+	nextRequest: [],
 	pokemon_species: {},
 	status: null,
 	evolution_chain: {},
@@ -19,7 +16,8 @@ const initialState = {
 		types: [],
 	},
 	display: [],
-	allPokemonNamesAndId: {}
+	allPokemonNamesAndId: {},
+	intersection: []
 }
 
 const reducer = (state, action) => {
@@ -95,6 +93,11 @@ const reducer = (state, action) => {
 				...state, allPokemonNamesAndId: action.payload
 			}
 		}
+		case 'intersectionChanged' : {
+			return {
+				...state, intersection: action.payload
+			}
+		}
 		default : 
 			return state
 	}
@@ -110,11 +113,12 @@ export default function PokemonsProvider({children}) {
 			const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=24`);
 			const data = await response.json();
 			dispatch({type: 'getPokemonCount', payload: data.count});
-			const pokemonsToFetch = data.results.map(pokemon => getIdFromURL(pokemon.url));
-			const pokemons = await getMultiplePokemons(pokemonsToFetch, undefined);
-			const nextRequest = data.next.replace('pokemon-species', 'pokemon')
-			dispatch({type: 'pokemonsLoaded', payload: {data: pokemons, nextRequest: nextRequest}});
-			dispatch({type: 'displayChanged', payload: pokemonsToFetch})
+			const intersection = [];
+			for (let i = 1; i <= data.count; i++) {
+				intersection.push(i)
+			};
+			getPokemons(dispatch, state, intersection, state.sortBy, false);
+			dispatch({type: 'intersectionChanged', payload: intersection});
 		};
 			getInitialPokemons()
 	}, [dispatch]);

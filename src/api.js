@@ -1,5 +1,3 @@
-import { getIdFromURL } from "./util";
-
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
 export const getIndividualPokemon = async (pokemon, dispatch) => {
@@ -19,8 +17,8 @@ export const getIndividualPokemon = async (pokemon, dispatch) => {
  */
 
 export const getPokemonsToFetch = (cachedPokemons, pokemonsToDisplay) => {
-    const flattenedCachedPokemons = Object.values(cachedPokemons).map(pokemon => pokemon.id);
-    return pokemonsToDisplay.filter(pokemon => !flattenedCachedPokemons.includes(pokemon));
+    const cachedPokemonIds = Object.values(cachedPokemons).map(pokemon => pokemon.id);
+    return pokemonsToDisplay.filter(pokemon => !cachedPokemonIds.includes(pokemon));
 };
 
 /**
@@ -31,11 +29,8 @@ export const getPokemonsToFetch = (cachedPokemons, pokemonsToDisplay) => {
  * @returns 
  */
 
-export const getMultiplePokemons = async (pokemonsToFetch, dispatch, nextRequest) => {
+export const getMultiplePokemons = async (pokemonsToFetch) => {
     //pass in id or name
-    if (dispatch) {
-        dispatch({type: 'dataLoading'});
-    }
     const dataResponses = await Promise.all(pokemonsToFetch.map(pokemon => fetch(`${BASE_URL}/pokemon/${pokemon}`)));
     const datas = dataResponses.map(response => response.json());
     const finalData = await Promise.all(datas);
@@ -43,43 +38,78 @@ export const getMultiplePokemons = async (pokemonsToFetch, dispatch, nextRequest
     for (let i of finalData) {
         obj[i.id] = i
     };
-    if (dispatch) {
-        dispatch({type: 'pokemonsLoaded', payload: {data: obj, nextRequest: nextRequest}})
-    }
     return obj;
 };
 
 export const getPokemons = async (dispatch, state, request, sortOption, isScroll) => {
     dispatch({type:'dataLoading'});
     let nextRequest, pokemonsToDisplay, fetchedPokemons;
-    //get next request
-    if (typeof request === 'string') { // if nextRequest is url
-        const response = await fetch(request);
-        const data = await response.json();
-        if (sortOption === 'numberAsc') {
-            nextRequest = data.next;
-            if (nextRequest !== null && nextRequest.includes('pokemon-species')) {
-                nextRequest.replace('pokemon-species', 'pokemon');
-            };
-            const offset = Number(nextRequest.slice(nextRequest.indexOf('=') + 1, nextRequest.indexOf('&')));
-            if (offset >= state.pokemonCount) {
-                nextRequest = null;
-            } else if ( offset < state.pokemonCount && offset + 24 > state.pokemonCount) {
-                nextRequest = nextRequest.replace('limit=24', `limit=${state.pokemonCount - offset}`)
-            };
-        } else if (sortOption === 'numberDesc') {
-            nextRequest = data.previous?.replace('pokemon-species', 'pokemon') || null;
-        };
-        pokemonsToDisplay = data.results.map(pokemon => getIdFromURL(pokemon.url));
-    } else if (request instanceof Array) {
-        pokemonsToDisplay = request.splice(0, 24);
-        console.log(pokemonsToDisplay)
 
-        nextRequest = request;
-        if (nextRequest.length === 0) {
-            nextRequest = null
+    // sort request
+    const sortPokemons = async () => {
+        const sortPokemonsByName = () => {
+            let sortedNames;
+            let sort = sortOption.includes('Asc') ? 'asc' : 'desc';
+            if (sort === 'asc') {
+                sortedNames = Object.keys(state.allPokemonNamesAndId).sort((a, b) => a.localeCompare(b));
+            } else if(sort === 'desc') {
+                sortedNames = Object.keys(state.allPokemonNamesAndId).sort((a, b) => b.localeCompare(a));
+            };
+            const sortedPokemons = sortedNames.reduce((prev, cur) => {
+                prev[cur] = state.allPokemonNamesAndId[cur];
+                return prev;
+            }, {});
+            return Object.values(sortedPokemons).filter(id => request.includes(id));
+        };
+
+        const sortPokemonsByWeightOrHeight = async (sortBy) => {
+            const pokemonsToFetch = getPokemonsToFetch(state.pokemons, request);
+            const fetchedPokemons = await getMultiplePokemons(pokemonsToFetch, dispatch, null);
+            const allPokemons = {...state.pokemons, ...fetchedPokemons};
+            let sortedPokemons;
+            let sort = sortOption.includes('Asc') ? 'asc' : 'desc';
+            if (sort === 'asc') {
+                sortedPokemons = Object.values(allPokemons).sort((a, b) => a[sortBy] - b[sortBy]);
+            } else if (sort === 'desc') {
+                sortedPokemons = Object.values(allPokemons).sort((a, b) => b[sortBy] - a[sortBy]);
+            };
+            return sortedPokemons.map(pokemon => pokemon.id).filter(id => request.includes(id));
         }
-    }
+
+        switch(sortOption) {
+            case 'numberDesc' : {
+                return [...request].sort((a, b) => b - a);
+            }
+            case 'nameAsc' : {
+                return sortPokemonsByName();
+            }
+            case 'nameDesc' : {
+                return sortPokemonsByName();
+            }
+            case 'heightAsc' : {
+                return sortPokemonsByWeightOrHeight('height')
+            }
+            case 'heightDesc' : {
+                return sortPokemonsByWeightOrHeight('height')
+            }
+            case 'weightAsc' : {
+                return sortPokemonsByWeightOrHeight('weight')
+            }
+            case 'weightDesc' : {
+                return sortPokemonsByWeightOrHeight('weight')
+            }
+            default : {
+                // 'numberAsc'
+                return [...request].sort((a, b) => a - b)
+            }
+        }
+    };
+    const sortedRequest = await sortPokemons(request, sortOption)
+    pokemonsToDisplay = sortedRequest.splice(0, 24);
+    nextRequest = sortedRequest;
+    if (nextRequest.length === 0) {
+        nextRequest = null
+    };
 
     //get not cached pokemons
     const pokemonsToFetch = getPokemonsToFetch(state.pokemons, pokemonsToDisplay);
@@ -91,12 +121,10 @@ export const getPokemons = async (dispatch, state, request, sortOption, isScroll
     };
 
     if (isScroll === true) {
-        // console.log(pokemonsToDisplay)
         dispatch({type: 'displayChanged', payload: [...state.display, ...pokemonsToDisplay]});
     } else {
         dispatch({type: 'displayChanged', payload: pokemonsToDisplay});
     }
-
 };
 
 // custom async hooks
