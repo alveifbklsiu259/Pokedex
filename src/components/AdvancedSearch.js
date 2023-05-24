@@ -1,9 +1,15 @@
-import { useRef } from "react"
+import { useRef, memo } from "react"
 import FilterGeneration from "./FilterGeneration";
 import FilterTypes from "./FilterTypes";
 import { usePokemonData } from "./PokemonsProvider";
 
-export default function AdvancedSearch({types, generations, param}) {
+const AdvancedSearch = memo(function AdvancedSearch({
+	setSearchParam,
+	selectedTypes,
+	setSelectedTypes,
+	selectedGenerations,
+	setSelectedGenerations,
+}) {
 	const { dispatch } = usePokemonData();
 	const ref = useRef(null);
 	const changeIcon = () => {
@@ -17,15 +23,11 @@ export default function AdvancedSearch({types, generations, param}) {
 	}
 
 	const handleReset = () => {
-		const {setSelectedTypes} = types;
-		const {setSelectedGenerations} = generations;
-		const {setSearchParam} = param
 		setSelectedTypes([]);
 		setSelectedGenerations({});
 		setSearchParam('')
 		dispatch({type: 'advancedSearchReset'});
 	}
-
 	return (
 		<div className="advancedSearch text-center mt-3">
 			<button type="button" data-bs-toggle="collapse" data-bs-target="#advanced_search" aria-expanded="false" aria-controls="advanced_search" onClick={changeIcon}>
@@ -33,12 +35,13 @@ export default function AdvancedSearch({types, generations, param}) {
 			</button>
 			<div className="collapse" id="advanced_search">
 				<div className="container m-0 row justify-content-center">
-					<FilterGeneration generations={generations} />
-					<FilterTypes types={types} />
+					<FilterGeneration selectedGenerations={selectedGenerations} setSelectedGenerations={setSelectedGenerations} />
+					<FilterTypes selectedTypes={selectedTypes} setSelectedTypes={setSelectedTypes} />
 					<button onClick={handleReset} type="button" className="btn btn-secondary btn-md w-25 bg-secondary ">Reset</button>
-					{/* region //https://pokeapi.co/api/v2/region */}
 				</div>
 			</div>
 		</div>
 	)
-}
+});
+
+export default AdvancedSearch

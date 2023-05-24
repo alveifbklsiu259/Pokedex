@@ -36,6 +36,13 @@ h1 {
     font-weight: bold;
 }
 
+.card-body {
+    background-color: blanchedalmond;
+}
+
+.card-body .pokeBall {
+    width: 10%;
+}
 
 .card {
     background-color: #2021240f;

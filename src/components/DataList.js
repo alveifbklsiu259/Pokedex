@@ -1,4 +1,4 @@
-import { forwardRef} from "react";
+import { forwardRef } from "react";
 import { flushSync } from "react-dom";
 
 const DataList = forwardRef(({matchList, inputRef, searchParam, setSearchParam, resetFocus, setShowDataList, showDataList, hoveredPokemon, setHoveredPokemon, activePokemon}, datalistRef) => {
@@ -11,7 +11,7 @@ const DataList = forwardRef(({matchList, inputRef, searchParam, setSearchParam, 
 		setHoveredPokemon('')
 	};
 
-	const handleClick = (e) => {
+	const handleClick = e => {
 		const input = inputRef.current;
 		setHoveredPokemon('');
 		setShowDataList(false);
@@ -33,9 +33,9 @@ const DataList = forwardRef(({matchList, inputRef, searchParam, setSearchParam, 
 							return [currentElement];
 						} else {
 							return previousReturn.concat(<span className="nameMatch" key={index}>{lowerCaseSearchParam}</span>, currentElement);
-						}
+						};
 					}, [])
-				}
+				};
 			</>
 		);
 	};

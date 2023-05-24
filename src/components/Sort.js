@@ -13,7 +13,6 @@ export default function Sort() {
 		{text:'Weight(light - heavy)', value: 'weightAsc'},
 		{text:'Weight(heavy - light)', value: 'weightDesc'}
 	];
-console.log(state)
 	const handleSortByChanged = async sortOption => {
 		dispatch({type: 'sortByChanged', payload: sortOption});
 		getPokemons(dispatch, state, state.intersection, sortOption, false);

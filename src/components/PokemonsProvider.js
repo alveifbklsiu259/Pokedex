@@ -1,5 +1,6 @@
-import { useReducer, createContext, useContext, useEffect} from 'react'
+import { useReducer, createContext, useContext, useEffect, useCallback, useMemo } from 'react'
 import { getPokemons } from '../api';
+import { getIdFromURL } from '../util';
 
 const PokemonContext = createContext(null);
 const initialState = {
@@ -7,6 +8,7 @@ const initialState = {
 	pokemonCount: null,
 	nextRequest: [],
 	pokemon_species: {},
+	// loading | idle | scrolling
 	status: null,
 	evolution_chain: {},
 	searchParam: '',
@@ -16,7 +18,7 @@ const initialState = {
 		types: [],
 	},
 	display: [],
-	allPokemonNamesAndId: {},
+	allPokemonNamesAndIds: {},
 	intersection: []
 }
 
@@ -25,6 +27,11 @@ const reducer = (state, action) => {
 		case 'dataLoading' : {
 			return {
 				...state, status: 'loading'
+			}
+		}
+		case 'scrolling' : {
+			return {
+				...state, status: 'scrolling'
 			}
 		}
 		case 'getPokemonCount' : {
@@ -83,14 +90,9 @@ const reducer = (state, action) => {
 				...state, display: action.payload, status: 'idle'
 			}
 		}
-		case 'nextRequestChanged' : {
+		case 'getAllPokemonNamesAndIds' : {
 			return {
-				...state, nextRequest: action.payload
-			}
-		}
-		case 'getAllPokemonNamesAndId' : {
-			return {
-				...state, allPokemonNamesAndId: action.payload
+				...state, allPokemonNamesAndIds: action.payload
 			}
 		}
 		case 'intersectionChanged' : {
@@ -107,12 +109,21 @@ export default function PokemonsProvider({children}) {
 	const [state, dispatch] = useReducer(reducer, initialState);
 
 	useEffect(()=> {
-		const getInitialPokemons = async () => {
+		const getInitialPokemonData = async () => {
 			dispatch({type:'dataLoading'})
-			// 24 is the common multiple of 2, 3, 4 (which are the amount of cards diplayed on each row in different viewports)
-			const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=24`);
+			// get pokemons amount
+			const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=9999`);
 			const data = await response.json();
 			dispatch({type: 'getPokemonCount', payload: data.count});
+
+			// get all names and ids
+			const pokemonsNamesAndId = {};
+			for (let pokemon of data.results) {
+				pokemonsNamesAndId[pokemon.name] = getIdFromURL(pokemon.url);
+			};
+			dispatch({type: 'getAllPokemonNamesAndIds', payload: pokemonsNamesAndId});
+
+			// set the range
 			const intersection = [];
 			for (let i = 1; i <= data.count; i++) {
 				intersection.push(i)
@@ -120,7 +131,7 @@ export default function PokemonsProvider({children}) {
 			getPokemons(dispatch, state, intersection, state.sortBy, false);
 			dispatch({type: 'intersectionChanged', payload: intersection});
 		};
-			getInitialPokemons()
+			getInitialPokemonData()
 	}, [dispatch]);
 
 	return (
@@ -131,6 +142,44 @@ export default function PokemonsProvider({children}) {
 		</>
 	)
 }
+// export function usePokemonData() {
+// 	const value = useContext(PokemonContext);
+// 	return useCallback(() => {
+// 		return value
+// 	}, [value]) 
+// }
+// have to call usePokemonData()()
+
+// export function usePokemonData() {
+// 	const value = useContext(PokemonContext);
+// 	return useMemo(() => {
+// 		return value
+// 	}, [value]) 
+// }
+
+
+// export function usePokemonData() {
+// 	// state is an object
+// 	const {state} = useContext(PokemonContext);
+// 	// const cachedState = useMemo(() => {state})
+// 	// dispatch is the same between renders
+// 	const {dispatch} = useContext(PokemonContext);
+// 	const obj = {};
+// 	console.log(obj)
+// 	return useMemo(() => {
+// 		return {state, dispatch}
+// 	}, [obj])
+// }
+
+// export function usePokemonData() {
+// 	const {state} = useContext(PokemonContext);
+// 	const {dispatch} = useContext(PokemonContext);
+// 	return useCallback(() => {
+// 		return {state, dispatch}
+// 	}, [state, dispatch])
+// }
+
+
 
 export function usePokemonData() {
 	return useContext(PokemonContext);

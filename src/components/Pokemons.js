@@ -1,8 +1,8 @@
-import BasicInfo from "./BasicInfo";
+import { useEffect, useCallback } from "react";
 import { usePokemonData } from "./PokemonsProvider";
 import { Link } from "react-router-dom";
 import Sort from "./Sort";
-import { useEffect, useCallback } from "react";
+import BasicInfo from "./BasicInfo";
 import Spinner from "./Spinner";
 import { getPokemons } from "../api";
 
@@ -12,17 +12,15 @@ export default function Pokemons() {
 	for (let i = 0; i < state.display.length; i ++) {
 		pokemonsToDisplay[i] = Object.values(state.pokemons).find(pokemon => pokemon.id === state.display[i]);
 	};
-	
-	const handleDisplay = useCallback(async() => {
+
+	const handleDisplay = async() => {
 		getPokemons(dispatch, state, state.nextRequest, state.sortBy, true);
-	}, [dispatch, state]) 
+	};
 
 	const handleScroll = useCallback(() => {
-		if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight && state.status === 'idle' ) {
-			if (state.nextRequest !== null) {
-				handleDisplay();
-			}
-		}
+		if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight && state.status === 'idle' && state.nextRequest !== null) {
+			handleDisplay();
+		};
 	}, [state.status, state.nextRequest, handleDisplay])
 
 	useEffect(() => {
@@ -30,10 +28,15 @@ export default function Pokemons() {
 		return () => window.removeEventListener('scroll', handleScroll);
 	}, [handleScroll])
 
+	// Pokemons render 4 times, 2 times when state.status === 'loading'
+	// console.log(123)
+
 	let content;
-	if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
+	if (state.status === 'loading') {
+		content = <Spinner />
+	} else if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
 		content = <p className="text-center">No Pokémons to show</p>
-	} else {
+	} else if (state.status === 'scrolling') {
 		content = (
 			<>
 				{
@@ -46,12 +49,168 @@ export default function Pokemons() {
 					))
 				}
 				{
-					state.status === 'loading' && <Spinner />
+					<Spinner/>
 				}
-				{/* the above loading will cause flicker when changing order method */}
 			</>
 		)
-	}
+	} else if (state.status === 'idle') {
+		content = (
+			<>
+				{
+					pokemonsToDisplay.map(pokemon => (
+						<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+							<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+								<BasicInfo pokemon={pokemon}/>
+							</Link>
+						</div>
+					))
+				}
+			</>
+		)
+	};
+	
+	// console.log(state.status)
+	// else if (state.status === 'scrolling') {
+	// 	content = (
+	// 		<>
+	// 			{
+	// 				pokemonsToDisplay.map(pokemon => (
+	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+	// 							<BasicInfo pokemon={pokemon}/>
+	// 						</Link>
+	// 					</div>
+	// 				))
+	// 			}
+	// 			{
+	// 				state.status === 'loading' && <Spinner />
+	// 			}
+	// 		</>
+	// 	)
+	// } 
+
+
+
+	// if (state.status === 'loading') {
+	// 	content = <Spinner />
+	// } else if (state.status === 'scrolling') {
+	// 	content = (
+	// 		<>
+	// 			{
+	// 				pokemonsToDisplay.map(pokemon => (
+	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+	// 							<BasicInfo pokemon={pokemon}/>
+	// 						</Link>
+	// 					</div>
+	// 				))
+	// 			}
+	// 			{
+	// 				state.status === 'loading' && <Spinner />
+	// 			}
+	// 		</>
+	// 	)
+	// } else if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
+	// 	content = <p className="text-center">No Pokémons to show</p>
+	// } else if (state.status === 'idle') {
+	// 	content = (
+	// 		<>
+	// 			{
+	// 				pokemonsToDisplay.map(pokemon => (
+	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+	// 							<BasicInfo pokemon={pokemon}/>
+	// 						</Link>
+	// 					</div>
+	// 				))
+	// 			}
+	// 		</>
+	// 	)
+	// }
+
+	// if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
+	// 	content = <p className="text-center">No Pokémons to show</p>
+	// } else if (state.status === 'loading' && window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight) {
+	// 	content = <Spinner />
+	// } else if (state.status === 'loading' && window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight) {
+	// 	// for scroll
+	// 	content = (
+	// 		<>
+	// 			{
+	// 				pokemonsToDisplay.map(pokemon => (
+	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+	// 							<BasicInfo pokemon={pokemon}/>
+	// 						</Link>
+	// 					</div>
+	// 				))
+	// 			}
+	// 			{
+	// 				state.status === 'loading' && <Spinner />
+	// 			}
+	// 		</>
+	// 	)
+	// } else {
+	// 	console.log(1123)
+		
+	// 	content = (
+	// 		<>
+	// 			{
+	// 				pokemonsToDisplay.map(pokemon => (
+	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+	// 							<BasicInfo pokemon={pokemon}/>
+	// 						</Link>
+	// 					</div>
+	// 				))
+	// 			}
+	// 		</>
+	// 	)
+	// }
+
+
+
+
+	// let content;
+	// if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
+	// 	content = <p className="text-center">No Pokémons to show</p>
+	// } else if (state.status === 'loading' && window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight) {
+	// 	content = <Spinner />
+	// } else if (state.status === 'loading' && window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight) {
+	// 	// for scroll
+	// 	content = (
+	// 		<>
+	// 			{
+	// 				pokemonsToDisplay.map(pokemon => (
+	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+	// 							<BasicInfo pokemon={pokemon}/>
+	// 						</Link>
+	// 					</div>
+	// 				))
+	// 			}
+	// 			{
+	// 				state.status === 'loading' && <Spinner />
+	// 			}
+	// 		</>
+	// 	)
+	// } else {
+	// 	console.log(1123)
+		
+	// 	content = (
+	// 		<>
+	// 			{
+	// 				pokemonsToDisplay.map(pokemon => (
+	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+	// 							<BasicInfo pokemon={pokemon}/>
+	// 						</Link>
+	// 					</div>
+	// 				))
+	// 			}
+	// 		</>
+	// 	)
+	// }
 
 	// problem:
 	// when filter, dispaly of pokemons will cause re-fetch if they don't exist in the previous display

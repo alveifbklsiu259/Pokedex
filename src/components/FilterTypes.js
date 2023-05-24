@@ -1,13 +1,10 @@
-import ball from '../assets/ball.svg'
-import { useState, useEffect, memo } from 'react'
-import { usePokemonData } from './PokemonsProvider';
+import pokeBall from '../assets/ball.svg';
+import { useState, useEffect, memo } from 'react';
 
-
-const FilterTypes = memo(({types: {selectedTypes, setSelectedTypes}}) => {
+const FilterTypes = memo(function FilterTypes ({selectedTypes, setSelectedTypes}) {
 	const [types, setTypes] = useState([]);
-	const {state} = usePokemonData();
-	const handleSelect = (e, type) => {
-		e.target.classList.toggle('selected');
+
+	const handleClick = type => {
 		setSelectedTypes(() => {
 			const update = [...selectedTypes];
 			if (update.includes(type.name)) {
@@ -16,31 +13,39 @@ const FilterTypes = memo(({types: {selectedTypes, setSelectedTypes}}) => {
 				update.push(type.name)
 			}
 			return update;
-		})
-	}
-	
+		});
+	};
 
 	useEffect(() => {
-		const getTypes = async () => {
-			const response = await fetch('https://pokeapi.co/api/v2/type');
-			const data = await response.json();
-			setTypes(data.results)
-		};
-		getTypes();
-	}, [setTypes]);
+		let ignore = false;
+		if (!ignore) {
+			const getTypes = async () => {
+				const response = await fetch('https://pokeapi.co/api/v2/type');
+				const data = await response.json();
+				setTypes(data.results)
+			};
+			getTypes();
+		}
+		return () => {
+			ignore = true
+		}
+	}, []);
 
 	return (
 		<ul className="typesFilter col-12 col-sm-6 row justify-content-center gap-3">
 			<div>
-				<h3 ><img className="pokeBall" src={ball} alt="pokeBall" /> Types</h3>
+				<h3 ><img className="pokeBall" src={pokeBall} alt="pokeBall" /> Types</h3>
 			</div>
 			{types.filter(type => type.name !== 'unknown' && type.name !== 'shadow').map(type => (
-				<li onClick={(e) => handleSelect(e, type)} key={type.name} className={`type type-${type.name} ${selectedTypes.includes(type.name) ? 'selected' : ''}`}>
-					{type.name}
+				<li 
+					onClick={() => handleClick(type)} 
+					key={type.name} 
+					className={`type type-${type.name} ${selectedTypes.includes(type.name) ? 'selected' : ''}`}
+				>{type.name}
 				</li>
 			))}
 		</ul>
-    )
+	)
 });
 
 export default FilterTypes

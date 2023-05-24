@@ -1,44 +1,48 @@
-import pokeBall from '../assets/pokeBall.png'
-import { usePokemonData } from './PokemonsProvider'
-import { useState, useEffect} from 'react';
+import pokeBall from '../assets/pokeBall.png';
+import { usePokemonData } from './PokemonsProvider';
+import { useState, useEffect, memo } from 'react';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
 import { getPokemons } from '../api';
 import { getIdFromURL } from '../util';
 
-export default function Search() {
+const Search = memo( function Search() {
+	console.log('search')
 	const {dispatch, state} = usePokemonData();
 	const [searchParam, setSearchParam] = useState('');
-	const [pokemonsRange, setPokemonsRange] = useState([]);
-
 	const [selectedGenerations, setSelectedGenerations] = useState({});
 	const [selectedTypes, setSelectedTypes] = useState([]);
+	let pokemonRange = [];
+	const allPokemonNames = Object.keys(state.allPokemonNamesAndIds);
 
-	useEffect(() => {
-		setSearchParam(state.searchParam);
-		setSelectedGenerations(state.advancedSearch.generations);
-		setSelectedTypes(state.advancedSearch.types);
-	}, [state.searchParam, state.advancedSearch]);
-
-	// get pokemons range
-	useEffect(() => {
-		const getPokemonsRange = async () => {
-			switch (Object.keys(selectedGenerations).length) {
-				// no selected generations, fetch all generations' pokemons
-				case 0 : {
-						const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=10000`);
-						const data = await response.json();
-						setPokemonsRange(() => data.results)
-					break;
-				}
-				default : {
-					setPokemonsRange(() => Object.values(selectedGenerations).flat())
-					break;
-				}
-			}	
+	// get range
+	switch (Object.keys(selectedGenerations).length) {
+		// no selected generations, fetch all generations' pokemons
+		case 0 : {
+			for (let i = 0; i < allPokemonNames.length; i ++) {
+				let obj = {};
+				obj.name = allPokemonNames[i];
+				obj.url = `https://pokeapi.co/api/v2/pokemon-species/${state.allPokemonNamesAndIds[allPokemonNames[i]]}/`
+				pokemonRange.push(obj);
+			};
+			break;
 		}
-		getPokemonsRange()
-	}, [selectedGenerations]);
+		default : 
+			pokemonRange = Object.values(selectedGenerations).flat();
+	};
+
+	// synchronizing state
+	useEffect(() => {
+		if (searchParam !== state.searchParam) {
+			setSearchParam(state.searchParam);
+		};
+		if(JSON.stringify(state.advancedSearch.generations) !== JSON.stringify(selectedGenerations)) {
+			setSelectedGenerations(state.advancedSearch.generations);
+		};
+		if(JSON.stringify(state.advancedSearch.types) !== JSON.stringify(selectedTypes)) {
+			setSelectedTypes(state.advancedSearch.types);
+		};
+	}, [state.searchParam, state.advancedSearch]);
 
 	const handleSearch = async (e) => {
 		e.preventDefault();
@@ -49,44 +53,56 @@ export default function Search() {
 		// handle search param
 		let searchResult = [];
 		if (searchParam === '') {
-			searchResult = pokemonsRange
+			searchResult = pokemonRange
 		} else if (isNaN(Number(searchParam))) {
 			// sort by name
-			searchResult = pokemonsRange.filter(pokemon => pokemon.name.includes(searchParam.toLowerCase()))
+			searchResult = pokemonRange.filter(pokemon => pokemon.name.toLowerCase().includes(searchParam.toLowerCase()))
 		} else {
 			// sort by id, also remove preceding 0
-			searchResult = pokemonsRange.filter(pokemon => String(getIdFromURL(pokemon.url)).includes(String(Number(searchParam))) )
-		}
+			searchResult = pokemonRange.filter(pokemon => String(getIdFromURL(pokemon.url)).includes(String(Number(searchParam))))
+		};
 
-
-		// types
-		const flattenedRange = searchResult.map(pokemon => getIdFromURL(pokemon.url));
+		// handle types
+		const rangeIds = searchResult.map(pokemon => getIdFromURL(pokemon.url));
 		const dataResponses = await Promise.all(selectedTypes.map(type => fetch(`https://pokeapi.co/api/v2/type/${type}`)));
 		const datas = dataResponses.map(response => response.json());
 		const finalData = await Promise.all(datas);
 		const typesArrayToCompare = finalData.map(type => type.pokemon);
 		const flattenedTypesArrayToCompare = typesArrayToCompare.map(type => type.map(pokemon => getIdFromURL(pokemon.pokemon.url)));
-		let intersection = flattenedRange
+
+		// get intersection
+		let intersection = rangeIds
 		for (let i = 0; i < flattenedTypesArrayToCompare.length; i ++) {
 			intersection = intersection.filter(pokemon => flattenedTypesArrayToCompare[i].includes(pokemon));
-			// intersection = intersection.filter(pokemon => flattenedTypesArrayToCompare[i].filter(comparePokemon => comparePokemon.startsWith(pokemon)).length !== 0);
 		};
-		dispatch({type:'intersectionChanged', payload: intersection});
 
-		// intersection (range), --> sorting order --> sort pokemonsTofetch --> fetch
-		getPokemons(dispatch, state, intersection, state.sortBy, false)
+		// fetch pokemons
+		dispatch({type:'intersectionChanged', payload: intersection});
+		getPokemons(dispatch, state, intersection, state.sortBy, false);
 	}
+
 	return (
-		<div style={{background: 'blanchedalmond'}} className="card-body mb-4 p-4">
-			<h1  className="display-4 text-center">
-				<img style={{width: '10%'}} src={pokeBall} alt="pokeBall" /> Search For Pokémons
+		<div className="card-body mb-4 p-4">
+			<h1 className="display-4 text-center">
+				<img className='pokeBall' src={pokeBall} alt="pokeBall" /> Search For Pokémons
 			</h1>
 			<p className="lead text-center">By Name or the National Pokédex number</p>
-			<form onSubmit={(e) => handleSearch(e)}>
-				<Input searchParam={{searchParam, setSearchParam}}/>
-				<AdvancedSearch param={{setSearchParam, searchParam}} types={{selectedTypes, setSelectedTypes}} generations={{selectedGenerations, setSelectedGenerations}} />
+			<form onSubmit={handleSearch}>
+				<Input 
+					searchParam={searchParam} 
+					setSearchParam={setSearchParam}
+				/>
+				<AdvancedSearch 
+					setSearchParam={setSearchParam} 
+					selectedTypes={selectedTypes} 
+					setSelectedTypes={setSelectedTypes} 
+					selectedGenerations={selectedGenerations} 
+					setSelectedGenerations={setSelectedGenerations}
+				/>
 				<button className="btn btn-primary btn-lg btn-block w-100 my-3" type="submit">Search</button>
 			</form>
 		</div>
 	)
-}
+})
+
+export default Search
