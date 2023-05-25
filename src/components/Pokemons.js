@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from "react";
-import { usePokemonData } from "./PokemonsProvider";
 import { Link } from "react-router-dom";
+import { usePokemonData } from "./PokemonsProvider";
 import Sort from "./Sort";
 import BasicInfo from "./BasicInfo";
 import Spinner from "./Spinner";
@@ -26,48 +26,122 @@ export default function Pokemons() {
 	useEffect(() => {
 		window.addEventListener('scroll', handleScroll);
 		return () => window.removeEventListener('scroll', handleScroll);
-	}, [handleScroll])
+	}, [handleScroll]);
 
-	// Pokemons render 4 times, 2 times when state.status === 'loading'
-	// console.log(123)
+	// null --> loading --> idle --> scroll(scrolling) --> idle
 
-	let content;
+	console.log(state.status);
+
+	let content = (
+		<>
+			{
+				pokemonsToDisplay.map(pokemon => (
+					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+							<BasicInfo pokemon={pokemon}/>
+						</Link>
+					</div>
+				))
+			}
+		</>
+	);
+
 	if (state.status === 'loading') {
 		content = <Spinner />
 	} else if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
 		content = <p className="text-center">No Pokémons to show</p>
+	} else if (state.status === 'idle') {
+		content = content
 	} else if (state.status === 'scrolling') {
 		content = (
 			<>
-				{
-					pokemonsToDisplay.map(pokemon => (
-						<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-							<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-								<BasicInfo pokemon={pokemon}/>
-							</Link>
-						</div>
-					))
-				}
-				{
-					<Spinner/>
-				}
-			</>
-		)
-	} else if (state.status === 'idle') {
-		content = (
-			<>
-				{
-					pokemonsToDisplay.map(pokemon => (
-						<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-							<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-								<BasicInfo pokemon={pokemon}/>
-							</Link>
-						</div>
-					))
-				}
+				{content}
+				<Spinner />
 			</>
 		)
 	};
+
+	// console.log(state)
+
+
+
+// to fix:
+// sort by weight/height will make a fetch first, then the second time should not fetch again
+
+
+
+	// if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
+	// 	content = <p className="text-center">No Pokémons to show</p>
+	// } else if (state.status === 'loading') {
+	// 	// for scroll
+	// 	content = (
+	// 		<>
+	// 			{
+	// 				pokemonsToDisplay.map(pokemon => (
+	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+	// 							<BasicInfo pokemon={pokemon}/>
+	// 						</Link>
+	// 					</div>
+	// 				))
+	// 			}
+	// 			{
+	// 				state.status === 'loading' && <Spinner />
+	// 			}
+	// 		</>
+	// 	)
+	// } else {
+	// 	content = (
+	// 		<>
+	// 			{
+	// 				pokemonsToDisplay.map(pokemon => (
+	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+	// 							<BasicInfo pokemon={pokemon}/>
+	// 						</Link>
+	// 					</div>
+	// 				))
+	// 			}
+	// 		</>
+	// 	)
+	// }
+
+	// if (state.status === 'loading') {
+	// 	content = <Spinner />
+	// } else if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
+	// 	content = <p className="text-center">No Pokémons to show</p>
+	// } else if (state.status === 'scrolling') {
+	// 	content = (
+	// 		<>
+	// 			{
+	// 				pokemonsToDisplay.map(pokemon => (
+	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+	// 							<BasicInfo pokemon={pokemon}/>
+	// 						</Link>
+	// 					</div>
+	// 				))
+	// 			}
+	// 			{
+	// 				<Spinner/>
+	// 			}
+	// 		</>
+	// 	)
+	// } else if (state.status === 'idle') {
+	// 	content = (
+	// 		<>
+	// 			{
+	// 				pokemonsToDisplay.map(pokemon => (
+	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
+	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+	// 							<BasicInfo pokemon={pokemon}/>
+	// 						</Link>
+	// 					</div>
+	// 				))
+	// 			}
+	// 		</>
+	// 	)
+	// };
 	
 	// console.log(state.status)
 	// else if (state.status === 'scrolling') {

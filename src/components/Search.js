@@ -1,28 +1,31 @@
 import pokeBall from '../assets/pokeBall.png';
 import { usePokemonData } from './PokemonsProvider';
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
 import { getPokemons } from '../api';
 import { getIdFromURL } from '../util';
 
-const Search = memo( function Search() {
-	console.log('search')
+export default function Search() {
 	const {dispatch, state} = usePokemonData();
 	const [searchParam, setSearchParam] = useState('');
 	const [selectedGenerations, setSelectedGenerations] = useState({});
 	const [selectedTypes, setSelectedTypes] = useState([]);
 	let pokemonRange = [];
-	const allPokemonNames = Object.keys(state.allPokemonNamesAndIds);
+	// to cache Input
+	const cachedAllPokemonNames = useMemo(() => {
+		return Object.keys(state.allPokemonNamesAndIds);
+	}, [state.allPokemonNamesAndIds])
+	
 
 	// get range
 	switch (Object.keys(selectedGenerations).length) {
 		// no selected generations, fetch all generations' pokemons
 		case 0 : {
-			for (let i = 0; i < allPokemonNames.length; i ++) {
+			for (let i = 0; i < cachedAllPokemonNames.length; i ++) {
 				let obj = {};
-				obj.name = allPokemonNames[i];
-				obj.url = `https://pokeapi.co/api/v2/pokemon-species/${state.allPokemonNamesAndIds[allPokemonNames[i]]}/`
+				obj.name = cachedAllPokemonNames[i];
+				obj.url = `https://pokeapi.co/api/v2/pokemon-species/${state.allPokemonNamesAndIds[cachedAllPokemonNames[i]]}/`
 				pokemonRange.push(obj);
 			};
 			break;
@@ -88,7 +91,8 @@ const Search = memo( function Search() {
 			</h1>
 			<p className="lead text-center">By Name or the National Pokédex number</p>
 			<form onSubmit={handleSearch}>
-				<Input 
+				<Input
+					pokemonNames={cachedAllPokemonNames}
 					searchParam={searchParam} 
 					setSearchParam={setSearchParam}
 				/>
@@ -103,6 +107,4 @@ const Search = memo( function Search() {
 			</form>
 		</div>
 	)
-})
-
-export default Search
+};

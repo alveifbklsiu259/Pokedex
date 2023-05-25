@@ -1,13 +1,10 @@
-import { useRef, useState } from "react"
+import { useRef, useState, memo } from "react"
 import DataList from './DataList';
-import { usePokemonData } from "./PokemonsProvider";
 
-export default function Input({searchParam, setSearchParam}) {
-	const {state} = usePokemonData();
+const Input = memo(function Input({pokemonNames, searchParam, setSearchParam}) {
 	const [showDataList, setShowDataList] = useState(false);
 	const [hoveredPokemon, setHoveredPokemon] = useState('');
 	const [currentFocus, setCurrentFocus] = useState(-1);
-	const pokemonNames = Object.keys(state.allPokemonNamesAndIds);
 	const datalistRef = useRef(null);
 	const inputRef = useRef(null);
 	let matchList = [];
@@ -21,7 +18,7 @@ export default function Input({searchParam, setSearchParam}) {
 	const handleFocus = () => {
 		if (matchList.length === 1 && matchList[0] === searchParam) {
 			setShowDataList(false);
-		} else {
+		} else if (searchParam !== '') {
 			setShowDataList(true);
 		};
 	};
@@ -83,6 +80,10 @@ export default function Input({searchParam, setSearchParam}) {
 					e.preventDefault();
 					datalist.children[currentFocus].click();
 				};
+				// submit the form
+				if (matchList.length === 1 && matchList[0] === searchParam) {
+					setShowDataList(false);
+				};
 				break;
 			}
 			// escape
@@ -135,4 +136,5 @@ export default function Input({searchParam, setSearchParam}) {
 			/>
 		</div>
 	)
-}
+});
+export default Input;

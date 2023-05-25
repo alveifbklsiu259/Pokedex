@@ -1,13 +1,12 @@
-
-import BasicInfo from "./BasicInfo"
-import Detail from "./Detail"
-import Stats from "./Stats"
-import EvolutionChains from "./EvolutionChains"
-import { usePokemonData } from "./PokemonsProvider"
-import { Link, useParams } from "react-router-dom"
-import { useEffect } from "react"
+import { useEffect } from "react";
+import { Link, useParams } from "react-router-dom";
+import BasicInfo from "./BasicInfo";
+import Detail from "./Detail";
+import Stats from "./Stats";
+import EvolutionChains from "./EvolutionChains";
+import { usePokemonData } from "./PokemonsProvider";
 import Spinner from "./Spinner";
-import { getIndividualPokemon } from "../api"
+import { getIndividualPokemon } from "../api";
 
 export default function Pokemon() {
 	const {dispatch, state} = usePokemonData();

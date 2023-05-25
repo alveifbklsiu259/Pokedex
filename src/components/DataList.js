@@ -35,7 +35,7 @@ const DataList = forwardRef(({matchList, inputRef, searchParam, setSearchParam, 
 							return previousReturn.concat(<span className="nameMatch" key={index}>{lowerCaseSearchParam}</span>, currentElement);
 						};
 					}, [])
-				};
+				}
 			</>
 		);
 	};
