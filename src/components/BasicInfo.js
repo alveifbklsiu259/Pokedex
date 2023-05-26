@@ -1,21 +1,35 @@
 // instead of passing down pokemon, pass id or name and check caching
-import { useEffect } from "react";
-import { usePokemonData } from "./PokemonsProvider";
+import { useEffect, memo } from "react";
+import { Link } from "react-router-dom";
+import { useDispatchContenxt } from "./PokemonsProvider";
 import Spinner from "./Spinner";
 import { getIndividualPokemon } from "../api";
 
-export default function BasicInfo({pokemon}) {
-	const { dispatch} = usePokemonData();
+
+// this component is for memoization
+export const PokemonCards = memo(function PokemonCards({pokemon}) {
+	return (
+		<div className="col-6 col-md-4 col-lg-3 card pb-3">
+			<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
+				<BasicInfo pokemon={pokemon}/>
+			</Link>
+		</div>
+	)
+});
+
+const BasicInfo = function BasicInfo({pokemon}) {
+	const dispatch = useDispatchContenxt();
 
 	useEffect(() => {
 		const prepareDate = async() => {
 			if (typeof pokemon === 'string') {
 				const data = await getIndividualPokemon(pokemon, dispatch);
 				pokemon = data;
-			}
+			};
 		};
 		prepareDate()
 	}, [pokemon, getIndividualPokemon]);
+
 
 	let content;
 	if (typeof pokemon === 'string') {
@@ -42,3 +56,5 @@ export default function BasicInfo({pokemon}) {
 		</>
 	)
 }
+
+export default BasicInfo;

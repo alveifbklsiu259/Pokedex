@@ -22,7 +22,7 @@ function App() {
 
 export default App;
 
-
+// cache types, generations as in basic info or...
 // pokedex
 // change language
 // pagination

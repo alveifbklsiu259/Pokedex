@@ -3,6 +3,7 @@ import { getPokemons } from '../api';
 import { getIdFromURL } from '../util';
 
 const PokemonContext = createContext(null);
+const DispatchContext = createContext(null);
 const initialState = {
 	pokemons: {},
 	pokemonCount: null,
@@ -77,7 +78,7 @@ const reducer = (state, action) => {
 		case 'advancedSearchChanged' : {
 			const {field, data} = action.payload;
 			return {
-				...state, advancedSearch: {...state.advancedSearch, [field]: data}, status: 'loading'
+				...state, advancedSearch: {...state.advancedSearch, [field]: data}
 			}
 		}
 		case 'advancedSearchReset' : {
@@ -98,6 +99,11 @@ const reducer = (state, action) => {
 		case 'intersectionChanged' : {
 			return {
 				...state, intersection: action.payload
+			}
+		}
+		case 'nextRequestChanged' : {
+			return {
+				...state, nextRequest: action.payload
 			}
 		}
 		default : 
@@ -128,8 +134,10 @@ export default function PokemonsProvider({children}) {
 			for (let i = 1; i <= data.count; i++) {
 				intersection.push(i)
 			};
-			getPokemons(dispatch, state, intersection, state.sortBy, false);
 			dispatch({type: 'intersectionChanged', payload: intersection});
+			getPokemons(dispatch, state, intersection, state.sortBy);
+
+			// cache input 
 		};
 			getInitialPokemonData()
 	}, [dispatch]);
@@ -137,7 +145,9 @@ export default function PokemonsProvider({children}) {
 	return (
 		<>
 			<PokemonContext.Provider value={{state, dispatch}}>
-				{children}
+				<DispatchContext.Provider value={dispatch}>
+					{children}
+				</DispatchContext.Provider>
 			</PokemonContext.Provider>
 		</>
 	)
@@ -183,4 +193,8 @@ export default function PokemonsProvider({children}) {
 
 export function usePokemonData() {
 	return useContext(PokemonContext);
-}
+};
+
+export function useDispatchContenxt() {
+	return useContext(DispatchContext)
+};

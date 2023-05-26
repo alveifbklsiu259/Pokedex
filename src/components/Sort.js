@@ -1,21 +1,25 @@
 import { usePokemonData } from "./PokemonsProvider"
 import { getPokemons } from "../api";
 
+const dropdownOptions = [
+	{text:'Number(low - high)', value: 'numberAsc'},
+	{text:'Number(high - low)', value: 'numberDesc'},
+	{text:'Name(A - Z)', value: 'nameAsc'},
+	{text:'Name(Z - A)', value: 'nameDesc'},
+	{text:'Height(short - tall)', value: 'heightAsc'},
+	{text:'Height(tall - short)', value: 'heightDesc'},
+	{text:'Weight(light - heavy)', value: 'weightAsc'},
+	{text:'Weight(heavy - light)', value: 'weightDesc'}
+];
+
 export default function Sort() {
 	const {state, dispatch} = usePokemonData();
-	const dropdownOptions = [
-		{text:'Number(low - high)', value: 'numberAsc'},
-		{text:'Number(high - low)', value: 'numberDesc'},
-		{text:'Name(A - Z)', value: 'nameAsc'},
-		{text:'Name(Z - A)', value: 'nameDesc'},
-		{text:'Height(short - tall)', value: 'heightAsc'},
-		{text:'Height(tall - short)', value: 'heightDesc'},
-		{text:'Weight(light - heavy)', value: 'weightAsc'},
-		{text:'Weight(heavy - light)', value: 'weightDesc'}
-	];
+
 	const handleSortByChanged = async sortOption => {
-		dispatch({type: 'sortByChanged', payload: sortOption});
-		getPokemons(dispatch, state, state.intersection, sortOption, false);
+		if (sortOption !== state.sortBy) {
+			dispatch({type: 'sortByChanged', payload: sortOption});
+			getPokemons(dispatch, state, state.intersection, sortOption);
+		};
 	}
 	return (
 		<>

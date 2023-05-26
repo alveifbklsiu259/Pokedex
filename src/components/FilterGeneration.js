@@ -18,19 +18,20 @@ const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, s
 
 	useEffect(() => {
 		let ignore = false;
-		if (!ignore) {
-			const getGenerationInfo = async () => {
-				const response = await fetch('https://pokeapi.co/api/v2/generation');
-				const data = await response.json();
-				const responses = await Promise.all(data.results.map(generation => fetch(generation.url)));
-				const datas = responses.map(response => response.json());
-				const finalData = await Promise.all(datas);
-				setGenerationOptions(finalData.map(generation => generation))
+		const getGenerationInfo = async () => {
+			const response = await fetch('https://pokeapi.co/api/v2/generation');
+			const data = await response.json();
+			const responses = await Promise.all(data.results.map(generation => fetch(generation.url)));
+			const datas = responses.map(response => response.json());
+			const finalData = await Promise.all(datas);
+			if (!ignore) {
+				setGenerationOptions(finalData.map(generation => generation));
 			};
-			getGenerationInfo();
 		};
+		getGenerationInfo();
+		
 		return () => {
-			ignore = true
+			ignore = true;
 		};
 	}, [])
 

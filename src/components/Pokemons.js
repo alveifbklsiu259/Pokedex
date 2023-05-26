@@ -1,290 +1,56 @@
-import { useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useCallback, useMemo } from "react";
 import { usePokemonData } from "./PokemonsProvider";
 import Sort from "./Sort";
-import BasicInfo from "./BasicInfo";
+import { PokemonCards } from "./BasicInfo";
 import Spinner from "./Spinner";
-import { getPokemons } from "../api";
+import { getPokemonsOnScroll } from "../api";
 
 export default function Pokemons() {
 	const {state, dispatch} = usePokemonData();
-	let pokemonsToDisplay= [];
-	for (let i = 0; i < state.display.length; i ++) {
-		pokemonsToDisplay[i] = Object.values(state.pokemons).find(pokemon => pokemon.id === state.display[i]);
-	};
 
-	const handleDisplay = async() => {
-		getPokemons(dispatch, state, state.nextRequest, state.sortBy, true);
-	};
+	const cachedDispaly = useMemo(() => {
+		let pokemonsToDisplay = [];
+		for (let i = 0; i < state.display.length; i ++) {
+			pokemonsToDisplay[i] = Object.values(state.pokemons).find(pokemon => pokemon.id === state.display[i]);
+		};
+		return pokemonsToDisplay
+	}, [state.display, state.pokemons]);
 
 	const handleScroll = useCallback(() => {
 		if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight && state.status === 'idle' && state.nextRequest !== null) {
-			handleDisplay();
+			getPokemonsOnScroll(dispatch, state.nextRequest, state.pokemons, state.display);
 		};
-	}, [state.status, state.nextRequest, handleDisplay])
+	}, [state.status, state.nextRequest, getPokemonsOnScroll, state.pokemons, state.display])
 
 	useEffect(() => {
 		window.addEventListener('scroll', handleScroll);
 		return () => window.removeEventListener('scroll', handleScroll);
 	}, [handleScroll]);
 
-	// null --> loading --> idle --> scroll(scrolling) --> idle
-
-	console.log(state.status);
-
 	let content = (
 		<>
-			{
-				pokemonsToDisplay.map(pokemon => (
-					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-							<BasicInfo pokemon={pokemon}/>
-						</Link>
-					</div>
-				))
-			}
+			{cachedDispaly.map(pokemon => (
+				<PokemonCards key={pokemon.id} pokemon={pokemon}/>
+			))}
 		</>
 	);
 
 	if (state.status === 'loading') {
 		content = <Spinner />
-	} else if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
+	} else if (state.status === 'idle' && cachedDispaly.length === 0) {
 		content = <p className="text-center">No Pokémons to show</p>
-	} else if (state.status === 'idle') {
-		content = content
-	} else if (state.status === 'scrolling') {
+	} else if (state.status === 'idle' || state.status === 'scrolling') {
 		content = (
 			<>
 				{content}
-				<Spinner />
+				{state.status === 'scrolling' && <Spinner />}
 			</>
 		)
 	};
+console.log(state);
+	// to fix:
+	// set position after search
 
-	// console.log(state)
-
-
-
-// to fix:
-// sort by weight/height will make a fetch first, then the second time should not fetch again
-
-
-
-	// if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
-	// 	content = <p className="text-center">No Pokémons to show</p>
-	// } else if (state.status === 'loading') {
-	// 	// for scroll
-	// 	content = (
-	// 		<>
-	// 			{
-	// 				pokemonsToDisplay.map(pokemon => (
-	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-	// 							<BasicInfo pokemon={pokemon}/>
-	// 						</Link>
-	// 					</div>
-	// 				))
-	// 			}
-	// 			{
-	// 				state.status === 'loading' && <Spinner />
-	// 			}
-	// 		</>
-	// 	)
-	// } else {
-	// 	content = (
-	// 		<>
-	// 			{
-	// 				pokemonsToDisplay.map(pokemon => (
-	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-	// 							<BasicInfo pokemon={pokemon}/>
-	// 						</Link>
-	// 					</div>
-	// 				))
-	// 			}
-	// 		</>
-	// 	)
-	// }
-
-	// if (state.status === 'loading') {
-	// 	content = <Spinner />
-	// } else if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
-	// 	content = <p className="text-center">No Pokémons to show</p>
-	// } else if (state.status === 'scrolling') {
-	// 	content = (
-	// 		<>
-	// 			{
-	// 				pokemonsToDisplay.map(pokemon => (
-	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-	// 							<BasicInfo pokemon={pokemon}/>
-	// 						</Link>
-	// 					</div>
-	// 				))
-	// 			}
-	// 			{
-	// 				<Spinner/>
-	// 			}
-	// 		</>
-	// 	)
-	// } else if (state.status === 'idle') {
-	// 	content = (
-	// 		<>
-	// 			{
-	// 				pokemonsToDisplay.map(pokemon => (
-	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-	// 							<BasicInfo pokemon={pokemon}/>
-	// 						</Link>
-	// 					</div>
-	// 				))
-	// 			}
-	// 		</>
-	// 	)
-	// };
-	
-	// console.log(state.status)
-	// else if (state.status === 'scrolling') {
-	// 	content = (
-	// 		<>
-	// 			{
-	// 				pokemonsToDisplay.map(pokemon => (
-	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-	// 							<BasicInfo pokemon={pokemon}/>
-	// 						</Link>
-	// 					</div>
-	// 				))
-	// 			}
-	// 			{
-	// 				state.status === 'loading' && <Spinner />
-	// 			}
-	// 		</>
-	// 	)
-	// } 
-
-
-
-	// if (state.status === 'loading') {
-	// 	content = <Spinner />
-	// } else if (state.status === 'scrolling') {
-	// 	content = (
-	// 		<>
-	// 			{
-	// 				pokemonsToDisplay.map(pokemon => (
-	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-	// 							<BasicInfo pokemon={pokemon}/>
-	// 						</Link>
-	// 					</div>
-	// 				))
-	// 			}
-	// 			{
-	// 				state.status === 'loading' && <Spinner />
-	// 			}
-	// 		</>
-	// 	)
-	// } else if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
-	// 	content = <p className="text-center">No Pokémons to show</p>
-	// } else if (state.status === 'idle') {
-	// 	content = (
-	// 		<>
-	// 			{
-	// 				pokemonsToDisplay.map(pokemon => (
-	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-	// 							<BasicInfo pokemon={pokemon}/>
-	// 						</Link>
-	// 					</div>
-	// 				))
-	// 			}
-	// 		</>
-	// 	)
-	// }
-
-	// if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
-	// 	content = <p className="text-center">No Pokémons to show</p>
-	// } else if (state.status === 'loading' && window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight) {
-	// 	content = <Spinner />
-	// } else if (state.status === 'loading' && window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight) {
-	// 	// for scroll
-	// 	content = (
-	// 		<>
-	// 			{
-	// 				pokemonsToDisplay.map(pokemon => (
-	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-	// 							<BasicInfo pokemon={pokemon}/>
-	// 						</Link>
-	// 					</div>
-	// 				))
-	// 			}
-	// 			{
-	// 				state.status === 'loading' && <Spinner />
-	// 			}
-	// 		</>
-	// 	)
-	// } else {
-	// 	console.log(1123)
-		
-	// 	content = (
-	// 		<>
-	// 			{
-	// 				pokemonsToDisplay.map(pokemon => (
-	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-	// 							<BasicInfo pokemon={pokemon}/>
-	// 						</Link>
-	// 					</div>
-	// 				))
-	// 			}
-	// 		</>
-	// 	)
-	// }
-
-
-
-
-	// let content;
-	// if (state.status === 'idle' && pokemonsToDisplay.length === 0) {
-	// 	content = <p className="text-center">No Pokémons to show</p>
-	// } else if (state.status === 'loading' && window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight) {
-	// 	content = <Spinner />
-	// } else if (state.status === 'loading' && window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight) {
-	// 	// for scroll
-	// 	content = (
-	// 		<>
-	// 			{
-	// 				pokemonsToDisplay.map(pokemon => (
-	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-	// 							<BasicInfo pokemon={pokemon}/>
-	// 						</Link>
-	// 					</div>
-	// 				))
-	// 			}
-	// 			{
-	// 				state.status === 'loading' && <Spinner />
-	// 			}
-	// 		</>
-	// 	)
-	// } else {
-	// 	console.log(1123)
-		
-	// 	content = (
-	// 		<>
-	// 			{
-	// 				pokemonsToDisplay.map(pokemon => (
-	// 					<div key={pokemon.id} className="col-6 col-md-4 col-lg-3 card pb-3">
-	// 						<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-	// 							<BasicInfo pokemon={pokemon}/>
-	// 						</Link>
-	// 					</div>
-	// 				))
-	// 			}
-	// 		</>
-	// 	)
-	// }
 
 	// problem:
 	// when filter, dispaly of pokemons will cause re-fetch if they don't exist in the previous display

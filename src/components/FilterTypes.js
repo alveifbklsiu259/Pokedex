@@ -3,7 +3,6 @@ import { useState, useEffect, memo } from 'react';
 
 const FilterTypes = memo(function FilterTypes ({selectedTypes, setSelectedTypes}) {
 	const [types, setTypes] = useState([]);
-
 	const handleClick = type => {
 		setSelectedTypes(() => {
 			const update = [...selectedTypes];
@@ -18,14 +17,16 @@ const FilterTypes = memo(function FilterTypes ({selectedTypes, setSelectedTypes}
 
 	useEffect(() => {
 		let ignore = false;
-		if (!ignore) {
-			const getTypes = async () => {
-				const response = await fetch('https://pokeapi.co/api/v2/type');
-				const data = await response.json();
-				setTypes(data.results)
-			};
-			getTypes();
-		}
+
+		const getTypes = async () => {
+			const response = await fetch('https://pokeapi.co/api/v2/type');
+			const data = await response.json();
+			if (!ignore) {
+				setTypes(data.results);
+			}
+		};
+		getTypes();
+
 		return () => {
 			ignore = true
 		}
