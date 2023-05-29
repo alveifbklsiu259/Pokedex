@@ -27,6 +27,8 @@ export default App;
 // change language
 // pagination
 // manual cache
+// cross icon after datalist
+
 
 //---------------------------------------------------//
 //Layout: (components)

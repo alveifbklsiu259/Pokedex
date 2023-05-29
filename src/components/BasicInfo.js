@@ -1,7 +1,7 @@
 // instead of passing down pokemon, pass id or name and check caching
 import { useEffect, memo } from "react";
 import { Link } from "react-router-dom";
-import { useDispatchContenxt } from "./PokemonsProvider";
+import { useDispatchContenxt, usePokemonData } from "./PokemonsProvider";
 import Spinner from "./Spinner";
 import { getIndividualPokemon } from "../api";
 
@@ -19,16 +19,17 @@ export const PokemonCards = memo(function PokemonCards({pokemon}) {
 
 const BasicInfo = function BasicInfo({pokemon}) {
 	const dispatch = useDispatchContenxt();
+	const {state} = usePokemonData();
+	let pokemonData = pokemon;
 
 	useEffect(() => {
-		const prepareDate = async() => {
-			if (typeof pokemon === 'string') {
-				const data = await getIndividualPokemon(pokemon, dispatch);
-				pokemon = data;
-			};
+		if (typeof pokemon === 'string') {
+			const getPokemon = async() => {
+					pokemonData = await getIndividualPokemon(pokemon, dispatch);
+				};
+			getPokemon()
 		};
-		prepareDate()
-	}, [pokemon, getIndividualPokemon]);
+	}, [pokemon]);
 
 
 	let content;
@@ -38,14 +39,13 @@ const BasicInfo = function BasicInfo({pokemon}) {
 		content =  (
 			<>
 				<div className="d-flex flex-column align-items-center text-center p-0 h-100 justify-content-between">
-				<img className="poke-img mx-auto p-0" src={pokemon.sprites.other['official-artwork'].front_default} alt={pokemon.name} />
-				<span className="id p-0">#{String(pokemon.id).padStart(4 ,'0')}</span>
-				<h1 className="p-0 text-capitalize">{pokemon.name}</h1>
+				<img className="poke-img mx-auto p-0" src={pokemonData.sprites.other['official-artwork'].front_default} alt={pokemonData.name} />
+				<span className="id p-0">#{String(pokemonData.id).padStart(4 ,'0')}</span>
+				<h1 className="p-0 text-capitalize">{pokemonData.name}</h1>
 				<div className="types row justify-content-center">
-					{pokemon.types.map(type => <span key={type.type.name} className={`type-${type.type.name} type col-5 m-1`}>{type.type.name}</span>)}
+					{pokemonData.types.map(type => <span key={type.type.name} className={`type-${type.type.name} type col-5 m-1`}>{type.type.name}</span>)}
 				</div>	
 				</div>
-				
 			</>
 		)
 	}

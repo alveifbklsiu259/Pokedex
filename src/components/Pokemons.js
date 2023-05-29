@@ -47,15 +47,7 @@ export default function Pokemons() {
 			</>
 		)
 	};
-console.log(state);
-	// to fix:
-	// set position after search
 
-
-	// problem:
-	// when filter, dispaly of pokemons will cause re-fetch if they don't exist in the previous display
-	// but I already have those pokemons stored in my state, this should not happen
-	// seems like the problem is because I disable cache in chrome devTool
 	return (
 		<>
 			<div className="container">

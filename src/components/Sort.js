@@ -1,4 +1,4 @@
-import { usePokemonData } from "./PokemonsProvider"
+import { usePokemonData, useDispatchContenxt } from "./PokemonsProvider"
 import { getPokemons } from "../api";
 
 const dropdownOptions = [
@@ -13,9 +13,10 @@ const dropdownOptions = [
 ];
 
 export default function Sort() {
-	const {state, dispatch} = usePokemonData();
+	const {state} = usePokemonData();
+	const dispatch = useDispatchContenxt();
 
-	const handleSortByChanged = async sortOption => {
+	const handleClick = async sortOption => {
 		if (sortOption !== state.sortBy) {
 			dispatch({type: 'sortByChanged', payload: sortOption});
 			getPokemons(dispatch, state, state.intersection, sortOption);
@@ -29,7 +30,7 @@ export default function Sort() {
 				</button>
 				<ul className="dropdown-menu dropdown-menu-dark">
 					{dropdownOptions.map(option => (
-						<li key={option.value} onClick={() => handleSortByChanged(option.value)} className={`dropdown-item ${state.sortBy === option.value ? 'active' : ''}`} >{option.text}</li>
+						<li key={option.value} onClick={() => handleClick(option.value)} className={`dropdown-item ${state.sortBy === option.value ? 'active' : ''}`} >{option.text}</li>
 					))}
 				</ul>
 			</div>
