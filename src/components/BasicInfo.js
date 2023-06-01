@@ -3,7 +3,7 @@ import { useEffect, memo } from "react";
 import { Link } from "react-router-dom";
 import { useDispatchContenxt, usePokemonData } from "./PokemonsProvider";
 import Spinner from "./Spinner";
-import { getIndividualPokemon } from "../api";
+import { getIndividualtData } from "../api";
 
 
 // this component is for memoization
@@ -23,22 +23,24 @@ const BasicInfo = function BasicInfo({pokemon}) {
 	let pokemonData = pokemon;
 
 	useEffect(() => {
-		if (typeof pokemon === 'string') {
+		if (typeof pokemon === 'number') {
 			const getPokemon = async() => {
-					pokemonData = await getIndividualPokemon(pokemon, dispatch);
+					dispatch({type: 'dataLoading'})
+					pokemonData = await getIndividualtData('pokemon', pokemon);
+					dispatch({type: 'individualPokemonLoaded', payload: pokemonData})
 				};
-			getPokemon()
+			getPokemon();
 		};
 	}, [pokemon]);
 
 
 	let content;
-	if (typeof pokemon === 'string') {
+	if (typeof pokemon === 'number') {
 		content = <Spinner />
 	} else {
 		content =  (
 			<>
-				<div className="d-flex flex-column align-items-center text-center p-0 h-100 justify-content-between">
+				<div className="d-flex flex-column align-items-center text-center p-0 h-100 justify-content-start">
 				<img className="poke-img mx-auto p-0" src={pokemonData.sprites.other['official-artwork'].front_default} alt={pokemonData.name} />
 				<span className="id p-0">#{String(pokemonData.id).padStart(4 ,'0')}</span>
 				<h1 className="p-0 text-capitalize">{pokemonData.name}</h1>

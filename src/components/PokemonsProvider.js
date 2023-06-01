@@ -52,12 +52,12 @@ const reducer = (state, action) => {
 		}
 		case 'pokemonSpeciesLoaded' : {
 			return {
-				...state, status: 'idle', pokemon_species: {...state.pokemon_species, [action.payload.id]: action.payload.data}
+				...state, status: 'idle', pokemon_species: {...state.pokemon_species, [action.payload.id]: action.payload}
 			}
 		}
 		case "evolutionChainLoaded" : {
 			return {
-				...state, status: 'idle', evolution_chain: {...state.evolution_chain, [action.payload.id]:action.payload.chain}
+				...state, status: 'idle', evolution_chain: {...state.evolution_chain, [action.payload.id]:action.payload.chains}
 			}
 		}
 		case "individualPokemonLoaded" : {
@@ -114,33 +114,36 @@ const reducer = (state, action) => {
 export default function PokemonsProvider({children}) {
 	const [state, dispatch] = useReducer(reducer, initialState);
 
-	useEffect(()=> {
-		const getInitialPokemonData = async () => {
-			dispatch({type:'dataLoading'})
-			// get pokemons amount
-			const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=9999`);
-			const data = await response.json();
-			dispatch({type: 'getPokemonCount', payload: data.count});
+	// useEffect(()=> {
+	// 	const getInitialPokemonData = async () => {
+	// 		dispatch({type:'dataLoading'})
+	// 		// get pokemons amount
+	// 		const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=9999`);
+	// 		const data = await response.json();
+	// 		dispatch({type: 'getPokemonCount', payload: data.count});
 
-			// get all names and ids
-			const pokemonsNamesAndId = {};
-			for (let pokemon of data.results) {
-				pokemonsNamesAndId[pokemon.name] = getIdFromURL(pokemon.url);
-			};
-			dispatch({type: 'getAllPokemonNamesAndIds', payload: pokemonsNamesAndId});
+	// 		// get all names and ids
+	// 		const pokemonsNamesAndId = {};
+	// 		for (let pokemon of data.results) {
+	// 			pokemonsNamesAndId[pokemon.name] = getIdFromURL(pokemon.url);
+	// 		};
+	// 		dispatch({type: 'getAllPokemonNamesAndIds', payload: pokemonsNamesAndId});
 
-			// set the range
-			const intersection = [];
-			for (let i = 1; i <= data.count; i++) {
-				intersection.push(i)
-			};
-			dispatch({type: 'intersectionChanged', payload: intersection});
-			getPokemons(dispatch, state, intersection, state.sortBy);
+	// 		// set the range
+	// 		const intersection = [];
+	// 		for (let i = 1; i <= data.count; i++) {
+	// 			intersection.push(i)
+	// 		};
+	// 		dispatch({type: 'intersectionChanged', payload: intersection});
+	// 		getPokemons(dispatch, state, intersection, state.sortBy);
 
-			// cache input 
-		};
-			getInitialPokemonData()
-	}, [dispatch]);
+	// 		// cache input 
+	// 	};
+	// 		getInitialPokemonData()
+	// }, [dispatch]);
+
+	// see if we can move the getInitialPokemonData out, and call it if the user lands on /pokemons/xxx
+	// refresh pokemon page, there're chances that you will see dispatch being batched(normally should be two 2 loading 2 idle)
 
 	return (
 		<>

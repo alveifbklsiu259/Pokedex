@@ -3,14 +3,26 @@ import { usePokemonData } from "./components/PokemonsProvider";
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
-export const getIndividualPokemon = async (pokemon, dispatch) => {
-	//pass in id or name
-	dispatch({type: 'dataLoading'});
-	const response = await fetch(`${BASE_URL}/pokemon/${pokemon}`);
+// export const getIndividualPokemon = async (pokemon, dispatch) => {
+// 	//pass in id or name
+// 	dispatch({type: 'dataLoading'});
+// 	const response = await fetch(`${BASE_URL}/pokemon/${pokemon}`);
+// 	const data = await response.json();
+// 	dispatch({type: 'individualPokemonLoaded', payload: data});
+// 	return data
+// };
+
+export const getIndividualtData = async (dataType, pokemon) => {
+	const response = await fetch(`${BASE_URL}/${dataType}/${pokemon}`);
 	const data = await response.json();
-	dispatch({type: 'individualPokemonLoaded', payload: data});
-	return data
+	return data;
 };
+
+
+
+
+
+
 
 // export const useIndividualPokemon = (pokemon) => {
 // 	const [pokemonData, setPokemonData] = useState({});

@@ -7,20 +7,20 @@ import { getPokemonsOnScroll } from "../api";
 
 export default function Pokemons() {
 	const {state, dispatch} = usePokemonData();
-
 	const cachedDispaly = useMemo(() => {
 		let pokemonsToDisplay = [];
 		for (let i = 0; i < state.display.length; i ++) {
 			pokemonsToDisplay[i] = Object.values(state.pokemons).find(pokemon => pokemon.id === state.display[i]);
 		};
 		return pokemonsToDisplay
+		// state changes will not affect them, they will still point to the same references, since we only shallow copy {...state} in each action case.
 	}, [state.display, state.pokemons]);
 
 	const handleScroll = useCallback(() => {
 		if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight && state.status === 'idle' && state.nextRequest !== null) {
 			getPokemonsOnScroll(dispatch, state.nextRequest, state.pokemons, state.display);
 		};
-	}, [state.status, state.nextRequest, getPokemonsOnScroll, state.pokemons, state.display])
+	}, [state.status, state.nextRequest, getPokemonsOnScroll, state.pokemons, state.display]);
 
 	useEffect(() => {
 		window.addEventListener('scroll', handleScroll);
