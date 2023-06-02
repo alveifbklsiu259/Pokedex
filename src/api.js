@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { usePokemonData } from "./components/PokemonsProvider";
+// import { useEffect, useState } from "react";
+// import { usePokemonData } from "./components/PokemonsProvider";
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 

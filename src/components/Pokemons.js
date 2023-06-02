@@ -1,26 +1,28 @@
 import { useEffect, useCallback, useMemo } from "react";
-import { usePokemonData } from "./PokemonsProvider";
+import { usePokemonData, useDispatchContenxt } from "./PokemonsProvider";
 import Sort from "./Sort";
 import { PokemonCards } from "./BasicInfo";
 import Spinner from "./Spinner";
 import { getPokemonsOnScroll } from "../api";
 
 export default function Pokemons() {
-	const {state, dispatch} = usePokemonData();
+	const state = usePokemonData();
+	console.log(state)
+	const dispatch = useDispatchContenxt();
 	const cachedDispaly = useMemo(() => {
 		let pokemonsToDisplay = [];
 		for (let i = 0; i < state.display.length; i ++) {
 			pokemonsToDisplay[i] = Object.values(state.pokemons).find(pokemon => pokemon.id === state.display[i]);
 		};
 		return pokemonsToDisplay
-		// state changes will not affect them, they will still point to the same references, since we only shallow copy {...state} in each action case.
+		// changes in other fields of state will not affect these dependencies, they will still point to the same references, since we only shallow copy {...state} in each action case.
 	}, [state.display, state.pokemons]);
 
 	const handleScroll = useCallback(() => {
 		if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight && state.status === 'idle' && state.nextRequest !== null) {
 			getPokemonsOnScroll(dispatch, state.nextRequest, state.pokemons, state.display);
 		};
-	}, [state.status, state.nextRequest, getPokemonsOnScroll, state.pokemons, state.display]);
+	}, [state.status, state.nextRequest, state.pokemons, state.display, dispatch]);
 
 	useEffect(() => {
 		window.addEventListener('scroll', handleScroll);

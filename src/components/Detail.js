@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 
 function getGender(gender_rate) {
 	switch(gender_rate) {
@@ -17,7 +17,7 @@ function getGender(gender_rate) {
 	}
 };
 
-export default function Detail({pokemon, speciesInfo}) {
+const Detail = memo(function Detail({pokemon, speciesInfo}) {
 	const flavorTexts = speciesInfo.flavor_text_entries;
 	let flavorText = '';
 	if (flavorTexts.length) {
@@ -47,4 +47,5 @@ export default function Detail({pokemon, speciesInfo}) {
 			</div>
 		</>
 	)
-};
+});
+export default Detail;

@@ -7,7 +7,7 @@ import { getPokemons } from '../api';
 import { getIdFromURL } from '../util';
 
 export default function Search() {
-	const {state} = usePokemonData();
+	const state = usePokemonData();
 	const dispatch = useDispatchContenxt();
 	const [searchParam, setSearchParam] = useState('');
 	const [selectedGenerations, setSelectedGenerations] = useState({});

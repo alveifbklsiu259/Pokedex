@@ -1,24 +1,24 @@
 import './App.css';
-import { createBrowserRouter,createRoutesFromElements, Route, RouterProvider, Routes} from 'react-router-dom';
+import { createBrowserRouter,createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
 import PokemonsProvider from './components/PokemonsProvider';
 import Index from './components/Index';
 import Pokemon from './components/Pokemon';
 
 const router = createBrowserRouter(createRoutesFromElements(
-  <>
-    <Route path="/" element={<Index />}/>
-    <Route path="/pokemons/:pokeId" element={<Pokemon />}/>
-  </>
+	<>
+		<Route path="/" element={<Index />}/>
+		<Route path="/pokemons/:pokeId" element={<Pokemon />}/>
+	</>
 ))
 
-
 function App() {
-  return (
-    <PokemonsProvider>
-      <RouterProvider router={router} />
-    </PokemonsProvider>
-  );
-}
+	return (
+		<PokemonsProvider>
+			<RouterProvider router={router} />
+		</PokemonsProvider>
+	)
+};
+
 
 export default App;
 

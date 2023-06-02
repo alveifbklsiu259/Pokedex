@@ -1,4 +1,4 @@
-import { useReducer, createContext, useContext, useEffect, useCallback, useMemo } from 'react'
+import { useReducer, createContext, useContext, useEffect } from 'react'
 import { getPokemons } from '../api';
 import { getIdFromURL } from '../util';
 
@@ -8,10 +8,10 @@ const initialState = {
 	pokemons: {},
 	pokemonCount: null,
 	nextRequest: [],
-	pokemon_species: {},
+	pokemonSpecies: {},
 	// loading | idle | scrolling
 	status: null,
-	evolution_chain: {},
+	evolutionChains: {},
 	searchParam: '',
 	sortBy: 'numberAsc',
 	advancedSearch: {
@@ -25,6 +25,12 @@ const initialState = {
 
 const reducer = (state, action) => {
 	switch (action.type) {
+		// for Effect cleanup function
+		case 'cancelEffect' : {
+			return {
+				...state, status: null
+			}
+		}
 		case 'dataLoading' : {
 			return {
 				...state, status: 'loading'
@@ -52,12 +58,12 @@ const reducer = (state, action) => {
 		}
 		case 'pokemonSpeciesLoaded' : {
 			return {
-				...state, status: 'idle', pokemon_species: {...state.pokemon_species, [action.payload.id]: action.payload}
+				...state, status: 'idle', pokemonSpecies: {...state.pokemonSpecies, [action.payload.id]: action.payload}
 			}
 		}
-		case "evolutionChainLoaded" : {
+		case "evolutionChainsLoaded" : {
 			return {
-				...state, status: 'idle', evolution_chain: {...state.evolution_chain, [action.payload.id]:action.payload.chains}
+				...state, status: 'idle', evolutionChains: {...state.evolutionChains, [action.payload.id]:action.payload.chains}
 			}
 		}
 		case "individualPokemonLoaded" : {
@@ -114,40 +120,45 @@ const reducer = (state, action) => {
 export default function PokemonsProvider({children}) {
 	const [state, dispatch] = useReducer(reducer, initialState);
 
-	// useEffect(()=> {
-	// 	const getInitialPokemonData = async () => {
-	// 		dispatch({type:'dataLoading'})
-	// 		// get pokemons amount
-	// 		const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=9999`);
-	// 		const data = await response.json();
-	// 		dispatch({type: 'getPokemonCount', payload: data.count});
 
-	// 		// get all names and ids
-	// 		const pokemonsNamesAndId = {};
-	// 		for (let pokemon of data.results) {
-	// 			pokemonsNamesAndId[pokemon.name] = getIdFromURL(pokemon.url);
-	// 		};
-	// 		dispatch({type: 'getAllPokemonNamesAndIds', payload: pokemonsNamesAndId});
+	// can i batch dispatches in provider too?
+	// see if i can batch dispatches between PokemonProvider and Pokemon
 
-	// 		// set the range
-	// 		const intersection = [];
-	// 		for (let i = 1; i <= data.count; i++) {
-	// 			intersection.push(i)
-	// 		};
-	// 		dispatch({type: 'intersectionChanged', payload: intersection});
-	// 		getPokemons(dispatch, state, intersection, state.sortBy);
+	useEffect(()=> {
+		const getInitialPokemonData = async () => {
+			//  either remove this dataLoading dispatch or..
+			dispatch({type:'dataLoading'})
+			// get pokemons amount
+			const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=9999`);
+			const data = await response.json();
+			dispatch({type: 'getPokemonCount', payload: data.count});
 
-	// 		// cache input 
-	// 	};
-	// 		getInitialPokemonData()
-	// }, [dispatch]);
+			// get all names and ids
+			const pokemonsNamesAndId = {};
+			for (let pokemon of data.results) {
+				pokemonsNamesAndId[pokemon.name] = getIdFromURL(pokemon.url);
+			};
+			dispatch({type: 'getAllPokemonNamesAndIds', payload: pokemonsNamesAndId});
+
+			// set the range
+			const intersection = [];
+			for (let i = 1; i <= data.count; i++) {
+				intersection.push(i)
+			};
+			dispatch({type: 'intersectionChanged', payload: intersection});
+			getPokemons(dispatch, state, intersection, state.sortBy);
+
+			// cache input 
+		};
+			getInitialPokemonData()
+	}, [dispatch]);
 
 	// see if we can move the getInitialPokemonData out, and call it if the user lands on /pokemons/xxx
 	// refresh pokemon page, there're chances that you will see dispatch being batched(normally should be two 2 loading 2 idle)
 
 	return (
 		<>
-			<PokemonContext.Provider value={{state, dispatch}}>
+			<PokemonContext.Provider value={state}>
 				<DispatchContext.Provider value={dispatch}>
 					{children}
 				</DispatchContext.Provider>

@@ -13,7 +13,7 @@ const dropdownOptions = [
 ];
 
 export default function Sort() {
-	const {state} = usePokemonData();
+	const state = usePokemonData();
 	const dispatch = useDispatchContenxt();
 
 	const handleClick = async sortOption => {
