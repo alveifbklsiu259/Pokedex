@@ -2,12 +2,12 @@ import { useEffect, useCallback, useMemo } from "react";
 import { usePokemonData, useDispatchContenxt } from "./PokemonsProvider";
 import Sort from "./Sort";
 import { PokemonCards } from "./BasicInfo";
+import ScrollToTop from "./ScrollToTop";
 import Spinner from "./Spinner";
 import { getPokemonsOnScroll } from "../api";
 
 export default function Pokemons() {
 	const state = usePokemonData();
-	console.log(state)
 	const dispatch = useDispatchContenxt();
 	const cachedDispaly = useMemo(() => {
 		let pokemonsToDisplay = [];
@@ -28,14 +28,9 @@ export default function Pokemons() {
 		window.addEventListener('scroll', handleScroll);
 		return () => window.removeEventListener('scroll', handleScroll);
 	}, [handleScroll]);
+	console.log(state)
 
-	let content = (
-		<>
-			{cachedDispaly.map(pokemon => (
-				<PokemonCards key={pokemon.id} pokemon={pokemon}/>
-			))}
-		</>
-	);
+	let content;
 
 	if (state.status === 'loading') {
 		content = <Spinner />
@@ -44,7 +39,10 @@ export default function Pokemons() {
 	} else if (state.status === 'idle' || state.status === 'scrolling') {
 		content = (
 			<>
-				{content}
+				{cachedDispaly.map(pokemon => (
+					<PokemonCards key={pokemon.id} pokemon={pokemon}/>
+				))}
+				<ScrollToTop />
 				{state.status === 'scrolling' && <Spinner />}
 			</>
 		)

@@ -90,12 +90,12 @@ export const getMultiplePokemons = async pokemonsToFetch => {
 };
 
 
-export const getPokemons = async (dispatch, state, request, sortOption) => {
+export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndIds, request, sortOption) => {
 	// preload data for weight/height sort options
 	const preloadDataForSort = async pokemonsToFetch => {
 		dispatch({type:'dataLoading'});
 		const fetchedPokemons = await getMultiplePokemons(pokemonsToFetch);
-		const allPokemons = {...state.pokemons, ...fetchedPokemons};
+		const allPokemons = {...cachedPokemons, ...fetchedPokemons};
 		return [fetchedPokemons, allPokemons];
 	};
 	
@@ -105,12 +105,12 @@ export const getPokemons = async (dispatch, state, request, sortOption) => {
 			let sortedNames;
 			let sort = sortOption.includes('Asc') ? 'asc' : 'desc';
 			if (sort === 'asc') {
-				sortedNames = Object.keys(state.allPokemonNamesAndIds).sort((a, b) => a.localeCompare(b));
+				sortedNames = Object.keys(allPokemonNamesAndIds).sort((a, b) => a.localeCompare(b));
 			} else if(sort === 'desc') {
-				sortedNames = Object.keys(state.allPokemonNamesAndIds).sort((a, b) => b.localeCompare(a));
+				sortedNames = Object.keys(allPokemonNamesAndIds).sort((a, b) => b.localeCompare(a));
 			};
 			const sortedPokemons = sortedNames.reduce((prev, cur) => {
-				prev[cur] = state.allPokemonNamesAndIds[cur];
+				prev[cur] = allPokemonNamesAndIds[cur];
 				return prev;
 			}, {});
 			return Object.values(sortedPokemons).filter(id => request.includes(id));
@@ -161,11 +161,11 @@ export const getPokemons = async (dispatch, state, request, sortOption) => {
 
 	// for weight / height sort options
 	if (sortOption.includes('weight') || sortOption.includes('height')) {
-		pokemonsToFetch = getPokemonsToFetch(state.pokemons, request);
+		pokemonsToFetch = getPokemonsToFetch(cachedPokemons, request);
 		if (pokemonsToFetch.length) {
 			[fetchedPokemons, allPokemons] = await preloadDataForSort(pokemonsToFetch);
 		} else {
-			allPokemons = {...state.pokemons};
+			allPokemons = {...cachedPokemons};
 		};
 	};
 	const sortedRequest = sortPokemons(allPokemons);
@@ -174,7 +174,7 @@ export const getPokemons = async (dispatch, state, request, sortOption) => {
 
 	//get uncached pokemons for name / id sort options
 	if (pokemonsToFetch === undefined) {
-		pokemonsToFetch = getPokemonsToFetch(state.pokemons, pokemonsToDisplay);
+		pokemonsToFetch = getPokemonsToFetch(cachedPokemons, pokemonsToDisplay);
 	};
 	
 	// only make request when necessary

@@ -19,7 +19,7 @@ export default function Sort() {
 	const handleClick = async sortOption => {
 		if (sortOption !== state.sortBy) {
 			dispatch({type: 'sortByChanged', payload: sortOption});
-			getPokemons(dispatch, state, state.intersection, sortOption);
+			getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, state.intersection, sortOption);
 		};
 	}
 	return (

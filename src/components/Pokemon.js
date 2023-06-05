@@ -6,11 +6,11 @@ import Stats from "./Stats";
 import EvolutionChains from "./EvolutionChains";
 import { usePokemonData, useDispatchContenxt } from "./PokemonsProvider";
 import Spinner from "./Spinner";
+import ScrollToTop from "./ScrollToTop";
 import { getIndividualtData, getPokemonsToFetch, getMultiplePokemons } from "../api";
 import { getIdFromURL } from "../util";
 
 export default function Pokemon() {
-
 	const state = usePokemonData();
 	const dispatch = useDispatchContenxt();
 	const {pokeId} = useParams();
@@ -25,7 +25,6 @@ export default function Pokemon() {
 	const evolutionChains = state.evolutionChains?.[chainId];
 
 	const isDataReady = [pokemon, speciesInfo, evolutionChains].every(Boolean);
-	console.log(state)
 	useEffect(() => {
 		if (!isDataReady) {
 			let ignore = false;
@@ -111,7 +110,7 @@ export default function Pokemon() {
 						dispatch({type: 'evolutionChainsLoaded', payload: {id: getIdFromURL(speciesData.evolution_chain.url), chains: chainsData}});
 					};
 					if (fetchedPokemons && Object.keys(fetchedPokemons).length) {
-						dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: null}});
+						dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: state.nextRequest}});
 					};
 				} else {
 					dispatch({type: 'cancelEffect'});
@@ -121,28 +120,27 @@ export default function Pokemon() {
 
 			return (() => {ignore = true});
 		};
-	}, [pokemon, speciesInfo, evolutionChains, pokeId ,state.pokemons, dispatch, isDataReady]);
-
-	useEffect(() => {
-		window.scrollTo(0, 0)
-	}, [pokeId])
-
+	}, [pokemon, speciesInfo, evolutionChains, pokeId ,state.pokemons, dispatch, isDataReady, state.nextRequest]);
+	console.log(state)
 	let content;
 	if (state.status === 'idle' && isDataReady) {
 		content = (
-			<div className="container p-0">
-				<div className="row justify-content-center">
-					<div className='basic-info row col-12 col-sm-6 justify-content-center'>
-						<BasicInfo pokemon={pokemon}/>
-					</div>
-					<Detail pokemon={pokemon} speciesInfo={speciesInfo} />
-					<Stats pokemon={pokemon}/>
-					<EvolutionChains cachedPokemons={state.pokemons} evolutionChains={evolutionChains}/>
+			<>
+				<div className="container p-0">
 					<div className="row justify-content-center">
-						<Link to='/' className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</Link>
+						<div className='basic-info row col-8 col-sm-6 justify-content-center'>
+							<BasicInfo pokemon={pokemon}/>
+						</div>
+						<Detail pokemon={pokemon} speciesInfo={speciesInfo} />
+						<Stats pokemon={pokemon}/>
+						<EvolutionChains cachedPokemons={state.pokemons} evolutionChains={evolutionChains}/>
+						<div className="row justify-content-center">
+							<Link to='/' className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</Link>
+						</div>
 					</div>
 				</div>
-			</div>
+				<ScrollToTop />
+			</>
 		)
 	} else {
 		content = <Spinner />

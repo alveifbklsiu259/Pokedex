@@ -1,15 +1,17 @@
 import './App.css';
 import { createBrowserRouter,createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
 import PokemonsProvider from './components/PokemonsProvider';
-import Index from './components/Index';
+import RootRoute, { Index } from './components/RootRoute';
 import Pokemon from './components/Pokemon';
 
 const router = createBrowserRouter(createRoutesFromElements(
-	<>
-		<Route path="/" element={<Index />}/>
-		<Route path="/pokemons/:pokeId" element={<Pokemon />}/>
+	<>	
+		<Route path="/" element={<RootRoute />}>
+			<Route index element={<Index />} />
+			<Route path="/pokemons/:pokeId" element={<Pokemon />} />
+		</Route>
 	</>
-))
+));
 
 function App() {
 	return (
@@ -19,15 +21,18 @@ function App() {
 	)
 };
 
-
 export default App;
 
+// window.scrollTo(0,0) will be interrupted if you click the button right after the button shows up
+// error page
 // cache types, generations as in basic info or...
 // pokedex
 // change language
 // pagination
 // manual cache
 // cross icon after datalist
+// next/previous pokemon on pokemon page / or use fullPage.js
+
 
 
 //---------------------------------------------------//

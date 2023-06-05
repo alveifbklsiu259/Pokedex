@@ -15,7 +15,8 @@ export const PokemonCards = memo(function PokemonCards({pokemon}) {
 const BasicInfo = function BasicInfo({pokemon}) {
 	return (
 		<div className="d-flex flex-column align-items-center text-center p-0 h-100 justify-content-start">
-			<img className="poke-img mx-auto p-0" src={pokemon.sprites.other['official-artwork'].front_default} alt={pokemon.name} />
+			{/* width/heigh attributes are important for ScrollRestoration */}
+			<img width='475' height='475' className="poke-img mx-auto p-0" src={pokemon.sprites.other['official-artwork'].front_default} alt={pokemon.name} />
 			<span className="id p-0">#{String(pokemon.id).padStart(4 ,'0')}</span>
 			<h1 className="p-0 text-capitalize">{pokemon.name}</h1>
 			<div className="types row justify-content-center">

@@ -420,6 +420,29 @@ h1 {
     font-weight: bold;
 }
 
+.upBtn {
+    position: fixed;
+    bottom: 1.2em;
+    right: 0.5em;
+    width: 45px;
+    height: 45px;
+    font-size: 26px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    background-color: #444950;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.5s ease-out;
+    z-index: 2;
+}
+
+.upBtnHide {
+    opacity: 0;
+    cursor: default;
+}
+
 @media(min-width: 576px) {
 
     /* basic-info */

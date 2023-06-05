@@ -27,6 +27,7 @@ const reducer = (state, action) => {
 	switch (action.type) {
 		// for Effect cleanup function
 		case 'cancelEffect' : {
+			console.log('cancelEffect')
 			return {
 				...state, status: null
 			}
@@ -127,7 +128,7 @@ export default function PokemonsProvider({children}) {
 	useEffect(()=> {
 		const getInitialPokemonData = async () => {
 			//  either remove this dataLoading dispatch or..
-			dispatch({type:'dataLoading'})
+			dispatch({type:'dataLoading'});
 			// get pokemons amount
 			const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=9999`);
 			const data = await response.json();
@@ -146,8 +147,7 @@ export default function PokemonsProvider({children}) {
 				intersection.push(i)
 			};
 			dispatch({type: 'intersectionChanged', payload: intersection});
-			getPokemons(dispatch, state, intersection, state.sortBy);
-
+			getPokemons(dispatch, {}, pokemonsNamesAndId, intersection, 'numberAsc');
 			// cache input 
 		};
 			getInitialPokemonData()
