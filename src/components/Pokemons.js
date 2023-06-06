@@ -51,7 +51,7 @@ export default function Pokemons() {
 	return (
 		<>
 			<div className="container">
-				<Sort/>
+				<Sort status={state.status}/>
 				<div className="row g-5">
 					{content}
 				</div>

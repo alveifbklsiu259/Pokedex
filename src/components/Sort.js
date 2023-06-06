@@ -12,14 +12,14 @@ const dropdownOptions = [
 	{text:'Weight(heavy - light)', value: 'weightDesc'}
 ];
 
-export default function Sort() {
+export default function Sort({status}) {
 	const state = usePokemonData();
 	const dispatch = useDispatchContenxt();
 
 	const handleClick = async sortOption => {
 		if (sortOption !== state.sortBy) {
 			dispatch({type: 'sortByChanged', payload: sortOption});
-			getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, state.intersection, sortOption);
+			getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, state.intersection, sortOption, status);
 		};
 	}
 	return (

@@ -1,7 +1,18 @@
 import { forwardRef } from "react";
 import { flushSync } from "react-dom";
 
-const DataList = forwardRef(({matchList, inputRef, searchParam, setSearchParam, resetFocus, setShowDataList, showDataList, hoveredPokemon, setHoveredPokemon, activePokemon}, datalistRef) => {
+const DataList = forwardRef(({
+	matchList, 
+	inputRef, 
+	searchParam, 
+	setSearchParam, 
+	resetFocus, 
+	setShowDataList, 
+	showDataList, 
+	hoveredPokemon, 
+	setHoveredPokemon, 
+	activePokemon
+}, datalistRef) => {
 
 	const handleMouseOver = e => {
 		setHoveredPokemon(e.target.textContent)

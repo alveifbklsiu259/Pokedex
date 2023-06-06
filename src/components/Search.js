@@ -79,7 +79,7 @@ export default function Search() {
 			dispatch({type: 'searchParamChanged', payload: searchParam});
 			dispatch({type: 'advancedSearchChanged', payload: {field: 'generations', data: selectedGenerations}});
 			dispatch({type: 'advancedSearchChanged', payload: {field: 'types', data: selectedTypes}});
-			getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, intersection, state.sortBy);
+			getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, intersection, state.sortBy, state.status);
 		};
 		document.querySelector('.sort').scrollIntoView();
 	}

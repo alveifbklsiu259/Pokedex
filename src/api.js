@@ -90,10 +90,12 @@ export const getMultiplePokemons = async pokemonsToFetch => {
 };
 
 
-export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndIds, request, sortOption) => {
+export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndIds, request, sortOption, status) => {
 	// preload data for weight/height sort options
 	const preloadDataForSort = async pokemonsToFetch => {
-		dispatch({type:'dataLoading'});
+		if (status !== 'loading') {
+			dispatch({type:'dataLoading'});
+		};
 		const fetchedPokemons = await getMultiplePokemons(pokemonsToFetch);
 		const allPokemons = {...cachedPokemons, ...fetchedPokemons};
 		return [fetchedPokemons, allPokemons];
@@ -179,7 +181,9 @@ export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndId
 	
 	// only make request when necessary
 	if (pokemonsToFetch.length && fetchedPokemons === undefined) {
-		dispatch({type:'dataLoading'});
+		if (status !== 'loading') {
+			dispatch({type:'dataLoading'});
+		};
 		fetchedPokemons = await getMultiplePokemons(pokemonsToFetch);
 	};
 

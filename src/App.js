@@ -28,11 +28,9 @@ export default App;
 // cache types, generations as in basic info or...
 // pokedex
 // change language
-// pagination
 // manual cache
-// cross icon after datalist
 // next/previous pokemon on pokemon page / or use fullPage.js
-
+// ability tooltip
 
 
 //---------------------------------------------------//

@@ -98,6 +98,10 @@ const Input = memo(function Input({pokemonNames, searchParam, setSearchParam}) {
 		};
 	};
 
+	const clearInput = () => {
+		setSearchParam('');
+	};
+
 	const match = pokemonNames.filter(name => name.toLowerCase().includes(searchParam.toLowerCase()));
 	const sortedByStart = match.filter(name => name.startsWith(searchParam)).sort((a,b) => a.localeCompare(b));
 	const remainderMatches = match.filter(name => !sortedByStart.includes(name)).sort((a,b) => a.localeCompare(b));
@@ -109,18 +113,21 @@ const Input = memo(function Input({pokemonNames, searchParam, setSearchParam}) {
 
 	return (
 		<div className="form-group position-relative">
-			<input
-				ref={inputRef}
-				autoComplete='off'
-				id="searchInput"
-				type="text"
-				className={`form-control form-control-lg ${showDataList && matchList.length ? 'showDatalist' : ''}`}
-				value={searchParam}
-				onFocus={handleFocus}
-				onBlur={handleBlur}
-				onInput={handleInput}
-				onKeyDown={handleKeyDown}
-			/>
+			<div className="position-relative">
+				<input
+					ref={inputRef}
+					autoComplete='off'
+					id="searchInput"
+					type="text"
+					className={`form-control form-control-lg ${showDataList && matchList.length ? 'showDatalist' : ''}`}
+					value={searchParam}
+					onFocus={handleFocus}
+					onBlur={handleBlur}
+					onInput={handleInput}
+					onKeyDown={handleKeyDown}
+				/>
+				<i className={`fa-solid fa-xmark xmark ${!searchParam ? 'd-none' : ''}`} onClick={clearInput}></i>
+			</div>
 			<DataList
 				matchList={matchList}
 				ref={datalistRef}

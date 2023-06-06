@@ -26,7 +26,9 @@ export default function Pokemon() {
 
 	const isDataReady = [pokemon, speciesInfo, evolutionChains].every(Boolean);
 	useEffect(() => {
-		if (!isDataReady) {
+		// PokemonProvider also fetches data when it mounts, to avoid race condition, only fetch data when PokemonProvider's request is done. (since the dispatches in PokemonProvider are batched intentionally, status will only become "idle" when all requests in it are done.)
+		// To reduce unnecessary re-renders of this component, I think it would be great if we could find a way to batch dispatched between this Effect and the Effect from PokemonProvider, but since the re-renders are mainly caused by Context API, and I decided to migrate to Redux later, I'll just leave it as it is.
+		if (!isDataReady && state.status === 'idle') {
 			let ignore = false;
 			const getData = async () => {
 				dispatch({type: 'dataLoading'});
@@ -117,10 +119,9 @@ export default function Pokemon() {
 				};
 			};
 			getData();
-
 			return (() => {ignore = true});
 		};
-	}, [pokemon, speciesInfo, evolutionChains, pokeId ,state.pokemons, dispatch, isDataReady, state.nextRequest]);
+	}, [pokemon, speciesInfo, evolutionChains, pokeId ,state.pokemons, dispatch, isDataReady, state.nextRequest, state.statue]);
 	console.log(state)
 	let content;
 	if (state.status === 'idle' && isDataReady) {

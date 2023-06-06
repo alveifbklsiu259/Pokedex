@@ -132,22 +132,22 @@ export default function PokemonsProvider({children}) {
 			// get pokemons amount
 			const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=9999`);
 			const data = await response.json();
-			dispatch({type: 'getPokemonCount', payload: data.count});
 
 			// get all names and ids
 			const pokemonsNamesAndId = {};
 			for (let pokemon of data.results) {
 				pokemonsNamesAndId[pokemon.name] = getIdFromURL(pokemon.url);
 			};
-			dispatch({type: 'getAllPokemonNamesAndIds', payload: pokemonsNamesAndId});
 
 			// set the range
 			const intersection = [];
 			for (let i = 1; i <= data.count; i++) {
 				intersection.push(i)
 			};
+			await getPokemons(dispatch, {}, pokemonsNamesAndId, intersection, 'numberAsc', 'loading');
+			dispatch({type: 'getPokemonCount', payload: data.count});
+			dispatch({type: 'getAllPokemonNamesAndIds', payload: pokemonsNamesAndId});
 			dispatch({type: 'intersectionChanged', payload: intersection});
-			getPokemons(dispatch, {}, pokemonsNamesAndId, intersection, 'numberAsc');
 			// cache input 
 		};
 			getInitialPokemonData()

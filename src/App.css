@@ -374,6 +374,22 @@ h1 {
     box-shadow: none;
 }
 
+.xmark {
+    position: absolute;
+    right: 1em;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    opacity: 0.8;
+    color: #333;
+    font-size: 20px;
+}
+
+.xmark:hover {
+    opacity: 1;
+    color: #000;
+}
+
 #pokemonDataList {
     position: absolute;
     background-color: #fff;

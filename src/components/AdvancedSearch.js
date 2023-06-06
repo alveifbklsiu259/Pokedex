@@ -55,7 +55,7 @@ const AdvancedSearch = memo(function AdvancedSearch({
 					<button 
 						onClick={handleReset} 
 						type="button" 
-						className="btn btn-secondary btn-md w-25 bg-secondary "
+						className="btn btn-secondary btn-md w-25 bg-danger"
 					>Reset
 					</button>
 				</div>
