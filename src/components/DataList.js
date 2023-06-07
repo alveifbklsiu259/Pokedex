@@ -34,6 +34,16 @@ const DataList = forwardRef(({
 		input.focus();
 	};
 
+	const handleTouchEnd = e => {
+		if (!hoveredPokemon) {
+			// prevent click firing twice
+			e.preventDefault();
+			handleClick(e);
+		};
+		// for onBlur to work on mobile
+		setHoveredPokemon('');
+	};
+
 	const colorMatching = (pokemonName, searchParam) => {
 		const lowerCaseSearchParam = searchParam.toLowerCase();
 		return (
@@ -43,7 +53,7 @@ const DataList = forwardRef(({
 						if (index === 0) {
 							return [currentElement];
 						} else {
-							return previousReturn.concat(<span className="nameMatch" key={index}>{lowerCaseSearchParam}</span>, currentElement);
+							return previousReturn.concat(<span className="matchedCharacter" key={index}>{lowerCaseSearchParam}</span>, currentElement);
 						};
 					}, [])
 				}
@@ -59,6 +69,9 @@ const DataList = forwardRef(({
 					onMouseOver={handleMouseOver}
 					onMouseLeave={handleMouseLeave}
 					onClick={handleClick}
+					// for mobile device
+					onTouchMove={handleMouseOver}
+					onTouchEnd={handleTouchEnd}
 					key={pokemon}
 				>{colorMatching(pokemon, searchParam)}
 				</div>

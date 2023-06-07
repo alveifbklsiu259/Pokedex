@@ -426,12 +426,7 @@ h1 {
     color: #fff;
 }
 
-.match_character {
-    color: red;
-    font-weight: bold;
-}
-
-.nameMatch:nth-of-type(1) {
+.matchedCharacter:nth-of-type(1) {
     color: red;
     font-weight: bold;
 }
@@ -458,6 +453,37 @@ h1 {
     opacity: 0;
     cursor: default;
 }
+
+/* error page */
+.errorPage {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.errorPage img{
+    max-width: 250px;
+    height: auto;
+    width: 100%;
+    display: block;
+    margin: 0 auto;
+}
+
+.errorPage h1 {
+    font-size: 36px;
+    text-align: center;
+}
+
+.errorPage ul {
+    background-color: blanchedalmond;
+    padding: 20px 40px;
+}
+
+.errorPage ul li {
+    list-style-type: disc;
+}
+
 
 @media(min-width: 576px) {
 

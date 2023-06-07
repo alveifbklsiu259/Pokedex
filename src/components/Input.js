@@ -94,12 +94,16 @@ const Input = memo(function Input({pokemonNames, searchParam, setSearchParam}) {
 				break;
 			}
 			default : 
-				// most of the input changes are handled by handleInput
+			// most of the input changes are handled by handleInput
 		};
 	};
 
 	const clearInput = () => {
 		setSearchParam('');
+		resetFocus(datalistRef.current);
+		// for mobile
+		setHoveredPokemon('');
+		inputRef.current.focus();
 	};
 
 	const match = pokemonNames.filter(name => name.toLowerCase().includes(searchParam.toLowerCase()));

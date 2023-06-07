@@ -3,12 +3,16 @@ import { createBrowserRouter,createRoutesFromElements, Route, RouterProvider } f
 import PokemonsProvider from './components/PokemonsProvider';
 import RootRoute, { Index } from './components/RootRoute';
 import Pokemon from './components/Pokemon';
+import ErrorPage from './components/ErrorPage';
+
 
 const router = createBrowserRouter(createRoutesFromElements(
 	<>	
-		<Route path="/" element={<RootRoute />}>
-			<Route index element={<Index />} />
-			<Route path="/pokemons/:pokeId" element={<Pokemon />} />
+		<Route errorElement={<ErrorPage />} path="/" element={<RootRoute />}>
+			<Route errorElement={<ErrorPage />}>
+				<Route index element={<Index />} />
+				<Route path="/pokemons/:pokeId" element={<Pokemon /> } />
+			</Route>
 		</Route>
 	</>
 ));

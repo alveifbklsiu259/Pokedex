@@ -9,7 +9,7 @@ const initialState = {
 	pokemonCount: null,
 	nextRequest: [],
 	pokemonSpecies: {},
-	// loading | idle | scrolling
+	// loading | idle | scrolling | error 
 	status: null,
 	evolutionChains: {},
 	searchParam: '',
@@ -25,16 +25,19 @@ const initialState = {
 
 const reducer = (state, action) => {
 	switch (action.type) {
-		// for Effect cleanup function
-		case 'cancelEffect' : {
-			console.log('cancelEffect')
-			return {
-				...state, status: null
-			}
-		}
 		case 'dataLoading' : {
 			return {
 				...state, status: 'loading'
+			}
+		}
+		case 'error' : {
+			return {
+				...state, status: 'error'
+			}
+		}
+		case 'backToRoot' : {
+			return {
+				...state, status: 'idle'
 			}
 		}
 		case 'scrolling' : {
@@ -120,7 +123,6 @@ const reducer = (state, action) => {
 
 export default function PokemonsProvider({children}) {
 	const [state, dispatch] = useReducer(reducer, initialState);
-
 
 	// can i batch dispatches in provider too?
 	// see if i can batch dispatches between PokemonProvider and Pokemon
