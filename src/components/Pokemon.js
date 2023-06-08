@@ -20,6 +20,10 @@ export default function Pokemon() {
 	const pokemon = state.pokemons[pokeId];
 	const speciesInfo = state.pokemonSpecies[pokeId];
 
+	// get pokemon --> check if have abilities -->
+	// 1. Yes --> grabs the data from cache
+	// 2. No --> make request to abilities
+
 	// evolution chains
 	const evolutionChainsURL = speciesInfo?.evolution_chain?.url;
 	const chainId = evolutionChainsURL ? getIdFromURL(evolutionChainsURL) : undefined;
@@ -128,7 +132,7 @@ export default function Pokemon() {
 			<>
 				<div className="container p-0">
 					<div className="row justify-content-center">
-						<div className='basic-info row col-8 col-sm-6 justify-content-center'>
+						<div className='basicInfoContainer row col-8 col-sm-6 justify-content-center'>
 							<BasicInfo pokemon={pokemon}/>
 						</div>
 						<Detail pokemon={pokemon} speciesInfo={speciesInfo} />
@@ -152,6 +156,7 @@ export default function Pokemon() {
 		content = (
 			<ErrorPage />
 		)
+		throw new Error('error')
 	};
 	return (
 		<>

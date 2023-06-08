@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import Abilities from "./Abilities";
 
 function getGender(gender_rate) {
 	switch(gender_rate) {
@@ -35,14 +36,10 @@ const Detail = memo(function Detail({pokemon, speciesInfo}) {
 				<p className="col-6 d-flex flex-column">Gender <br />
 					<span className="mt-4">{getGender(speciesInfo.gender_rate)}</span>
 				</p>
-				<p className="col-6">Abilities <br />
-				{[...abilities].map(ability => (
-					<React.Fragment key={ability}>
-						<span>{ability}</span>
-						<br/>
-					</React.Fragment>
-				))}
-				</p>
+				<div className="col-6 abilities p-0">Abilities <br />
+					<Abilities pokemon={pokemon} abilities={[...abilities]}/>
+				</div>
+
 				<p className="col-12 m-3 p-2 text-start description">{flavorText}</p>
 			</div>
 		</>

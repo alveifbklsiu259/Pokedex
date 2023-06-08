@@ -116,7 +116,7 @@ const Input = memo(function Input({pokemonNames, searchParam, setSearchParam}) {
 	let activePokemon = matchList[currentFocus];
 
 	return (
-		<div className="form-group position-relative">
+		<div className="form-group position-relative searchInput">
 			<div className="position-relative">
 				<input
 					ref={inputRef}

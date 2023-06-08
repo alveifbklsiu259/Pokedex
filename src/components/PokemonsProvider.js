@@ -9,6 +9,7 @@ const initialState = {
 	pokemonCount: null,
 	nextRequest: [],
 	pokemonSpecies: {},
+	abilities: {},
 	// loading | idle | scrolling | error 
 	status: null,
 	evolutionChains: {},
@@ -20,7 +21,7 @@ const initialState = {
 	},
 	display: [],
 	allPokemonNamesAndIds: {},
-	intersection: []
+	intersection: [],
 }
 
 const reducer = (state, action) => {
@@ -116,6 +117,11 @@ const reducer = (state, action) => {
 				...state, nextRequest: action.payload
 			}
 		}
+		case 'abilityLoaded' : {
+			return {
+				...state, abilities: {...state.abilities, [action.payload.abilityKey]: action.payload.data}
+			}
+		}
 		default : 
 			return state
 	}
@@ -144,7 +150,7 @@ export default function PokemonsProvider({children}) {
 			// set the range
 			const intersection = [];
 			for (let i = 1; i <= data.count; i++) {
-				intersection.push(i)
+				intersection.push(i);
 			};
 			await getPokemons(dispatch, {}, pokemonsNamesAndId, intersection, 'numberAsc', 'loading');
 			dispatch({type: 'getPokemonCount', payload: data.count});

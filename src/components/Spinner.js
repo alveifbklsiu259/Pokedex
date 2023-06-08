@@ -6,7 +6,7 @@ export default function Spinner() {
             <img
                 src={spinner} 
                 alt="Loading..."
-                style={{width: '200px', margin: '40px auto', display: 'block'}}
+                className='spinner'
             />
         </div>
     )

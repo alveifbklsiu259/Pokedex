@@ -28,13 +28,17 @@ function App() {
 export default App;
 
 // window.scrollTo(0,0) will be interrupted if you click the button right after the button shows up
-// error page
+// scrollResotration position not correct after: in pokemons, scroll down, click one pokemon, enter a wrong url, click back to pokeDex, the position will resotre to the previous scroll height, but i want it to stay on the top.
+
 // cache types, generations as in basic info or...
 // pokedex
 // change language
 // manual cache
 // next/previous pokemon on pokemon page / or use fullPage.js
-// ability tooltip
+// ability modal
+// pokemon different forms tab, in Pokemons, have a checkbox to show different forms
+// evolution details
+// why in my Pokemon component, when using Profiler, actualDuration is worse than baseDuration?
 
 
 //---------------------------------------------------//
