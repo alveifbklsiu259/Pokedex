@@ -586,6 +586,51 @@ h1 {
     list-style-type: disc;
 }
 
+/* varieties */
+
+.varieties {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.varieties ul {
+    border-bottom: 1px solid #464646;
+    display: flex;
+    padding: 0;
+    margin-top: 8px;
+    margin-left: 5px;
+}
+
+.varieties ul li.selected {
+    border: 1px solid #464646;
+    border-bottom: #fff 1px solid !important;
+    margin-bottom: -1px;
+}
+.varieties ul li.selected button {
+    font-weight: bold;
+}
+
+.varieties ul li {
+    border: 1px solid #fff;
+    border-bottom: #464646 1px solid;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: -1px;
+    transition: 0.2s ease-in-out border;
+    display: flex;
+}
+
+.varieties ul li:hover {
+    border: 1px solid #464646;
+}
+
+.varieties button {
+    border: none;
+    background-color: #fff;
+    padding: 8px 16px;
+    color: #000;
+    border-radius: inherit;
+}
+
 
 @media(min-width: 576px) {
 

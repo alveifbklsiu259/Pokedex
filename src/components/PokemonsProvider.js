@@ -5,6 +5,7 @@ import { getIdFromURL } from '../util';
 const PokemonContext = createContext(null);
 const DispatchContext = createContext(null);
 const initialState = {
+	language: 'en',
 	pokemons: {},
 	pokemonCount: null,
 	nextRequest: [],
@@ -26,6 +27,11 @@ const initialState = {
 
 const reducer = (state, action) => {
 	switch (action.type) {
+		case 'languageChanged' : {
+			return {
+				...state, language : action.payload
+			}
+		}
 		case 'dataLoading' : {
 			return {
 				...state, status: 'loading'

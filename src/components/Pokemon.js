@@ -10,6 +10,7 @@ import ScrollToTop from "./ScrollToTop";
 import { getIndividualtData, getPokemonsToFetch, getMultiplePokemons } from "../api";
 import { getIdFromURL } from "../util";
 import ErrorPage from "./ErrorPage";
+import Varieties from "./Varieties";
 
 export default function Pokemon() {
 	const state = usePokemonData();
@@ -18,11 +19,11 @@ export default function Pokemon() {
 
 	// pokemon data fot current page
 	const pokemon = state.pokemons[pokeId];
-	const speciesInfo = state.pokemonSpecies[pokeId];
-
-	// get pokemon --> check if have abilities -->
-	// 1. Yes --> grabs the data from cache
-	// 2. No --> make request to abilities
+	let speciesInfo = state.pokemonSpecies[pokeId];
+	// for different forms, any non-default-form pokemon uses its default-form's species data rather than data from 'pokemon-species/[pokeId]'
+	if (!speciesInfo && pokemon) {
+		speciesInfo =  state.pokemonSpecies[getIdFromURL(pokemon.species.url)];
+	};
 
 	// evolution chains
 	const evolutionChainsURL = speciesInfo?.evolution_chain?.url;
@@ -30,6 +31,7 @@ export default function Pokemon() {
 	const evolutionChains = state.evolutionChains?.[chainId];
 
 	const isDataReady = [pokemon, speciesInfo, evolutionChains].every(Boolean);
+
 	useEffect(() => {
 		// PokemonProvider also fetches data when it mounts, to avoid race condition, only fetch data when PokemonProvider's request is done. (since the dispatches in PokemonProvider are batched intentionally, status will only become "idle" when all requests in it are done.)
 		// To reduce unnecessary re-renders of this component, I think it would be great if we could find a way to batch dispatched between this Effect and the Effect from PokemonProvider, but since the re-renders are mainly caused by Context API, and I decided to migrate to Redux later, I'll just leave it as it is.
@@ -43,7 +45,7 @@ export default function Pokemon() {
 						pokemonData = await getIndividualtData('pokemon', pokeId);
 					};
 					if (!speciesInfo) {
-						speciesData = await getIndividualtData('pokemon-species', pokeId);
+						speciesData = await getIndividualtData('pokemon-species', getIdFromURL(pokemonData ? pokemonData.species.url : pokemon.species.url));
 						// get evolution chains
 						if (!evolutionChains) {
 							const getEvolutionChains = async () => {
@@ -95,6 +97,7 @@ export default function Pokemon() {
 	
 							// get pokemon data from the chain(s)
 							const pokemonsInChain = new Set(chainsData.flat());
+
 							let cachedPokemons;
 							if (pokemonData) {
 								cachedPokemons = {...state.pokemons, ...{[pokemonData.id]: pokemonData}};
@@ -126,18 +129,20 @@ export default function Pokemon() {
 			getData();
 		};
 	}, [pokemon, speciesInfo, evolutionChains, pokeId ,state.pokemons, dispatch, isDataReady, state.nextRequest, state.status]);
+	
 	let content;
 	if (state.status === 'idle' && isDataReady) {
 		content = (
 			<>
 				<div className="container p-0">
 					<div className="row justify-content-center">
+						{speciesInfo.varieties.length > 1 && <Varieties speciesInfo={speciesInfo} pokemon={pokemon} />}
 						<div className='basicInfoContainer row col-8 col-sm-6 justify-content-center'>
 							<BasicInfo pokemon={pokemon}/>
 						</div>
 						<Detail pokemon={pokemon} speciesInfo={speciesInfo} />
 						<Stats pokemon={pokemon}/>
-						<EvolutionChains cachedPokemons={state.pokemons} evolutionChains={evolutionChains}/>
+						<EvolutionChains cachedPokemons={state.pokemons} evolutionChains={evolutionChains} />
 						<div className="row justify-content-center">
 							<Link to='/' className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</Link>
 						</div>

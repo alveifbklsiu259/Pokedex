@@ -35,10 +35,11 @@ export default App;
 // change language
 // manual cache
 // next/previous pokemon on pokemon page / or use fullPage.js
-// ability modal
+// ability modal transition effect
 // pokemon different forms tab, in Pokemons, have a checkbox to show different forms
 // evolution details
 // why in my Pokemon component, when using Profiler, actualDuration is worse than baseDuration?
+// filter : pokemon-species--> is_baby === true, is_legendary === true, is_mythical === true
 
 
 //---------------------------------------------------//

@@ -30,7 +30,6 @@ export default function Pokemons() {
 	}, [handleScroll]);
 
 	let content;
-
 	if (state.status === 'loading') {
 		content = <Spinner />
 	} else if (state.status === 'idle' && cachedDispaly.length === 0) {
