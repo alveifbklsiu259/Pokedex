@@ -28,7 +28,7 @@ export default function Pokemon() {
 	// evolution chains
 	const evolutionChainsURL = speciesInfo?.evolution_chain?.url;
 	const chainId = evolutionChainsURL ? getIdFromURL(evolutionChainsURL) : undefined;
-	const evolutionChains = state.evolutionChains?.[chainId];
+	const evolutionChains = state.evolutionChains?.[chainId]?.chains;
 
 	const isDataReady = [pokemon, speciesInfo, evolutionChains].every(Boolean);
 
@@ -52,18 +52,24 @@ export default function Pokemon() {
 								const response = await fetch(speciesData.evolution_chain.url);
 								const data = await response.json();
 	
-								// get chains
+								// get chains, details
+								let evolutionDetails = {};
 								let chainIds = [];
 								let index = 0;
 								let depth = 1;
 								chainIds[index] = {};
 								const getIdsFromChain = chains => {
+									// get details
+									if (chains.evolution_details.length) {
+										evolutionDetails[getIdFromURL(chains.species.url)] = chains.evolution_details;
+									};
 									// get ids
-									chainIds[index][`depth-${depth}`] = getIdFromURL(chains.species.url)
+									chainIds[index][`depth-${depth}`] = getIdFromURL(chains.species.url);
 									if (chains.evolves_to.length) {
 										depth ++;
 										chains.evolves_to.forEach((chain, index, array) => {
 											getIdsFromChain(chain);
+											// the last chain in each depth
 											if (index === array.length - 1) {
 												depth --;
 											};
@@ -72,6 +78,7 @@ export default function Pokemon() {
 										if (index !== 0) {
 											const minDepth = Number(Object.keys(chainIds[index])[0].split('-')[1]);
 											for (let i = 1; i < minDepth; i++) {
+												// get pokemon ids from the prvious chain, since they share the same pokemon(s)
 												chainIds[index][`depth-${i}`] = chainIds[index - 1][`depth-${i}`];
 											};
 										};
@@ -91,12 +98,12 @@ export default function Pokemon() {
 									}, {});
 									return Object.values(sortedChain);
 								});
-								return sortedChains;
+								return {sortedChains, evolutionDetails};
 							};
 							chainsData = await getEvolutionChains();
 	
 							// get pokemon data from the chain(s)
-							const pokemonsInChain = new Set(chainsData.flat());
+							const pokemonsInChain = new Set(chainsData.sortedChains.flat());
 
 							let cachedPokemons;
 							if (pokemonData) {
@@ -117,7 +124,11 @@ export default function Pokemon() {
 						dispatch({type: 'pokemonSpeciesLoaded', payload: speciesData});
 					};
 					if (chainsData) {
-						dispatch({type: 'evolutionChainsLoaded', payload: {id: getIdFromURL(speciesData.evolution_chain.url), chains: chainsData}});
+						dispatch({type: 'evolutionChainsLoaded', payload: {
+							id: getIdFromURL(speciesData.evolution_chain.url),
+							chains: chainsData.sortedChains,
+							details: chainsData.evolutionDetails
+						}});
 					};
 					if (fetchedPokemons && Object.keys(fetchedPokemons).length) {
 						dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: state.nextRequest}});
@@ -129,7 +140,6 @@ export default function Pokemon() {
 			getData();
 		};
 	}, [pokemon, speciesInfo, evolutionChains, pokeId ,state.pokemons, dispatch, isDataReady, state.nextRequest, state.status]);
-	
 	let content;
 	if (state.status === 'idle' && isDataReady) {
 		content = (
@@ -142,7 +152,7 @@ export default function Pokemon() {
 						</div>
 						<Detail pokemon={pokemon} speciesInfo={speciesInfo} />
 						<Stats pokemon={pokemon}/>
-						<EvolutionChains cachedPokemons={state.pokemons} evolutionChains={evolutionChains} />
+						<EvolutionChains cachedPokemons={state.pokemons} evolutionChains={evolutionChains} chainId={chainId} />
 						<div className="row justify-content-center">
 							<Link to='/' className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</Link>
 						</div>

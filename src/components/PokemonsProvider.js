@@ -74,7 +74,7 @@ const reducer = (state, action) => {
 		}
 		case "evolutionChainsLoaded" : {
 			return {
-				...state, status: 'idle', evolutionChains: {...state.evolutionChains, [action.payload.id]:action.payload.chains}
+				...state, status: 'idle', evolutionChains: {...state.evolutionChains, [action.payload.id]: {chains: action.payload.chains, details: action.payload.details}}
 			}
 		}
 		case "individualPokemonLoaded" : {

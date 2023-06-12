@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Spinner from './Spinner';
 import { usePokemonData, useDispatchContenxt } from './PokemonsProvider';
+import Modal from './Modal';
 
 export default function Abilities({abilities, pokemon}) {
 	const [isModalShown, setIsModalShown] = useState(false);
@@ -30,17 +31,8 @@ export default function Abilities({abilities, pokemon}) {
 		}
 	}
 
-	const handleCloseModal = () => {
-		setIsModalShown(false);
-		setIsDetail(false);
-	};
-
 	const handleShowDetail = () => {
 		setIsDetail(!isDetail);
-	};
-
-	const handlePropagation = (e) => {
-		e.stopPropagation();
 	};
 
 	let brief, detail;
@@ -50,42 +42,43 @@ export default function Abilities({abilities, pokemon}) {
 		detail = abilityData.effect_entries?.find(entry => entry?.language?.name === language)?.effect;
 	};
 
+	const customClass = `modalBody ${!abilityData && isModalShown ? 'modalLoading' : ''}`
+
 	return (
 		<>
 			{abilities.map(ability => (
-				<div key={ability}>
-					<span className='me-2'>{ability}</span>
-					<i onClick={() => {handleShowModal(ability)}} className="fa-solid fa-circle-question"></i>
-					<br />
-				</div>
-			))}
-			<div className={`modalBg ${isModalShown ? 'showModal' : 'hideModal'}`} onClick={handleCloseModal}>
-				<div className={`abilityModal ${!abilityData && isModalShown ? 'modalLoading' : ''}`} onClick={handlePropagation}>
-					<div className='modalTop'>
-						<i className="fa-solid fa-xmark xmark me-3 my-2" onClick={handleCloseModal}></i>
-					</div>
-					{
-						abilityData ? (
-							<>
-								<h1 className='abilityName my-2'>{abilityData.names.find(name => name.language.name === language).name}</h1>
-								<div className='abilityDescription p-3'>
-									<p>
-										{
-											isDetail ? detail ? detail : brief ? brief : 'No data to show' : brief ? brief : 'No data to show'
-										}
-									</p>
-									<p></p>
-								</div>
-								<div className='modalBtnContainer'>
-									<button onClick={handleShowDetail} className="btn btn-warning">Show {isDetail ? 'Brief' : 'Detail'}</button>
-								</div>
-							</>
-						) : (
-							<Spinner />
-						)
-					}
-				</div>
+			<div key={ability}>
+				<span className='me-2'>{ability}</span>
+				<i onClick={() => {handleShowModal(ability)}} className="fa-solid fa-circle-question"></i>
+				<br />
 			</div>
+			))}
+			<Modal 
+				customClass={customClass} 
+				isModalShown={isModalShown} 
+				setIsModalShown={setIsModalShown} 
+				setIsDetail={setIsDetail}
+			>
+				{
+					abilityData ? (
+						<>
+							<h1 className='abilityName my-2'>{abilityData.names.find(name => name.language.name === language).name}</h1>
+							<div className='abilityDescription p-3'>
+								<p>
+									{
+										isDetail ? detail ? detail : brief ? brief : 'No data to show' : brief ? brief : 'No data to show'
+									}
+								</p>
+							</div>
+							<div className='modalBtnContainer'>
+								<button onClick={handleShowDetail} className="btn btn-warning">Show {isDetail ? 'Brief' : 'Detail'}</button>
+							</div>
+						</>
+					) : (
+						<Spinner />
+					)
+				}
+			</Modal>
 		</>
 	)
 };

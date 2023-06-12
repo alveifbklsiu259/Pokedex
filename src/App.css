@@ -256,7 +256,7 @@ h1 {
     display: none;
 }
 
-.abilityModal {
+.modalBody {
     width: 80%;
     max-width: 600px;
     position: absolute;
@@ -309,7 +309,7 @@ h1 {
     background-color: #fff;
 }
 
-.abilityModal .spinner {
+.modalBody .spinner {
     margin: 0 auto;
     width: 180px;
 }
@@ -424,6 +424,46 @@ h1 {
     justify-content: center;
     margin: 0 10px;
     font-size: 2.2em
+}
+
+/* evolution details */
+
+.evolutionDetails {
+    display: flex;
+    align-items: baseline;
+    column-gap: 5px;
+}
+
+.gtTwo .caret .evolutionDetails {
+    min-height: 70px;
+    align-items: center;
+}
+
+.evolutionDetails .mainText {
+    /* white-space: nowrap; */
+    max-width: 70px;
+    font-size: 1em;
+    display: flex;
+}
+
+.mainText .item, .evolutionDetailsModal .item {
+    object-fit: none;
+    width: 30px;
+}
+
+
+
+.evolutionDetailsModal ul li {
+    list-style-image: url('./assets/ball.svg');
+}
+
+.evolutionDetails i.fa-circle-info {
+    color: #818486;
+    cursor: pointer;
+}
+
+.evolutionDetails i.fa-circle-info:hover {
+    color: #000
 }
 
 /* sort */
