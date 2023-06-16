@@ -23,17 +23,18 @@ export default function ErrorPage() {
 		e.preventDefault();
 
 		// handle search param
+		const trimmedText = searchParam.trim();
 		let intersection = [];
-		if (searchParam === '' || searchParam.replaceAll(' ', '').length === 0) {
+		if (trimmedText === '') {
 			// no input or only contains white space(s)
 			intersection = Object.values(state.allPokemonNamesAndIds);
-		} else if (isNaN(Number(searchParam))) {
+		} else if (isNaN(Number(trimmedText))) {
 			// sort by name
-			const matchNames = Object.keys(state.allPokemonNamesAndIds).filter(name => name.toLowerCase().includes(searchParam.toLowerCase()));
+			const matchNames = Object.keys(state.allPokemonNamesAndIds).filter(name => name.toLowerCase().includes(trimmedText.toLowerCase()));
 			intersection = matchNames.map(name => state.allPokemonNamesAndIds[name]);
 		} else {
 			// sort by id
-			intersection = Object.values(state.allPokemonNamesAndIds).filter(id => String(id).padStart(4 ,'0').includes(String(searchParam)));
+			intersection = Object.values(state.allPokemonNamesAndIds).filter(id => String(id).padStart(4 ,'0').includes(String(trimmedText)));
 		};
 
 		dispatch({type: 'advancedSearchReset'});

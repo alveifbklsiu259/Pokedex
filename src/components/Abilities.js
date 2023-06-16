@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Spinner from './Spinner';
 import { usePokemonData, useDispatchContenxt } from './PokemonsProvider';
 import Modal from './Modal';
+import { transformKeyName } from '../util';
 
 export default function Abilities({abilities, pokemon}) {
 	const [isModalShown, setIsModalShown] = useState(false);
@@ -12,7 +13,7 @@ export default function Abilities({abilities, pokemon}) {
 	const language = 'en'
 
 	const handleShowModal = async ability => {
-		const abilityKey = ability.replace('-', '_');
+		const abilityKey = transformKeyName(ability);
 
 		if (abilityData && abilityData.name !== ability) {
 			setAbilityData(null);

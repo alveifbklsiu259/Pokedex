@@ -1,6 +1,6 @@
 import { useReducer, createContext, useContext, useEffect } from 'react'
 import { getPokemons } from '../api';
-import { getIdFromURL } from '../util';
+import { getIdFromURL, transformKeyName } from '../util';
 
 const PokemonContext = createContext(null);
 const DispatchContext = createContext(null);
@@ -23,6 +23,8 @@ const initialState = {
 	display: [],
 	allPokemonNamesAndIds: {},
 	intersection: [],
+	generations: {},
+	moves: {}
 }
 
 const reducer = (state, action) => {
@@ -128,6 +130,16 @@ const reducer = (state, action) => {
 				...state, abilities: {...state.abilities, [action.payload.abilityKey]: action.payload.data}
 			}
 		}
+		case 'getGenerations' : {
+			return {
+				...state, generations: action.payload
+			}
+		}
+		case 'movesLoaded' : {
+			return {
+				...state, moves: {...state.moves, ...action.payload}
+			}
+		}
 		default : 
 			return state
 	}
@@ -141,6 +153,7 @@ export default function PokemonsProvider({children}) {
 
 	useEffect(()=> {
 		const getInitialPokemonData = async () => {
+			let generationData;
 			//  either remove this dataLoading dispatch or..
 			dispatch({type:'dataLoading'});
 			// get pokemons amount
@@ -158,14 +171,30 @@ export default function PokemonsProvider({children}) {
 			for (let i = 1; i <= data.count; i++) {
 				intersection.push(i);
 			};
+
+			const getGenerationInfo = async () => {
+				const response = await fetch('https://pokeapi.co/api/v2/generation');
+				const data = await response.json();
+				const responses = await Promise.all(data.results.map(generation => fetch(generation.url)));
+				const datas = responses.map(response => response.json());
+				const finalData = await Promise.all(datas);
+				generationData = finalData.reduce((pre, cur) => {
+					pre[transformKeyName(cur.name)] = cur;
+					return pre;
+				}, {})
+			};
+			await getGenerationInfo();
+
 			await getPokemons(dispatch, {}, pokemonsNamesAndId, intersection, 'numberAsc', 'loading');
 			dispatch({type: 'getPokemonCount', payload: data.count});
 			dispatch({type: 'getAllPokemonNamesAndIds', payload: pokemonsNamesAndId});
 			dispatch({type: 'intersectionChanged', payload: intersection});
+			dispatch({type: 'getGenerations', payload: generationData});
 			// cache input 
 		};
 			getInitialPokemonData()
 	}, [dispatch]);
+	
 
 	// see if we can move the getInitialPokemonData out, and call it if the user lands on /pokemons/xxx
 	// refresh pokemon page, there're chances that you will see dispatch being batched(normally should be two 2 loading 2 idle)

@@ -28,7 +28,7 @@ export default function Pokemons() {
 		window.addEventListener('scroll', handleScroll);
 		return () => window.removeEventListener('scroll', handleScroll);
 	}, [handleScroll]);
-
+	console.log(state.pokemons)
 	let content;
 	if (state.status === 'loading') {
 		content = <Spinner />
@@ -45,7 +45,6 @@ export default function Pokemons() {
 			</>
 		)
 	};
-
 	return (
 		<>
 			<div className="container">

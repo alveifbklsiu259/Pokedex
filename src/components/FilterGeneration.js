@@ -1,8 +1,10 @@
 import pokeBall from '../assets/ball.svg';
-import { useState, useEffect, memo } from 'react';
+import { memo, useMemo } from 'react';
+import { usePokemonData } from './PokemonsProvider';
 
 const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, setSelectedGenerations}) {
-	const [generationOptions, setGenerationOptions] = useState([]);
+	const state = usePokemonData();
+	const generationOptions = useMemo(() => Object.values(state.generations), [state.generations]);
 
 	const handleClick = generation => {
 		setSelectedGenerations(() => {
@@ -15,25 +17,6 @@ const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, s
 			return update
 		});
 	};
-
-	useEffect(() => {
-		let ignore = false;
-		const getGenerationInfo = async () => {
-			const response = await fetch('https://pokeapi.co/api/v2/generation');
-			const data = await response.json();
-			const responses = await Promise.all(data.results.map(generation => fetch(generation.url)));
-			const datas = responses.map(response => response.json());
-			const finalData = await Promise.all(datas);
-			if (!ignore) {
-				setGenerationOptions(finalData.map(generation => generation));
-			};
-		};
-		getGenerationInfo();
-		
-		return () => {
-			ignore = true;
-		};
-	}, [])
 
 	return (
 		<ul className="generation col-12 col-sm-6 row justify-content-center gap-2">

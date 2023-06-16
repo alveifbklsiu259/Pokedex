@@ -36,7 +36,7 @@ export default function Search() {
 
 	// synchronizing state when necessary
 	useEffect(() => {
-		setSearchParam (sp => sp !== state.searchParam ? state.searchParam : sp);
+		setSearchParam(state.searchParam);
 		setSelectedGenerations(sg => JSON.stringify(state.advancedSearch.generations) !== JSON.stringify(sg) ? state.advancedSearch.generations : sg);
 		setSelectedTypes(st => JSON.stringify(state.advancedSearch.types) !== JSON.stringify(st) ? state.advancedSearch.types : st);
 	}, [state.searchParam, state.advancedSearch]);
@@ -45,16 +45,17 @@ export default function Search() {
 		e.preventDefault();
 
 		// handle search param
+		const trimmedText = searchParam.trim();
 		let searchResult = [];
-		if (searchParam === '' || searchParam.replaceAll(' ', '').length === 0) {
+		if (trimmedText === '') {
 			// no input or only contains white space(s)
 			searchResult = pokemonRange;
-		} else if (isNaN(Number(searchParam))) {
+		} else if (isNaN(Number(trimmedText))) {
 			// sort by name
-			searchResult = pokemonRange.filter(pokemon => pokemon.name.toLowerCase().includes(searchParam.toLowerCase()));
+			searchResult = pokemonRange.filter(pokemon => pokemon.name.toLowerCase().includes(trimmedText.toLowerCase()));
 		} else {
 			// sort by id
-			searchResult = pokemonRange.filter(pokemon => String(getIdFromURL(pokemon.url)).padStart(4 ,'0').includes(String(searchParam)));
+			searchResult = pokemonRange.filter(pokemon => String(getIdFromURL(pokemon.url)).padStart(4 ,'0').includes(String(trimmedText)));
 		};
 
 		// get intersection

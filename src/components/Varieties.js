@@ -12,15 +12,24 @@ export default function Varieties({speciesInfo, pokemon}) {
 	const handleClick = async e => {
 		const formId = getIdFromURL(speciesInfo.varieties.find(variety => variety.pokemon.name === e.target.textContent).pokemon.url);
 
+		navigate(`/pokemons/${formId}`, {replace: true});
+		// we have state.status === 'idle' condition in Pokemon.js, no worry about duplicate requests.
 		if (!state.pokemons[formId]) {
 			dispatch({type: 'dataLoading'})
+			// fetch all forms
 			const request = speciesInfo.varieties.map(variety => getIdFromURL(variety.pokemon.url));
-			const pokemonsToFetch = getPokemonsToFetch(state.pokemons, request)
+			const pokemonsToFetch = getPokemonsToFetch(state.pokemons, request);
 			const fetchedPokemons = await getMultiplePokemons(pokemonsToFetch);
+
+			// also get formData
+			const dataResponses = await Promise.all(Object.values(fetchedPokemons).map(pokemon => fetch(pokemon.forms[0].url)));
+			const datas = dataResponses.map(response => response.json());
+			const formData = await Promise.all(datas);
+			Object.values(fetchedPokemons).forEach(pokemon => {
+				fetchedPokemons[pokemon.id].formData = formData.find(data => data.name === pokemon.name);
+			});
 			dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: state.nextRequest}});
 		};
-
-		navigate(`/pokemons/${formId}`, {replace: true});
 	};
 
 	return (

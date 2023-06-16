@@ -31,7 +31,7 @@ export default function EvolutionDetails({chainId, pokemonId}) {
 	// handle some exceptions
 	let selectedDetail = chainDetails[0];
 	if (chainDetails.length > 1 && chainDetails.find(chainDetail => chainDetail.trigger.name === 'use-item')) {
-		selectedDetail = chainDetails.find(chainDetail => chainDetail.trigger.name === 'use-item')
+		selectedDetail = chainDetails.find(chainDetail => chainDetail.trigger.name === 'use-item');
 	};
 
 	const requirements = Object.entries(selectedDetail)

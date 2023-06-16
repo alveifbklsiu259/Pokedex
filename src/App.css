@@ -65,15 +65,18 @@ h1 {
 
 /* Types */
 
-.types span {
+.type {
     padding: 0 10px;
     height: fit-content;
     min-width: 75px;
     max-width: 100px;
-}
-
-.type {
     border-radius: 10px;
+    display: block;
+    text-shadow: 1px 1px 2px rgba(82, 82, 82, 0.7);
+    font-weight: 200;
+    line-height: 1.8;
+    text-transform: uppercase;
+    font-size: 12px;
 }
 
 .type-bug {
@@ -451,8 +454,6 @@ h1 {
     width: 30px;
 }
 
-
-
 .evolutionDetailsModal ul li {
     list-style-image: url('./assets/ball.svg');
 }
@@ -464,6 +465,51 @@ h1 {
 
 .evolutionDetails i.fa-circle-info:hover {
     color: #000
+}
+
+/* moves */
+
+
+.moves .generationBtn {
+    min-width: 50px;
+}
+
+.learnUponEvolution {
+    text-decoration: underline dotted;
+    cursor: help;
+}
+
+.moves .type {
+    min-width: 0;
+    width: 70px;
+}
+
+/* React Data Table */
+
+.rdt_TableHead .rdt_TableHeadRow {
+    font-size: 16px;
+    background-color: #c7c7c7;
+}
+
+.rdt_TableHeadRow .rdt_TableCol {
+    font-weight: bold ;
+    padding: 0;
+}
+
+.rdt_TableRow .rdt_TableCell {
+    padding: 0;
+    font-size: 16px;
+}
+
+.moveDes {
+    background-color: #e9e9e9;
+    color: #000;
+    text-align: start;
+    padding: 20px;
+}
+
+.moveDes .description, .moveDes .effect, .moveDes .evo {
+    font-weight: bold;
 }
 
 /* sort */
