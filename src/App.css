@@ -512,6 +512,11 @@ h1 {
     font-weight: bold;
 }
 
+.moves .machine {
+    width: 30px;
+    object-fit: none;
+}
+
 /* sort */
 .sort li {
     cursor: pointer;

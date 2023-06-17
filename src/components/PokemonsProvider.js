@@ -1,6 +1,6 @@
 import { useReducer, createContext, useContext, useEffect } from 'react'
 import { getPokemons } from '../api';
-import { getIdFromURL, transformKeyName } from '../util';
+import { getIdFromURL, transformToKeyName } from '../util';
 
 const PokemonContext = createContext(null);
 const DispatchContext = createContext(null);
@@ -24,7 +24,8 @@ const initialState = {
 	allPokemonNamesAndIds: {},
 	intersection: [],
 	generations: {},
-	moves: {}
+	moves: {},
+	machines: {}
 }
 
 const reducer = (state, action) => {
@@ -140,6 +141,11 @@ const reducer = (state, action) => {
 				...state, moves: {...state.moves, ...action.payload}
 			}
 		}
+		case 'machineDataLoaded' : {
+			return {
+				...state, machines: action.payload
+			}
+		}
 		default : 
 			return state
 	}
@@ -179,7 +185,7 @@ export default function PokemonsProvider({children}) {
 				const datas = responses.map(response => response.json());
 				const finalData = await Promise.all(datas);
 				generationData = finalData.reduce((pre, cur) => {
-					pre[transformKeyName(cur.name)] = cur;
+					pre[transformToKeyName(cur.name)] = cur;
 					return pre;
 				}, {})
 			};

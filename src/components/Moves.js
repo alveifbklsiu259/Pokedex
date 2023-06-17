@@ -1,64 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { usePokemonData, useDispatchContenxt } from "./PokemonsProvider";
 import DataTable from 'react-data-table-component';
+import { Switch, Stack, Typography, capitalize } from "@mui/material";
+import { usePokemonData, useDispatchContenxt } from "./PokemonsProvider";
 import Spinner from "./Spinner";
-import { transformKeyName, getIdFromURL } from "../util";
-
-const columns = [
-	{
-		name: 'Level',
-		selector: row => row.level,
-		sortable: true,
-		center: true,
-	},
-	{
-		name: 'Move',
-		selector: row => row.move,
-		sortable: true,
-		center: true,
-	},
-	{
-		name: 'Type',
-		selector: row => row.type,
-		sortable: true,
-		center: true,
-		sortFunction: (rowA, rowB) => {
-			const a = rowA.type.props.children;
-			const b = rowB.type.props.children;
-			return a.localeCompare(b)
-		}
-	},
-	{
-		name: 'Cat.',
-		selector: row => row.cat,
-		sortable: true,
-		center: true,
-	},
-	{
-		name: 'Power',
-		selector: row => row.power,
-		sortable: true,
-		center: true,
-		sortFunction: (rowA, rowB) => {
-			const a = rowA.power === '—' ? 0 : rowA.power;
-			const b = rowB.power === '—' ? 0 : rowB.power;
-			return a - b;
-		}
-	},
-	{
-		name: 'Acc.',
-		selector: row => row.acc,
-		sortable: true,
-		center: true,
-	},
-	{
-		name: 'PP',
-		selector: row => row.pp,
-		sortable: true,
-		center: true,
-	},
-	// des
-];
+import { transformToKeyName, getIdFromURL } from "../util";
 
 export default function Moves({speciesInfo, pokemon, chainId}) {
 	const state = usePokemonData();
@@ -70,7 +15,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 		if (!pokemon.formData.is_battle_only) {
 			debutGeneration = generations.find(generation => generation.version_groups.some(version => version.name === pokemon.formData.version_group.name)).name;
 		} else {
-			// we should use the default form's data, the default-form-pokemon's data was already cached when dealing with evolution chain.
+			// should use the default form's data, the default-form-pokemon's data was already cached when dealing with evolution chain.
 			pokemonData = state.pokemons[getIdFromURL(pokemon.species.url)];
 		};
 	};
@@ -80,8 +25,9 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 
 	const [selectedGeneration, setSelectedGeneration] = useState(debutGeneration);
 
-	const versionGroups = state.generations[transformKeyName(selectedGeneration)].version_groups;
-	const [selectedVersion, setSelectedVersion] = useState(versionGroups[0].name);
+	const versions = state.generations[transformToKeyName(selectedGeneration)].version_groups;
+	const [selectedVersion, setSelectedVersion] = useState(versions[0].name);
+	const [filterMethod, setFilterMethod] = useState('level-up');
 	
 	// for pokemon that learns move(s) on evolution.
 	let maxEvoLevel;
@@ -118,41 +64,52 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	};
 
 	const filterMoves = (method, version) => {
+		const test = versionDetail => versionDetail.version_group.name === version && versionDetail.move_learn_method.name === method
 		return pokemonData.moves.filter(move => move.version_group_details
-			.some(detail => detail.version_group.name === version && detail.move_learn_method.name === method))
-			.map(move => ({...move, version_group_details: move.version_group_details.filter(detail => detail.version_group.name === version && detail.move_learn_method.name === method)}));
+			.some(test)).map(move => ({...move, version_group_details: move.version_group_details.filter(test)}));
 	};
-	const filteredMoves = filterMoves('level-up', selectedVersion);
-
-	console.log(filteredMoves);
+	const filteredMoves = filterMoves(filterMethod, selectedVersion);
 
 	const cachedMoves = filteredMoves.reduce((pre, cur) => {
-		const moveName = transformKeyName(cur.move.name);
+		const moveName = transformToKeyName(cur.move.name);
 		pre[moveName] = state.moves[moveName];
 		return pre;
 	}, {});
 
 	const isDataReady = Object.values(cachedMoves).every(Boolean);
-
-	let movesData;
-
+	let movesData, columnData;
 	const movesDataCreator = moves => {
 		const data = moves.map(entry => {
-			const lookupName = transformKeyName(entry.move.name);
+			const lookupName = transformToKeyName(entry.move.name);
 			const cachedMove = state.moves[lookupName];
-			const versionDetail = entry.version_group_details;
-			// value attribute is used for sorting, if maxEvoLevel is 0, put it after level 1.
-			const learnOnEvolution = <span data-tag="allowRowEvents" value={maxEvoLevel === 0 ? 2 : maxEvoLevel} title="Learned when Evolution" className="learnUponEvolution">Evo.</span>;
-			const type = <span data-tag="allowRowEvents" className={`type type-${cachedMove.type.name}`}>{cachedMove.type.name.toUpperCase()}</span>
+			const versionDetails = entry.version_group_details;
+			const type = cachedMove.type.name;
+			const typeData = <span value={type} data-tag="allowRowEvents" className={`type type-${type}`}>{type.toUpperCase()}</span>
 
+			// level-up; value attribute is used for sorting, if maxEvoLevel is 0, put it after level 1.
+			const learnOnEvolution = <span data-tag="allowRowEvents" value={maxEvoLevel === 0 ? 2 : maxEvoLevel} title="Learned when Evolution" className="learnUponEvolution">Evo.</span>;
 			const checkLearnOnEvo = level => {
 				return level === 0 ? learnOnEvolution : level;
 			};
+			const levelData = versionDetails.length === 1 ? checkLearnOnEvo(versionDetails[0].level_learned_at) : versionDetails.map(detail => checkLearnOnEvo(detail.level_learned_at));
+
+			// machine
+			const machine = state.machines?.[lookupName]?.version_groups?.[selectedVersion];
+
+			const machineData = (
+				// value is for sorting
+				<div value={machine}>
+					<span data-tag="allowRowEvents">{machine?.toUpperCase()}</span>
+					<img data-tag="allowRowEvents" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/tm-${type}.png`} alt={`tm-${type}`} className="machine"/>
+				</div>
+			);
+			const isFilteredByLevel = filterMethod === 'level-up';
+			const dispalyData = isFilteredByLevel ? levelData : machineData
 
 			return {
-				level: versionDetail.length === 1 ? checkLearnOnEvo(versionDetail[0].level_learned_at) : versionDetail.map(detail => checkLearnOnEvo(detail.level_learned_at)),
+				[isFilteredByLevel ? 'level' : 'machine']: dispalyData,
 				move: entry.move.name,
-				type: type,
+				type: typeData,
 				cat: cachedMove.damage_class.name,
 				power: cachedMove.power !== null ? cachedMove.power : '—',
 				acc: cachedMove.accuracy !== null ? `${cachedMove.accuracy}%` : '—',
@@ -163,7 +120,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 		});
 
 		data.forEach((move, index) => {
-			// moves that learned at differetn levels of the a pokemon
+			// moves that learned at differetn levels
 			if (move.level instanceof Array) {
 				move.level.forEach(level => {
 					data.push({...move, level: level})
@@ -183,25 +140,85 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	// if the data is already cached, use that, else fetch what's missing
 	if (isDataReady) {
 		movesData = movesDataCreator(filteredMoves);
+
+		if (movesData.length) {
+			// columnData
+			const formatTableHeader = data => {
+				switch (data) {
+					case 'pp' : {
+						return 'PP'
+					}
+					case 'acc' :
+					case 'cat' :
+						return capitalize(data).concat('.');
+					default : 
+						return capitalize(data)
+				};
+			};
+
+			const sortNumsWithNull = data => (rowA, rowB) => {
+				const a = rowA[data] === '—' ? 0 : rowA[data];
+				const b = rowB[data] === '—' ? 0 : rowB[data];
+				return a - b;
+			};
+
+			// when switching filterMethod, this function will run again if we sorted data, to avoid error, use optional chaining
+			const sortElement = data => (rowA, rowB) => {
+				const a = rowA[data]?.props?.value;
+				const b = rowB[data]?.props?.value;
+				return a?.localeCompare(b);
+			};
+
+			columnData = Object.keys(movesData[0]).reduce((pre, cur) => {
+				if (cur !== 'flavorText' && cur !== 'effect') {
+					pre.push({
+						id: cur,
+						name: formatTableHeader(cur),
+						selector: row => row[cur],
+						sortable: true,
+						center: true,
+						sortFunction: cur === 'type' || cur === 'machine' ? sortElement(cur) : cur === 'power' ? sortNumsWithNull(cur) : null
+					});
+				};
+				return pre;
+			}, []);
+		};
 	};
 
+	// (without DataList)
+	// initial-render: mounts --> Effect --> re-renders 
+	// re-render: if !dataReady: re-renders --> Effect --> re-renders
+
+	// click ==>  !dataReady --> fetch + render --> Effect will not run
+
+	// when generation, version changes, we want to check if we need to fetch, also when the initial render, we will check
+
+
+
+	function onRender(id, phase, actualDuration, baseDuration, startTime, commitTime) {
+		console.log(phase)
+	  }
+
+	// console.log(movesData)
 	useEffect(() => {
 		if (!isDataReady) {
 			const getMoves = async () => {
-				const movesToFetch = filteredMoves.filter(entry => !cachedMoves[transformKeyName(entry.move.name)])
+				const movesToFetch = filteredMoves.filter(entry => !cachedMoves[transformToKeyName(entry.move.name)])
 					.map(entry => entry.move.url);
 
 				const dataResponses = await Promise.all(movesToFetch.map(move => fetch(move)));
 				const datas = dataResponses.map(response => response.json());
 				const finalData = await Promise.all(datas);
 				dispatch({type: 'movesLoaded', payload: finalData.reduce((pre, cur) => {
-					pre[transformKeyName(cur.name)] = cur;
+					pre[transformToKeyName(cur.name)] = cur;
 					return pre;
 				}, {})});
-			}
+			};
 			getMoves();
-		}
+		};
 	}, [cachedMoves, dispatch, filteredMoves, isDataReady]);
+
+	//
 
 	// see if remove tabs that don't show?
 	// gen 8 doesn't support pokemons transfer?
@@ -211,52 +228,89 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 		
 	// active btn, disable btn, disable text input in Pokemons.
 	
-	// change moves to TM...
 	// find a way to chache moves when version changes
+
+	// separate dataTable
 
 	const handleClick = generation => {
 		setSelectedGeneration(generation);
-		const versionGroups = state.generations[transformKeyName(generation)].version_groups;
-		setSelectedVersion(versionGroups[0].name);
+		const versions = state.generations[transformToKeyName(generation)].version_groups;
+		setSelectedVersion(versions[0].name);
+	};
+
+	const showMovesByMachine = async e => {
+		setFilterMethod(e.target.checked ? 'machine' : 'level-up');
+
+		if (e.target.checked && Object.keys(state.machines).length === 0) {
+			const machineResponse = await fetch ('https://pokeapi.co/api/v2/machine?limit=9999');
+			const data = await machineResponse.json();
+	
+			const dataResponses = await Promise.all(data.results.map(machine => fetch(machine.url)));
+			const datas = dataResponses.map(data => data.json());
+			const finalData = await Promise.all(datas);
+			const machineData = finalData.reduce((pre, cur) => {
+				const keyName = transformToKeyName(cur.move.name);
+				if (!pre[keyName]) {
+					pre[keyName] = {};
+				} else if (!pre[keyName].version_groups) {
+					pre[keyName].version_groups = {};
+				};
+				pre[keyName].version_groups = {
+					...pre[keyName].version_groups,
+					[cur.version_group.name]: cur.item.name
+				};
+				return pre;
+			}, {})
+			dispatch({type: 'machineDataLoaded', payload: machineData});
+		};
 	};
 
 	return (
-		<div className="moves text-center mt-5">
-			<h1>Moves</h1>
-			<div>{generationOptions.map(generation => (
-				<button 
-					className={`generationBtn btn btn-outline-secondary m-1 ${selectedGeneration === generation ? 'active' : ''}`} 
-					key={generation}
-					onClick={() => handleClick(generation)}
-				>{(generation.replace('generation-', '')).toUpperCase()}</button>
-			))}</div>
-			<div className='col-12 varieties'>
-				<ul>
-					{versionGroups.map(version => (
-						<React.Fragment key={version.name}>
-							<li className={version.name === selectedVersion ? 'selected' : ''}>
-								<button className='text-capitalize' onClick={() => setSelectedVersion(version.name)}>{version.name}</button>
-							</li>
-						</React.Fragment>
-					))}
-					
-				</ul>
+		<React.Profiler id='moves' onRender={onRender}>
+			<div className="moves text-center mt-5">
+				<h1>Moves</h1>
+				<div>{generationOptions.map(generation => (
+					<button 
+						className={`generationBtn btn btn-outline-secondary m-1 ${selectedGeneration === generation ? 'active' : ''}`} 
+						key={generation}
+						onClick={() => handleClick(generation)}
+					>{(generation.replace('generation-', '')).toUpperCase()}</button>
+				))}</div>
+				<div className='col-12 varieties'>
+					<ul>
+						{versions.map(version => (
+							<React.Fragment key={version.name}>
+								<li className={version.name === selectedVersion ? 'selected' : ''}>
+									<button className='text-capitalize' onClick={() => setSelectedVersion(version.name)}>{version.name}</button>
+								</li>
+							</React.Fragment>
+						))}
+						
+					</ul>
+				</div>
+				<DataTable
+					columns={columnData}
+					data={movesData}
+					highlightOnHover
+					expandableRows
+					expandOnRowClicked
+					expandableRowsHideExpander
+					expandableRowsComponent={MoveEffect}
+					expandableRowsComponentProps={{selectedVersion}}
+					title={`Moves Learn by ${capitalize(filterMethod)}`}
+					subHeader
+					subHeaderComponent={(
+						<Stack direction="row" spacing={1} alignItems="center">
+							<Typography>Level</Typography>
+								<Switch onChange={showMovesByMachine} />
+							<Typography>Machine</Typography>
+						</Stack>
+					)}
+					progressPending={movesData ? false : true}
+					progressComponent={<Spinner />}
+				/>
 			</div>
-			{
-				movesData ? (
-					<DataTable
-						columns={columns}
-						data={movesData}
-						highlightOnHover
-						expandableRows
-						expandOnRowClicked
-						expandableRowsHideExpander
-						expandableRowsComponent={MoveEffect}
-						expandableRowsComponentProps={{selectedVersion}}
-					/>
-				) : <Spinner />
-			}
-		</div>
+		</React.Profiler>
 	)
 }
 
@@ -273,7 +327,7 @@ const MoveEffect = ({data, selectedVersion}) => {
 
 	return (
 		<div className="moveDes">
-			{data.level.type === 'span' && (
+			{data?.level?.type === 'span' && (
 				<ul className="evo">
 					Evo.
 					<li>{data.level.props.title}</li>
