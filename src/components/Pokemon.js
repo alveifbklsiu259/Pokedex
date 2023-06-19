@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import BasicInfo from "./BasicInfo";
 import Detail from "./Detail";
@@ -36,6 +36,11 @@ export default function Pokemon() {
 	const evolutionChainsURL = speciesInfo?.evolution_chain?.url;
 	const chainId = evolutionChainsURL ? getIdFromURL(evolutionChainsURL) : undefined;
 	const evolutionChains = state.evolutionChains?.[chainId]?.chains;
+
+	// passing down to child component, so we don't need to use usePokemonData there.
+	const cachedPokemons = useMemo(() => state.pokemons, [state.pokemons]);
+	const cachedNextRequest = useMemo(() => state.nextRequest, [state.nextRequest]);
+	const cachedAbilities = useMemo(() => state.abilities, [state.abilities]);
 
 	const isDataReady = [pokemon, speciesInfo, evolutionChains].every(Boolean);
 	useEffect(() => {
@@ -116,13 +121,13 @@ export default function Pokemon() {
 							// get pokemon data from the chain(s)
 							const pokemonsInChain = new Set(chainsData.sortedChains.flat());
 
-							let cachedPokemons;
+							let currentCachedPokemons;
 							if (pokemonData) {
-								cachedPokemons = {...state.pokemons, ...{[pokemonData.id]: pokemonData}};
+								currentCachedPokemons = {...cachedPokemons, ...{[pokemonData.id]: pokemonData}};
 							} else {
-								cachedPokemons = state.pokemons;
+								currentCachedPokemons = cachedPokemons;
 							};
-							const pokemonsToFetch = getPokemonsToFetch(cachedPokemons, [...pokemonsInChain]);
+							const pokemonsToFetch = getPokemonsToFetch(currentCachedPokemons, [...pokemonsInChain]);
 							fetchedPokemons = await getMultiplePokemons(pokemonsToFetch);
 						};
 					};
@@ -142,7 +147,7 @@ export default function Pokemon() {
 						}});
 					};
 					if (fetchedPokemons && Object.keys(fetchedPokemons).length) {
-						dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: state.nextRequest}});
+						dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: cachedNextRequest}});
 					};
 				} catch {
 					dispatch({type: 'error'});
@@ -150,20 +155,21 @@ export default function Pokemon() {
 			};
 			getData();
 		};
-	}, [pokemon, speciesInfo, evolutionChains, urlParam ,state.pokemons, dispatch, isDataReady, state.nextRequest, state.status]);
+	}, [pokemon, speciesInfo, evolutionChains, urlParam , dispatch, isDataReady, cachedNextRequest, state.status, cachedPokemons]);
 	let content;
+	console.log(state)
 	if (state.status === 'idle' && isDataReady) {
 		content = (
 			<>
 				<div className="container p-0">
 					<div className="row justify-content-center">
-						{speciesInfo.varieties.length > 1 && <Varieties speciesInfo={speciesInfo} pokemon={pokemon} />}
+						{speciesInfo.varieties.length > 1 && <Varieties cachedNextRequest={cachedNextRequest} cachedPokemons={cachedPokemons} speciesInfo={speciesInfo} pokemon={pokemon} />}
 						<div className='basicInfoContainer row col-8 col-sm-6 justify-content-center'>
 							<BasicInfo pokemon={pokemon}/>
 						</div>
-						<Detail pokemon={pokemon} speciesInfo={speciesInfo} />
+						<Detail pokemon={pokemon} speciesInfo={speciesInfo} cachedAbilities={cachedAbilities} />
 						<Stats pokemon={pokemon}/>
-						<EvolutionChains cachedPokemons={state.pokemons} evolutionChains={evolutionChains} chainId={chainId} />
+						<EvolutionChains cachedPokemons={cachedPokemons} evolutionChains={evolutionChains} chainId={chainId} />
 						<Moves pokemon={pokemon} chainId={chainId} speciesInfo={speciesInfo} key={pokemon.id} />
 						<div className="row justify-content-center">
 							<Link to='/' className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</Link>

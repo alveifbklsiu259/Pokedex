@@ -1,11 +1,10 @@
-import React from 'react';
+import React, {memo} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMultiplePokemons, getPokemonsToFetch } from '../api';
 import { getIdFromURL } from '../util';
-import { usePokemonData, useDispatchContenxt } from './PokemonsProvider';
+import { useDispatchContenxt } from './PokemonsProvider';
 
-export default function Varieties({speciesInfo, pokemon}) {
-	const state = usePokemonData();
+const Varieties = memo(function Varieties({speciesInfo, pokemon, cachedPokemons, cachedNextRequest}) {
 	const dispatch = useDispatchContenxt();
 	const navigate = useNavigate();
 
@@ -14,11 +13,11 @@ export default function Varieties({speciesInfo, pokemon}) {
 
 		navigate(`/pokemons/${formId}`, {replace: true});
 		// we have state.status === 'idle' condition in Pokemon.js, no worry about duplicate requests.
-		if (!state.pokemons[formId]) {
+		if (!cachedPokemons[formId]) {
 			dispatch({type: 'dataLoading'})
 			// fetch all forms
 			const request = speciesInfo.varieties.map(variety => getIdFromURL(variety.pokemon.url));
-			const pokemonsToFetch = getPokemonsToFetch(state.pokemons, request);
+			const pokemonsToFetch = getPokemonsToFetch(cachedPokemons, request);
 			const fetchedPokemons = await getMultiplePokemons(pokemonsToFetch);
 
 			// also get formData
@@ -28,7 +27,7 @@ export default function Varieties({speciesInfo, pokemon}) {
 			Object.values(fetchedPokemons).forEach(pokemon => {
 				fetchedPokemons[pokemon.id].formData = formData.find(data => data.name === pokemon.name);
 			});
-			dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: state.nextRequest}});
+			dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: cachedNextRequest}});
 		};
 	};
 
@@ -46,4 +45,5 @@ export default function Varieties({speciesInfo, pokemon}) {
 			</ul>
 		</div>
 	)
-}
+});
+export default Varieties;

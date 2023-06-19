@@ -12,17 +12,16 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	let pokemonData = pokemon;
 	let debutGeneration = speciesInfo.generation.name;
 	if (!pokemon.is_default) {
-		if (!pokemon.formData.is_battle_only) {
+		if (pokemon.formData && !pokemon.formData.is_battle_only) {
 			debutGeneration = generations.find(generation => generation.version_groups.some(version => version.name === pokemon.formData.version_group.name)).name;
 		} else {
-			// should use the default form's data, the default-form-pokemon's data was already cached when dealing with evolution chain.
+			// should use the default form's data, the data was already cached when dealing with evolution chain.
 			pokemonData = state.pokemons[getIdFromURL(pokemon.species.url)];
 		};
 	};
 	
 	const generationNames = generations.map(generation => generation.name);
 	const generationOptions = generationNames.slice(generationNames.indexOf(debutGeneration));
-
 	const [selectedGeneration, setSelectedGeneration] = useState(debutGeneration);
 
 	const versions = state.generations[transformToKeyName(selectedGeneration)].version_groups;
@@ -57,16 +56,18 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 					if (entry.min_level !== null && entry.min_level > maxEvoLevel) {
 						maxEvoLevel = entry.min_level
 					};
-				}
+				};
 			});
 		};
 		findHeighestEvoLevel(chainDetails);
 	};
 
+	// filter moves based on current filter method && version
 	const filterMoves = (method, version) => {
-		const test = versionDetail => versionDetail.version_group.name === version && versionDetail.move_learn_method.name === method
-		return pokemonData.moves.filter(move => move.version_group_details
-			.some(test)).map(move => ({...move, version_group_details: move.version_group_details.filter(test)}));
+		const test = versionDetail => versionDetail.version_group.name === version && versionDetail.move_learn_method.name === method;
+		return pokemonData.moves
+			.filter(move => move.version_group_details.some(test))
+			.map(move => ({...move, version_group_details: move.version_group_details.filter(test)}));
 	};
 	const filteredMoves = filterMoves(filterMethod, selectedVersion);
 
@@ -77,24 +78,28 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	}, {});
 
 	const isDataReady = Object.values(cachedMoves).every(Boolean);
+
 	let movesData, columnData;
 	const movesDataCreator = moves => {
 		const data = moves.map(entry => {
 			const lookupName = transformToKeyName(entry.move.name);
 			const cachedMove = state.moves[lookupName];
 			const versionDetails = entry.version_group_details;
+
+			// type
 			const type = cachedMove.type.name;
-			const typeData = <span value={type} data-tag="allowRowEvents" className={`type type-${type}`}>{type.toUpperCase()}</span>
+			const typeData = <span value={type} data-tag="allowRowEvents" className={`type type-${type}`}>{type.toUpperCase()}</span>;
 
 			// level-up; value attribute is used for sorting, if maxEvoLevel is 0, put it after level 1.
 			const learnOnEvolution = <span data-tag="allowRowEvents" value={maxEvoLevel === 0 ? 2 : maxEvoLevel} title="Learned when Evolution" className="learnUponEvolution">Evo.</span>;
 			const checkLearnOnEvo = level => {
 				return level === 0 ? learnOnEvolution : level;
 			};
+			// some moves can be learned at different levels.
 			const levelData = versionDetails.length === 1 ? checkLearnOnEvo(versionDetails[0].level_learned_at) : versionDetails.map(detail => checkLearnOnEvo(detail.level_learned_at));
 
 			// machine
-			const machine = state.machines?.[lookupName]?.version_groups?.[selectedVersion];
+			const machine = state.machines.entities?.[lookupName]?.version_groups?.[selectedVersion];
 
 			const machineData = (
 				// value is for sorting
@@ -129,7 +134,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 			};
 		});
 
-		// if the pokemon learn move on evolution, put this move at where it should be, which is the minimum level we can get this pokemon.
+		// sort the data based on level, if the pokemon learn move on evolution, put this move at where it should be, which is the minimum level we can get this pokemon.
 		return data.flat().sort((a, b) => {
 			const levelA = typeof a.level === 'object' ? a.level.props.value : a.level;
 			const levelB = typeof b.level === 'object' ? b.level.props.value : b.level;
@@ -137,51 +142,54 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 		});
 	};
 
+	const columnDataCreator = movesData => {
+		const formatTableHeader = data => {
+			switch (data) {
+				case 'pp' : {
+					return 'PP'
+				}
+				case 'acc' :
+				case 'cat' :
+					return capitalize(data).concat('.');
+				default : 
+					return capitalize(data)
+			};
+		};
+
+		const sortNumsWithNull = data => (rowA, rowB) => {
+			const a = rowA[data] === '—' ? 0 : rowA[data];
+			const b = rowB[data] === '—' ? 0 : rowB[data];
+			return a - b;
+		};
+
+		// when switching filter method, this function will run again if we sorted data, to avoid error, use optional chaining
+		const sortElement = data => (rowA, rowB) => {
+			const a = rowA[data]?.props?.value;
+			const b = rowB[data]?.props?.value;
+			return a?.localeCompare(b);
+		};
+
+		// just use movesData[0] as a template
+		return Object.keys(movesData[0]).reduce((pre, cur) => {
+			if (cur !== 'flavorText' && cur !== 'effect') {
+				pre.push({
+					id: cur,
+					name: formatTableHeader(cur),
+					selector: row => row[cur],
+					sortable: true,
+					center: true,
+					sortFunction: cur === 'type' || cur === 'machine' ? sortElement(cur) : cur === 'power' ? sortNumsWithNull(cur) : null
+				});
+			};
+			return pre;
+		}, []);
+	};
+
 	// if the data is already cached, use that, else fetch what's missing
 	if (isDataReady) {
 		movesData = movesDataCreator(filteredMoves);
-
 		if (movesData.length) {
-			// columnData
-			const formatTableHeader = data => {
-				switch (data) {
-					case 'pp' : {
-						return 'PP'
-					}
-					case 'acc' :
-					case 'cat' :
-						return capitalize(data).concat('.');
-					default : 
-						return capitalize(data)
-				};
-			};
-
-			const sortNumsWithNull = data => (rowA, rowB) => {
-				const a = rowA[data] === '—' ? 0 : rowA[data];
-				const b = rowB[data] === '—' ? 0 : rowB[data];
-				return a - b;
-			};
-
-			// when switching filterMethod, this function will run again if we sorted data, to avoid error, use optional chaining
-			const sortElement = data => (rowA, rowB) => {
-				const a = rowA[data]?.props?.value;
-				const b = rowB[data]?.props?.value;
-				return a?.localeCompare(b);
-			};
-
-			columnData = Object.keys(movesData[0]).reduce((pre, cur) => {
-				if (cur !== 'flavorText' && cur !== 'effect') {
-					pre.push({
-						id: cur,
-						name: formatTableHeader(cur),
-						selector: row => row[cur],
-						sortable: true,
-						center: true,
-						sortFunction: cur === 'type' || cur === 'machine' ? sortElement(cur) : cur === 'power' ? sortNumsWithNull(cur) : null
-					});
-				};
-				return pre;
-			}, []);
+			columnData = columnDataCreator(movesData)
 		};
 	};
 
@@ -202,6 +210,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	// console.log(movesData)
 	useEffect(() => {
 		if (!isDataReady) {
+			console.log('inner Effect')
 			const getMoves = async () => {
 				const movesToFetch = filteredMoves.filter(entry => !cachedMoves[transformToKeyName(entry.move.name)])
 					.map(entry => entry.move.url);
@@ -232,36 +241,62 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 
 	// separate dataTable
 
-	const handleClick = generation => {
+	// handle expandable
+
+	const changeGeneration = generation => {
 		setSelectedGeneration(generation);
 		const versions = state.generations[transformToKeyName(generation)].version_groups;
 		setSelectedVersion(versions[0].name);
 	};
 
-	const showMovesByMachine = async e => {
-		setFilterMethod(e.target.checked ? 'machine' : 'level-up');
+	const changeVersion = version => {
+		setSelectedVersion(version);
+	};
 
-		if (e.target.checked && Object.keys(state.machines).length === 0) {
-			const machineResponse = await fetch ('https://pokeapi.co/api/v2/machine?limit=9999');
-			const data = await machineResponse.json();
-	
-			const dataResponses = await Promise.all(data.results.map(machine => fetch(machine.url)));
-			const datas = dataResponses.map(data => data.json());
-			const finalData = await Promise.all(datas);
-			const machineData = finalData.reduce((pre, cur) => {
-				const keyName = transformToKeyName(cur.move.name);
-				if (!pre[keyName]) {
-					pre[keyName] = {};
-				} else if (!pre[keyName].version_groups) {
-					pre[keyName].version_groups = {};
+	const changeFilterMethod = async e => {
+		setFilterMethod(e.target.checked ? 'machine' : 'level-up');
+		if (e.target.checked) {
+			const movesFilteredByMachine = filterMoves('machine', selectedVersion);
+			const isDataReady = movesFilteredByMachine.every(entry => Boolean(state.machines.entities?.[transformToKeyName(entry.move.name)]?.version_groups?.[selectedVersion]));
+
+			if (!isDataReady || !Object.keys(state.machines.entities).length) {
+				let requests;
+				const rejectedRequests = [];
+				const fetchMachineData = async requests => {
+					// since there're 1500+ requests, use allSetteld to avoid one fails all fail, and re-fetch the next time if data is not complete.
+					const dataResponses = await Promise.allSettled(requests);
+					const datas = dataResponses.filter(data => {
+						if (data.status === 'rejected') {
+							rejectedRequests.push(data.value.url);
+						};
+						return data.status === 'fulfilled';
+					}).map(data => data.value.json());
+					const finalData = await Promise.all(datas);
+					return finalData.reduce((pre, cur) => {
+						const keyName = transformToKeyName(cur.move.name);
+						if (!pre[keyName]) {
+							pre[keyName] = {};
+						} else if (!pre[keyName].version_groups) {
+							pre[keyName].version_groups = {};
+						};
+						pre[keyName].version_groups = {
+							...pre[keyName].version_groups,
+							[cur.version_group.name]: cur.item.name
+						};
+						return pre;
+					}, {});
+				}
+				
+				if (state.machines.rejectedRequests.length) {
+					requests = state.machines.rejectedRequests;
+				} else {
+					const machineResponse = await fetch('https://pokeapi.co/api/v2/machine?limit=9999');
+					const data = await machineResponse.json();
+					requests = data.results.map(machine => fetch(machine.url));
 				};
-				pre[keyName].version_groups = {
-					...pre[keyName].version_groups,
-					[cur.version_group.name]: cur.item.name
-				};
-				return pre;
-			}, {})
-			dispatch({type: 'machineDataLoaded', payload: machineData});
+				const machineData = await fetchMachineData(requests);
+				dispatch({type: 'machineDataLoaded', payload: {entities: machineData, rejectedRequests: rejectedRequests}});
+			};
 		};
 	};
 
@@ -273,7 +308,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 					<button 
 						className={`generationBtn btn btn-outline-secondary m-1 ${selectedGeneration === generation ? 'active' : ''}`} 
 						key={generation}
-						onClick={() => handleClick(generation)}
+						onClick={() => changeGeneration(generation)}
 					>{(generation.replace('generation-', '')).toUpperCase()}</button>
 				))}</div>
 				<div className='col-12 varieties'>
@@ -281,7 +316,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 						{versions.map(version => (
 							<React.Fragment key={version.name}>
 								<li className={version.name === selectedVersion ? 'selected' : ''}>
-									<button className='text-capitalize' onClick={() => setSelectedVersion(version.name)}>{version.name}</button>
+									<button className='text-capitalize' onClick={() => changeVersion(version.name)}>{version.name}</button>
 								</li>
 							</React.Fragment>
 						))}
@@ -302,7 +337,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 					subHeaderComponent={(
 						<Stack direction="row" spacing={1} alignItems="center">
 							<Typography>Level</Typography>
-								<Switch onChange={showMovesByMachine} />
+								<Switch onChange={changeFilterMethod} />
 							<Typography>Machine</Typography>
 						</Stack>
 					)}

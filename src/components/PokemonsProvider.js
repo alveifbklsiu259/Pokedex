@@ -25,7 +25,10 @@ const initialState = {
 	intersection: [],
 	generations: {},
 	moves: {},
-	machines: {}
+	machines: {
+		entities: {},
+		rejectedRequests: []
+	}
 }
 
 const reducer = (state, action) => {
@@ -143,7 +146,7 @@ const reducer = (state, action) => {
 		}
 		case 'machineDataLoaded' : {
 			return {
-				...state, machines: action.payload
+				...state, machines: {...state.machines, entities: {...state.machines.entities, ...action.payload.entities}, rejectedRequests: action.payload.rejectedRequests}
 			}
 		}
 		default : 

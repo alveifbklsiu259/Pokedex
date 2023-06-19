@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import Modal from "./Modal";
 import { usePokemonData } from "./PokemonsProvider"
 
@@ -22,7 +22,7 @@ const textsForOtherRequirements = {
 	turn_upside_down: 'Hold game system upside-down'
 };
 
-export default function EvolutionDetails({chainId, pokemonId}) {
+const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId}) {
 	const [isModalShown, setIsModalShown] = useState(false);
 
 	const state = usePokemonData();
@@ -166,4 +166,5 @@ export default function EvolutionDetails({chainId, pokemonId}) {
 			}
 		</>
 	)
-}
+});
+export default EvolutionDetails;

@@ -18,7 +18,7 @@ function getGender(gender_rate) {
 	}
 };
 
-const Detail = memo(function Detail({pokemon, speciesInfo}) {
+const Detail = memo(function Detail({pokemon, speciesInfo, cachedAbilities}) {
 	const flavorTexts = speciesInfo.flavor_text_entries;
 	let flavorText = '';
 	if (flavorTexts.length) {
@@ -37,7 +37,7 @@ const Detail = memo(function Detail({pokemon, speciesInfo}) {
 					<span className="mt-4">{getGender(speciesInfo.gender_rate)}</span>
 				</p>
 				<div className="col-6 abilities p-0">Abilities <br />
-					<Abilities pokemon={pokemon} abilities={[...abilities]}/>
+					<Abilities cachedAbilities={cachedAbilities} pokemon={pokemon} abilities={[...abilities]}/>
 				</div>
 
 				<p className="col-12 m-3 p-2 text-start description">{flavorText}</p>

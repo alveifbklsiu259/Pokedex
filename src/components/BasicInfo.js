@@ -13,7 +13,7 @@ export const PokemonCards = memo(function PokemonCards({pokemon}) {
 	)
 });
 
-const BasicInfo = function BasicInfo({pokemon}) {
+const BasicInfo = memo(function BasicInfo({pokemon}) {
 	let nationalNumber = pokemon.id;
 	if (!pokemon.is_default) {
 		nationalNumber = getIdFromURL(pokemon.species.url);
@@ -30,6 +30,6 @@ const BasicInfo = function BasicInfo({pokemon}) {
 			</div>
 		</div>
 	)
-}
+});
 
 export default BasicInfo;

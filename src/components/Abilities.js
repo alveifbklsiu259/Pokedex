@@ -1,14 +1,13 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import Spinner from './Spinner';
-import { usePokemonData, useDispatchContenxt } from './PokemonsProvider';
+import { useDispatchContenxt } from './PokemonsProvider';
 import Modal from './Modal';
 import { transformToKeyName } from '../util';
 
-export default function Abilities({abilities, pokemon}) {
+const Abilities = memo(function Abilities({abilities, pokemon, cachedAbilities}) {
 	const [isModalShown, setIsModalShown] = useState(false);
 	const [isDetail, setIsDetail] = useState(false);
 	const [abilityData, setAbilityData] = useState(null);
-	const state = usePokemonData();
 	const dispatch = useDispatchContenxt();
 	const language = 'en'
 
@@ -21,14 +20,14 @@ export default function Abilities({abilities, pokemon}) {
 
 		setIsModalShown(true);
 
-		if (!state.abilities[abilityKey]) {
+		if (!cachedAbilities[abilityKey]) {
 			const target = pokemon.abilities.find(entry => entry.ability.name === ability);
 			const response = await fetch(target.ability.url);
 			const data = await response.json();
 			dispatch({type: 'abilityLoaded', payload: {abilityKey, data}});
 			setAbilityData(data);
 		} else {
-			setAbilityData(state.abilities[abilityKey]);
+			setAbilityData(cachedAbilities[abilityKey]);
 		}
 	}
 
@@ -82,4 +81,5 @@ export default function Abilities({abilities, pokemon}) {
 			</Modal>
 		</>
 	)
-};
+});
+export default Abilities;
