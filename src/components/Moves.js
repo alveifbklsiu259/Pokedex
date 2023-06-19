@@ -71,13 +71,8 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	};
 	const filteredMoves = filterMoves(filterMethod, selectedVersion);
 
-	const cachedMoves = filteredMoves.reduce((pre, cur) => {
-		const moveName = transformToKeyName(cur.move.name);
-		pre[moveName] = state.moves[moveName];
-		return pre;
-	}, {});
-
-	const isDataReady = Object.values(cachedMoves).every(Boolean);
+	const movesToFetch = filteredMoves.filter(entry => !state.moves[transformToKeyName(entry.move.name)])
+	.map(entry => entry.move.url);
 
 	let movesData, columnData;
 	const movesDataCreator = moves => {
@@ -185,11 +180,10 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 		}, []);
 	};
 
-	// if the data is already cached, use that, else fetch what's missing
-	if (isDataReady) {
+	if (!movesToFetch.length) {
 		movesData = movesDataCreator(filteredMoves);
 		if (movesData.length) {
-			columnData = columnDataCreator(movesData)
+			columnData = columnDataCreator(movesData);
 		};
 	};
 
@@ -199,37 +193,8 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 
 	// click ==>  !dataReady --> fetch + render --> Effect will not run
 
-	// when generation, version changes, we want to check if we need to fetch, also when the initial render, we will check
 
-
-
-	function onRender(id, phase, actualDuration, baseDuration, startTime, commitTime) {
-		console.log(phase)
-	  }
-
-	// console.log(movesData)
-	useEffect(() => {
-		if (!isDataReady) {
-			console.log('inner Effect')
-			const getMoves = async () => {
-				const movesToFetch = filteredMoves.filter(entry => !cachedMoves[transformToKeyName(entry.move.name)])
-					.map(entry => entry.move.url);
-
-				const dataResponses = await Promise.all(movesToFetch.map(move => fetch(move)));
-				const datas = dataResponses.map(response => response.json());
-				const finalData = await Promise.all(datas);
-				dispatch({type: 'movesLoaded', payload: finalData.reduce((pre, cur) => {
-					pre[transformToKeyName(cur.name)] = cur;
-					return pre;
-				}, {})});
-			};
-			getMoves();
-		};
-	}, [cachedMoves, dispatch, filteredMoves, isDataReady]);
-
-	//
-
-	// see if remove tabs that don't show?
+// see if remove tabs that don't show?
 	// gen 8 doesn't support pokemons transfer?
 	// memoize cachedMoves
 
@@ -243,6 +208,27 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 
 	// handle expandable
 
+
+	function onRender(id, phase, actualDuration, baseDuration, startTime, commitTime) {
+		// console.log(phase)
+	}
+
+	useEffect(() => {
+		if (movesToFetch.length) {
+			console.log('inner Effect')
+			const getMoves = async () => {
+				const dataResponses = await Promise.all(movesToFetch.map(move => fetch(move)));
+				const datas = dataResponses.map(response => response.json());
+				const finalData = await Promise.all(datas);
+				dispatch({type: 'movesLoaded', payload: finalData.reduce((pre, cur) => {
+					pre[transformToKeyName(cur.name)] = cur;
+					return pre;
+				}, {})});
+			};
+			getMoves();
+		};
+	}, [dispatch, filteredMoves, movesToFetch]);
+
 	const changeGeneration = generation => {
 		setSelectedGeneration(generation);
 		const versions = state.generations[transformToKeyName(generation)].version_groups;
@@ -252,25 +238,27 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	const changeVersion = version => {
 		setSelectedVersion(version);
 	};
-
+	console.log(state)
 	const changeFilterMethod = async e => {
 		setFilterMethod(e.target.checked ? 'machine' : 'level-up');
 		if (e.target.checked) {
 			const movesFilteredByMachine = filterMoves('machine', selectedVersion);
-			const isDataReady = movesFilteredByMachine.every(entry => Boolean(state.machines.entities?.[transformToKeyName(entry.move.name)]?.version_groups?.[selectedVersion]));
+			const isMachineDataReady = movesFilteredByMachine.every(entry => Boolean(state.machines.entities?.[transformToKeyName(entry.move.name)]?.version_groups?.[selectedVersion]));
 
-			if (!isDataReady || !Object.keys(state.machines.entities).length) {
+			if (!isMachineDataReady || !Object.keys(state.machines.entities).length) {
 				let requests;
 				const rejectedRequests = [];
-				const fetchMachineData = async requests => {
+				const fetchMachineData = async (requests, rejectedRequestsArray) => {
 					// since there're 1500+ requests, use allSetteld to avoid one fails all fail, and re-fetch the next time if data is not complete.
 					const dataResponses = await Promise.allSettled(requests);
-					const datas = dataResponses.filter(data => {
-						if (data.status === 'rejected') {
-							rejectedRequests.push(data.value.url);
+					const datas = dataResponses.filter((response, index) => {
+						if (response.status === 'rejected') {
+							// the fulfillment values come in the order of the promises passed, regardless of completion order, so we can use the index to check which request is rejected.
+							rejectedRequestsArray.push(index + 1);
 						};
-						return data.status === 'fulfilled';
-					}).map(data => data.value.json());
+						return response.status === 'fulfilled';
+					}).map(response => response.value.json());
+
 					const finalData = await Promise.all(datas);
 					return finalData.reduce((pre, cur) => {
 						const keyName = transformToKeyName(cur.move.name);
@@ -285,16 +273,16 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 						};
 						return pre;
 					}, {});
-				}
+				};
 				
 				if (state.machines.rejectedRequests.length) {
-					requests = state.machines.rejectedRequests;
+					requests = state.machines.rejectedRequests.map(request => fetch(`https://pokeapi.co/api/v2/machine/${request}`));
 				} else {
 					const machineResponse = await fetch('https://pokeapi.co/api/v2/machine?limit=9999');
 					const data = await machineResponse.json();
 					requests = data.results.map(machine => fetch(machine.url));
 				};
-				const machineData = await fetchMachineData(requests);
+				const machineData = await fetchMachineData(requests, rejectedRequests);
 				dispatch({type: 'machineDataLoaded', payload: {entities: machineData, rejectedRequests: rejectedRequests}});
 			};
 		};

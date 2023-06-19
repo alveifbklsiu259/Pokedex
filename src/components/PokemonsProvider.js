@@ -145,8 +145,14 @@ const reducer = (state, action) => {
 			}
 		}
 		case 'machineDataLoaded' : {
+			const newEntities = Object.keys(action.payload.entities).reduce((pre, cur) => {
+				pre[cur] = {
+					version_groups: {...state.machines.entities[cur]?.version_groups, ...action.payload.entities[cur].version_groups}
+				};
+				return pre;
+			}, {});
 			return {
-				...state, machines: {...state.machines, entities: {...state.machines.entities, ...action.payload.entities}, rejectedRequests: action.payload.rejectedRequests}
+				...state, machines: {...state.machines, entities: {...state.machines.entities, ...newEntities}, rejectedRequests: action.payload.rejectedRequests}
 			}
 		}
 		default : 
