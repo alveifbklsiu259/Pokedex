@@ -1,7 +1,7 @@
 import { useRef, useState, memo } from "react"
 import DataList from './DataList';
 
-const Input = memo(function Input({pokemonNames, searchParam, setSearchParam}) {
+const Input = memo(function Input({pokemonNames, searchParam, setSearchParam, status}) {
 	const [showDataList, setShowDataList] = useState(false);
 	const [hoveredPokemon, setHoveredPokemon] = useState('');
 	const [currentFocus, setCurrentFocus] = useState(-1);
@@ -119,6 +119,7 @@ const Input = memo(function Input({pokemonNames, searchParam, setSearchParam}) {
 		<div className="form-group position-relative searchInput">
 			<div className="position-relative">
 				<input
+					disabled={status === 'loading' ? true : false}
 					ref={inputRef}
 					autoComplete='off'
 					id="searchInput"

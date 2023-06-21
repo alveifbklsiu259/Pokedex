@@ -80,11 +80,47 @@ pokemons: all pokemon entries (name, types, images)
 // when scrilling down, I think it's because of the loader component, it causes unnecess re-render of pokemons component.
 // 268 evolution chain error
 
+// advanced types search, && or || options
 
 
 pokemon: pokemons species, if i can cache the pokemons api result, i don't have to make another request
 
 
 
-*/
+/* 
+Thoughts:
+	1. create a dynamic condition function creator:
+	say if you have a lot of conditions, you can just pass an array or object in, and also decide if you want || or &&, here're some examples:
+	
+		1. const filterData = ({ filters = [], every = false }) => (el) =>
+		filters[every ? "every" : "some"]((filterFn) => filterFn(el));
+		ref: https://stackoverflow.com/questions/65558221/javascript-multiple-condition-filtering-with-array-of-conditions
 
+		2. const filterMoves = (method, version) => {
+			const conditions = {
+				move_learn_method: method,
+				version_group: version
+			};
+
+			const test = versionDetail => Object.keys(conditions).every(key => {
+				if (conditions[key] instanceof Array) {
+					return conditions[key].some(condition => versionDetail[key].name === condition)
+				} else {
+					return conditions[key] === versionDetail[key].name;
+				};
+			})
+
+			const matches = pokemonData.moves.filter(move => move.version_group_details.some(test));
+			const results = matches.map(move => ({...move, version_group_details: move.version_group_details.filter(test)}));
+			return results;
+		};
+		ref: https://bobbyhadz.com/blog/javascript-filter-array-multiple-conditions#filter-an-array-with-multiple-conditions-with-a-dynamic-filter
+
+	2. Find a way to test client's connection speed, and based on the speed imply different fetching logic:
+		e.g: There's a button that shows a table with different tabs taht can change displayed data, all the data is from the server,
+		
+		1. if the client's speed is slow, fetch the data only needed, for example: when the tab is clicked, the relevant data will be fetched, note this may have a bad UI if the client's speed is fast, because we will show a spinner or loading info when fetching data, that means between each displayed table the client will see a spinner/loading.
+		2. if the cliente's speed is fast, fetch all the data when the show table button is clicked, this way, when the tab is clicked, we don't need to fetch data, therefore no loading/spinner between displayed table.
+
+		ref: https://stackoverflow.com/questions/5529718/how-to-detect-internet-speed-in-javascript
+*/

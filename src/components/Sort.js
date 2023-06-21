@@ -25,7 +25,7 @@ export default function Sort({status}) {
 	return (
 		<>
 			<div className="sort dropdown text-end mb-4">
-				<button className="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+				<button disabled={state.status === 'loading' ? true : false} className="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
 					Sort By {dropdownOptions.filter(option => option.value === state.sortBy)[0].text}
 				</button>
 				<ul className="dropdown-menu dropdown-menu-dark">

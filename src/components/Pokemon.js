@@ -41,6 +41,7 @@ export default function Pokemon() {
 	const cachedPokemons = useMemo(() => state.pokemons, [state.pokemons]);
 	const cachedNextRequest = useMemo(() => state.nextRequest, [state.nextRequest]);
 	const cachedAbilities = useMemo(() => state.abilities, [state.abilities]);
+	const cachedEvolutionChains = useMemo(() => state.evolutionChains, [state.evolutionChains]);
 
 	const isDataReady = [pokemon, speciesInfo, evolutionChains].every(Boolean);
 	useEffect(() => {
@@ -168,7 +169,7 @@ export default function Pokemon() {
 						</div>
 						<Detail pokemon={pokemon} speciesInfo={speciesInfo} cachedAbilities={cachedAbilities} />
 						<Stats pokemon={pokemon}/>
-						<EvolutionChains cachedPokemons={cachedPokemons} evolutionChains={evolutionChains} chainId={chainId} />
+						<EvolutionChains cachedPokemons={cachedPokemons} cachedEvolutionChains={cachedEvolutionChains} evolutionChains={evolutionChains} chainId={chainId} />
 						<Moves pokemon={pokemon} chainId={chainId} speciesInfo={speciesInfo} key={pokemon.id} />
 						<div className="row justify-content-center">
 							<Link to='/' className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</Link>

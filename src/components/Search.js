@@ -69,6 +69,7 @@ export default function Search() {
 			const finalData = await Promise.all(datas);
 			const typesArrayToCompare = finalData.map(type => type.pokemon);
 			const flattenedTypesArrayToCompare = typesArrayToCompare.map(type => type.map(pokemon => getIdFromURL(pokemon.pokemon.url)));
+			console.log(flattenedTypesArrayToCompare)
 			for (let i = 0; i < flattenedTypesArrayToCompare.length; i ++) {
 				intersection = intersection.filter(pokemon => flattenedTypesArrayToCompare[i].includes(pokemon));
 			};
@@ -96,6 +97,7 @@ export default function Search() {
 					pokemonNames={cachedPokemonNames}
 					searchParam={searchParam} 
 					setSearchParam={setSearchParam}
+					status={state.status}
 				/>
 				<AdvancedSearch
 					searchParam={searchParam}
@@ -105,7 +107,7 @@ export default function Search() {
 					selectedGenerations={selectedGenerations} 
 					setSelectedGenerations={setSelectedGenerations}
 				/>
-				<button className="btn btn-primary btn-lg btn-block w-100 my-3" type="submit">Search</button>
+				<button disabled={state.status === 'loading' ? true : false} className="btn btn-primary btn-lg btn-block w-100 my-3" type="submit">Search</button>
 			</form>
 		</div>
 	)

@@ -23,7 +23,7 @@ const AdvancedSearch = memo(function AdvancedSearch({
 		};
 	}
 
-	const handleReset = () => {
+	const reset = () => {
 		if (selectedTypes.length) {
 			setSelectedTypes([]);
 		};
@@ -53,7 +53,7 @@ const AdvancedSearch = memo(function AdvancedSearch({
 						setSelectedTypes={setSelectedTypes} 
 					/>
 					<button 
-						onClick={handleReset} 
+						onClick={reset} 
 						type="button" 
 						className="btn btn-secondary btn-md w-25 bg-danger"
 					>Reset

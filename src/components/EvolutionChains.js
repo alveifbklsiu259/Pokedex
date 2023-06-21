@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import BasicInfo from "./BasicInfo";
 import EvolutionDetails from "./EvolutionDetails";
 
-const EvolutionChains = memo(function EvolutionChains({evolutionChains, cachedPokemons, chainId}) {
+const EvolutionChains = memo(function EvolutionChains({evolutionChains, cachedPokemons, chainId, cachedEvolutionChains}) {
 	// get max depth
 	let maxDepth = 1;
 	evolutionChains.forEach(chain => {
@@ -30,7 +30,7 @@ const EvolutionChains = memo(function EvolutionChains({evolutionChains, cachedPo
 						</li>
 						{index < array.length - 1 && (
 							<li className='caret mt-5 mb-2'>
-								<EvolutionDetails chainId={chainId} pokemonId={array[index + 1]}/>
+								<EvolutionDetails cachedEvolutionChains={cachedEvolutionChains} chainId={chainId} pokemonId={array[index + 1]}/>
 							</li>
 						)}
 					</React.Fragment>
@@ -55,7 +55,7 @@ const EvolutionChains = memo(function EvolutionChains({evolutionChains, cachedPo
 											</li>
 											{index < array.length - 1 && (
 												<li className="caret">
-													<EvolutionDetails chainId={chainId} pokemonId={array[index + 1]}/>
+													<EvolutionDetails cachedEvolutionChains={cachedEvolutionChains} chainId={chainId} pokemonId={array[index + 1]}/>
 												</li>
 											)}
 										</React.Fragment>

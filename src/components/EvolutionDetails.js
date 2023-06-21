@@ -1,6 +1,5 @@
 import { useState, memo } from "react";
 import Modal from "./Modal";
-import { usePokemonData } from "./PokemonsProvider"
 
 const textsForOtherRequirements = {
 	gender: 'Gender',
@@ -22,11 +21,10 @@ const textsForOtherRequirements = {
 	turn_upside_down: 'Hold game system upside-down'
 };
 
-const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId}) {
+const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cachedEvolutionChains}) {
 	const [isModalShown, setIsModalShown] = useState(false);
 
-	const state = usePokemonData();
-	const chainDetails = state.evolutionChains[chainId].details[pokemonId];
+	const chainDetails = cachedEvolutionChains[chainId].details[pokemonId];
 
 	// handle some exceptions
 	let selectedDetail = chainDetails[0];

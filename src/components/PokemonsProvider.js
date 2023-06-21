@@ -25,10 +25,7 @@ const initialState = {
 	intersection: [],
 	generations: {},
 	moves: {},
-	machines: {
-		entities: {},
-		rejectedRequests: []
-	}
+	machines: {}
 }
 
 const reducer = (state, action) => {
@@ -145,14 +142,14 @@ const reducer = (state, action) => {
 			}
 		}
 		case 'machineDataLoaded' : {
-			const newEntities = Object.keys(action.payload.entities).reduce((pre, cur) => {
+			const newEntities = Object.keys(action.payload).reduce((pre, cur) => {
 				pre[cur] = {
-					version_groups: {...state.machines.entities[cur]?.version_groups, ...action.payload.entities[cur].version_groups}
+					version_groups: {...state.machines[cur]?.version_groups, ...action.payload[cur].version_groups}
 				};
 				return pre;
 			}, {});
 			return {
-				...state, machines: {...state.machines, entities: {...state.machines.entities, ...newEntities}, rejectedRequests: action.payload.rejectedRequests}
+				...state, machines: {...state.machines, ...newEntities}
 			}
 		}
 		default : 

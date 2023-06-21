@@ -36,7 +36,7 @@ const Varieties = memo(function Varieties({speciesInfo, pokemon, cachedPokemons,
 			<ul>
 				{speciesInfo.varieties.map(variety => (
 					<React.Fragment key={variety.pokemon.name}>
-						<li className={pokemon.name === variety.pokemon.name ? 'selected' : ''}>
+						<li className={pokemon.name === variety.pokemon.name ? 'active' : ''}>
 							<button className='text-capitalize' onClick={handleClick}>{variety.pokemon.name}</button>
 						</li>
 					</React.Fragment>

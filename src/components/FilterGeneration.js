@@ -27,7 +27,7 @@ const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, s
 				<li 
 					onClick={() => handleClick(generation)} 
 					key={generation.name} 
-					className={`d-flex justify-content-center align-items-center ${Object.keys(selectedGenerations).includes(generation.name) ? 'selected' : ''}`}
+					className={`d-flex justify-content-center align-items-center ${Object.keys(selectedGenerations).includes(generation.name) ? 'active' : ''}`}
 				>{(generation.name.replace('generation-', '')).toUpperCase()}
 				</li>
 			))}

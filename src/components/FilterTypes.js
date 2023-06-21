@@ -41,7 +41,7 @@ const FilterTypes = memo(function FilterTypes ({selectedTypes, setSelectedTypes}
 				<li 
 					onClick={() => handleClick(type)} 
 					key={type.name} 
-					className={`type type-${type.name} ${selectedTypes.includes(type.name) ? 'selected' : ''}`}
+					className={`type type-${type.name} ${selectedTypes.includes(type.name) ? 'active' : ''}`}
 				>{type.name}
 				</li>
 			))}
