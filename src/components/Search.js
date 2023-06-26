@@ -1,17 +1,19 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import pokeBall from '../assets/pokeBall.png';
 import { usePokemonData, useDispatchContenxt } from './PokemonsProvider';
-import { useState, useEffect, useMemo } from 'react';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
 import { getPokemons } from '../api';
 import { getIdFromURL } from '../util';
 
-export default function Search() {
+export default function Search({closeModal}) {
 	const state = usePokemonData();
 	const dispatch = useDispatchContenxt();
 	const [searchParam, setSearchParam] = useState('');
 	const [selectedGenerations, setSelectedGenerations] = useState({});
 	const [selectedTypes, setSelectedTypes] = useState([]);
+	const navigate = useNavigate();
 	// to cache Input
 	const cachedPokemonNames = useMemo(() => {
 		return Object.keys(state.allPokemonNamesAndIds);
@@ -69,7 +71,6 @@ export default function Search() {
 			const finalData = await Promise.all(datas);
 			const typesArrayToCompare = finalData.map(type => type.pokemon);
 			const flattenedTypesArrayToCompare = typesArrayToCompare.map(type => type.map(pokemon => getIdFromURL(pokemon.pokemon.url)));
-			console.log(flattenedTypesArrayToCompare)
 			for (let i = 0; i < flattenedTypesArrayToCompare.length; i ++) {
 				intersection = intersection.filter(pokemon => flattenedTypesArrayToCompare[i].includes(pokemon));
 			};
@@ -83,7 +84,20 @@ export default function Search() {
 			dispatch({type: 'advancedSearchChanged', payload: {field: 'types', data: selectedTypes}});
 			getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, intersection, state.sortBy, state.status);
 		};
-		document.querySelector('.sort').scrollIntoView();
+		if (closeModal) {
+			closeModal();
+		};
+		if (document.querySelector('.sort')) {
+			document.querySelector('.sort').scrollIntoView();
+		} else {
+			navigate('/');
+			setTimeout(() => {
+				document.querySelector('.sort').scrollIntoView();
+			}, 10)
+			// setTimeout(() => {
+			// 	window.scrollTo(0, 0)
+			// }, 10)
+		};
 	}
 
 	return (

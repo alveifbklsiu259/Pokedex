@@ -1,4 +1,4 @@
-import { useRef, memo } from "react"
+import { useRef, memo, useId } from "react"
 import FilterGeneration from "./FilterGeneration";
 import FilterTypes from "./FilterTypes";
 import { useDispatchContenxt } from "./PokemonsProvider";
@@ -12,6 +12,7 @@ const AdvancedSearch = memo(function AdvancedSearch({
 	setSelectedGenerations,
 }) {
 	const ref = useRef(null);
+	const collapseId = useId();
 	const dispatch = useDispatchContenxt();
 	const changeIcon = () => {
 		if (ref.current.closest('button').getAttribute('aria-expanded') === 'true') {
@@ -39,10 +40,10 @@ const AdvancedSearch = memo(function AdvancedSearch({
 	};
 	return (
 		<div className="advancedSearch text-center mt-3">
-			<button type="button" data-bs-toggle="collapse" data-bs-target="#advanced_search" aria-expanded="false" aria-controls="advanced_search" onClick={changeIcon}>
+			<button type="button" data-bs-toggle="collapse" data-bs-target={`#${collapseId}`} aria-expanded="false" aria-controls={collapseId} onClick={changeIcon}>
 				Show Advanced Search <i ref={ref} className="fa-solid fa-caret-down"></i>
 			</button>
-			<div className="collapse" id="advanced_search">
+			<div className="collapse" id={collapseId}>
 				<div className="container m-0 row justify-content-center">
 					<FilterGeneration 
 						selectedGenerations={selectedGenerations} 
@@ -55,7 +56,7 @@ const AdvancedSearch = memo(function AdvancedSearch({
 					<button 
 						onClick={reset} 
 						type="button" 
-						className="btn btn-secondary btn-md w-25 bg-danger"
+						className="btn btn-md resetBtn bg-danger"
 					>Reset
 					</button>
 				</div>

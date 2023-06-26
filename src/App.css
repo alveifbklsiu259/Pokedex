@@ -263,7 +263,7 @@ h1 {
     width: 80%;
     max-width: 600px;
     position: absolute;
-    top: 35%;
+    top: 40%;
     left: 50%;
     transform: translate(-50%, -50%);
     box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.1) 0px 8px 24px, rgba(17, 17, 26, 0.1) 0px 16px 56px;
@@ -496,6 +496,9 @@ h1 {
     margin: 200px 0;
 }
 
+.moves .varieties {
+    white-space: nowrap;
+}
 
 /* React Data Table */
 
@@ -536,7 +539,18 @@ h1 {
     cursor: pointer;
 }
 
+.dropdown-menu button {
+    border: none;
+    color: #fff;
+    background-color: transparent;
+}
+
 /* advanced search */
+.advancedSearch {
+    max-height: 35vh;
+    overflow: auto;
+}
+
 .advancedSearch button {
     border: none;
     background-color: inherit;
@@ -567,6 +581,12 @@ h1 {
 .advancedSearch .typesFilter li.active {
     outline-offset: 3px;
     outline: 2px solid #FF5722;
+}
+
+.advancedSearch .resetBtn {
+    min-width: 50px;
+    max-width: 150px;
+    color: #fff
 }
 
 /* input */
@@ -738,6 +758,22 @@ h1 {
     min-width: 100px;
 }
 
+/* navbar */
+
+.searchModal {
+    color: #000;
+    max-height: 60vh;
+}
+
+.searchModal .card-body {
+    margin: 0 !important;
+    border-radius: 0 0 10px 10px;
+}
+
+.navbar i {
+    font-size: 25px
+}
+
 @media(min-width: 576px) {
 
     /* basicInfo */
@@ -769,5 +805,10 @@ h1 {
         display: flex;
         justify-content: space-around;
         flex-wrap: wrap;
+    }
+
+    /* navbar */
+    .searchModal {
+        max-width: 60vw;
     }
 }

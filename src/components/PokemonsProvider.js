@@ -152,6 +152,11 @@ const reducer = (state, action) => {
 				...state, machines: {...state.machines, ...newEntities}
 			}
 		}
+		case 'languageChanged' : {
+			return {
+				...state, language: action.payload
+			}
+		}
 		default : 
 			return state
 	}
@@ -162,7 +167,6 @@ export default function PokemonsProvider({children}) {
 
 	// can i batch dispatches in provider too?
 	// see if i can batch dispatches between PokemonProvider and Pokemon
-
 	useEffect(()=> {
 		const getInitialPokemonData = async () => {
 			let generationData;

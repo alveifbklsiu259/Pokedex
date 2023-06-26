@@ -140,7 +140,7 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cac
 		</ul>
 	);
 
-	const handleShowModal = () => {
+	const showModal = () => {
 		setIsModalShown(true);
 	};
 
@@ -148,7 +148,7 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cac
 		<>
 			<div className="evolutionDetails">
 				<div className="mainText">{mainText}</div>
-				{Object.keys(requirements).length ? <i className="fa-solid fa-circle-info" onClick={handleShowModal}></i> : ''}
+				{Object.keys(requirements).length ? <i className="fa-solid fa-circle-info" onClick={showModal}></i> : ''}
 			</div>
 			{
 				Object.keys(requirements).length > 0 && (

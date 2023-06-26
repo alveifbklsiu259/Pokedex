@@ -11,7 +11,7 @@ const Abilities = memo(function Abilities({abilities, pokemon, cachedAbilities})
 	const dispatch = useDispatchContenxt();
 	const language = 'en'
 
-	const handleShowModal = async ability => {
+	const showModal = async ability => {
 		const abilityKey = transformToKeyName(ability);
 
 		if (abilityData && abilityData.name !== ability) {
@@ -31,7 +31,7 @@ const Abilities = memo(function Abilities({abilities, pokemon, cachedAbilities})
 		}
 	}
 
-	const handleShowDetail = () => {
+	const showModalDetail = () => {
 		setIsDetail(!isDetail);
 	};
 
@@ -49,7 +49,7 @@ const Abilities = memo(function Abilities({abilities, pokemon, cachedAbilities})
 			{abilities.map(ability => (
 			<div key={ability}>
 				<span className='me-2'>{ability}</span>
-				<i onClick={() => {handleShowModal(ability)}} className="fa-solid fa-circle-question"></i>
+				<i onClick={() => {showModal(ability)}} className="fa-solid fa-circle-question"></i>
 				<br />
 			</div>
 			))}
@@ -71,7 +71,7 @@ const Abilities = memo(function Abilities({abilities, pokemon, cachedAbilities})
 								</p>
 							</div>
 							<div className='modalBtnContainer'>
-								<button onClick={handleShowDetail} className="btn btn-warning">Show {isDetail ? 'Brief' : 'Detail'}</button>
+								<button onClick={showModalDetail} className="btn btn-warning">Show {isDetail ? 'Brief' : 'Detail'}</button>
 							</div>
 						</>
 					) : (

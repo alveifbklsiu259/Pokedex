@@ -25,12 +25,14 @@ export default function Sort({status}) {
 	return (
 		<>
 			<div className="sort dropdown text-end mb-4">
-				<button disabled={state.status === 'loading' ? true : false} className="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+				<button className="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
 					Sort By {dropdownOptions.filter(option => option.value === state.sortBy)[0].text}
 				</button>
 				<ul className="dropdown-menu dropdown-menu-dark">
 					{dropdownOptions.map(option => (
-						<li key={option.value} onClick={() => handleClick(option.value)} className={`dropdown-item ${state.sortBy === option.value ? 'active' : ''}`} >{option.text}</li>
+						<li key={option.value} onClick={() => handleClick(option.value)} className={`dropdown-item ${state.sortBy === option.value ? 'active' : ''}`}>
+							<button className="w-100" disabled={state.status === 'loading' ? true : false}>{option.text}</button>
+						</li>
 					))}
 				</ul>
 			</div>

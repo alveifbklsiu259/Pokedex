@@ -23,7 +23,6 @@ export default function Pokemons() {
 			getPokemonsOnScroll(dispatch, state.nextRequest, state.pokemons, state.display);
 		};
 	}, [state.status, state.nextRequest, state.pokemons, state.display, dispatch]);
-
 	useEffect(() => {
 		window.addEventListener('scroll', handleScroll);
 		return () => window.removeEventListener('scroll', handleScroll);

@@ -11,7 +11,6 @@ export default function Modal({customClass, isModalShown, setIsModalShown, setIs
 		e.stopPropagation();
 	};
 
-
 	return (
 		<>
 			<div className={`modalBg ${isModalShown ? 'showModal' : 'hideModal'}`} onClick={handleCloseModal}>
