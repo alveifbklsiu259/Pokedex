@@ -13,8 +13,6 @@ const MoveEffect = ({data, selectedVersion}) => {
 		};
 	})?.flavor_text || 'No data to show';
 
-	console.log(data.flavorText)
-
 	return (
 		<div className="moveDes">
 			{data?.level?.type === 'span' && (

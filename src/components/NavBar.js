@@ -41,13 +41,17 @@ export default function NavBar() {
 		setIsModalShown(false);
 	};
 
+	const backToRoot = () => {
+		dispatch({type: 'backToRoot'})
+	}
+
 	return (
 		<div className='navbar'>
 			<Box sx={{ flexGrow: 1, mb: 9 }}>
 				<HideOnScroll>
 					<AppBar sx={{bgcolor: theme => theme.palette.primary.light, position: 'fixed'}}>
 						<Toolbar sx={{justifyContent: 'space-between'}}>
-						<Typography variant="h5" component={Link} to="/" color="#fff" onClick={() => dispatch({type: 'backToRoot'})}>Pokédex</Typography>
+						<Typography variant="h5" component={Link} to="/" color="#fff" onClick={backToRoot}>Pokédex</Typography>
 						<Box sx={{display: 'flex'}}>
 							<Button size='large' variant="contained" onClick={showModal}><i className="fa-solid fa-magnifying-glass"></i></Button>
 							<LanguageMenu />

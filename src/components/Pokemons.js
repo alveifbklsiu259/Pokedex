@@ -18,6 +18,7 @@ export default function Pokemons() {
 		// changes in other fields of state will not affect these dependencies, they will still point to the same references, since we only shallow copy {...state} in each action case.
 	}, [state.display, state.pokemons]);
 
+	console.log(state)
 	const handleScroll = useCallback(() => {
 		if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight && state.status === 'idle' && state.nextRequest !== null) {
 			getPokemonsOnScroll(dispatch, state.nextRequest, state.pokemons, state.display);

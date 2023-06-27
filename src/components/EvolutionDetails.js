@@ -72,7 +72,9 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cac
 		case 'shed' : 
 			mainText = 'Level 20, Empty spot in party, Pokéball in bag';
 			break;
-
+		case 'other' :
+			mainText = 'No Data'
+			break;
 		default : 
 			mainText = '';
 	};

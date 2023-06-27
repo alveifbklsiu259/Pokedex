@@ -36,6 +36,27 @@ export default function LanguageMenu() {
 		handleClose();
 		const selectedLanguage = Object.keys(languageOptions).find(option => languageOptions[option] === e.target.outerText);
 		dispatch({type: 'languageChanged', payload: selectedLanguage});
+		
+		
+		
+		
+		
+		
+		
+		
+		// if on root
+		// fetch pokemon-species to get relevant names, --> when click language btn, fetch pokemon-species, then fetch pokemon-species when scrolling.
+		// fetch types  to get relevant types
+
+		// if on pokemon, we also need
+		// abilities
+		// flavor text
+		// version names
+		// moves name
+		// move effect, flavor text
+
+		// translate height, weight, stats,
+
 	};
 
 	return (
@@ -82,6 +103,7 @@ export default function LanguageMenu() {
 					<MenuItem
 						sx={{
 							mx: 1,
+							my: 0.4,
 							borderRadius: 2
 						}}
 						key={option} 

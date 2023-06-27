@@ -16,7 +16,7 @@ export default function ErrorPage() {
 
 	const handleBack = () => {
 		dispatch({type: 'backToRoot'});
-		navigate('/');
+		navigate('/', {state: 'backToRoot'});
 	};
 	
 	const handleSubmit = e => {

@@ -8,7 +8,7 @@ export default function RootRoute () {
 		<>
 			<ScrollRestoration getKey={location => {
 				const paths = ["/"];
-				return paths.includes(location.pathname) ? location.pathname : location.key;
+				return !paths.includes(location.pathname) || location.state === 'backToRoot' ? location.key : location.pathname;
 			}}/>
 			<NavBar />
 			<Outlet />

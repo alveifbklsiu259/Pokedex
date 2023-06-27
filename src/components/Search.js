@@ -84,19 +84,20 @@ export default function Search({closeModal}) {
 			dispatch({type: 'advancedSearchChanged', payload: {field: 'types', data: selectedTypes}});
 			getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, intersection, state.sortBy, state.status);
 		};
+
+		// for search modal
 		if (closeModal) {
 			closeModal();
 		};
+
+		// currently on root
 		if (document.querySelector('.sort')) {
 			document.querySelector('.sort').scrollIntoView();
 		} else {
-			navigate('/');
+			navigate('/', {state: 'backToRoot'});
 			setTimeout(() => {
 				document.querySelector('.sort').scrollIntoView();
 			}, 10)
-			// setTimeout(() => {
-			// 	window.scrollTo(0, 0)
-			// }, 10)
 		};
 	}
 
