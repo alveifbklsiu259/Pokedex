@@ -1,52 +1,38 @@
 import pokeBall from '../assets/ball.svg';
-import { useState, useEffect, memo } from 'react';
+import { memo } from 'react';
+import { usePokemonData } from './PokemonsProvider';
+import { getNameByLanguage } from '../util';
 
-const FilterTypes = memo(function FilterTypes ({selectedTypes, setSelectedTypes}) {
-	const [types, setTypes] = useState([]);
+const FilterTypes = memo(function FilterTypes ({selectedTypes, setSelectedTypes, cachedTypes}) {
+	const state = usePokemonData();
+
 	const handleClick = type => {
 		setSelectedTypes(() => {
 			const update = [...selectedTypes];
-			if (update.includes(type.name)) {
-				update.splice(update.indexOf(type.name), 1);
+			if (update.includes(type)) {
+				update.splice(update.indexOf(type), 1);
 			} else {
-				update.push(type.name)
+				update.push(type)
 			}
 			return update;
 		});
 	};
-
-	useEffect(() => {
-		let ignore = false;
-
-		const getTypes = async () => {
-			const response = await fetch('https://pokeapi.co/api/v2/type');
-			const data = await response.json();
-			if (!ignore) {
-				setTypes(data.results);
-			}
-		};
-		getTypes();
-
-		return () => {
-			ignore = true
-		}
-	}, []);
 
 	return (
 		<ul className="typesFilter col-12 col-sm-6 row justify-content-center gap-3">
 			<div>
 				<h3 ><img className="pokeBall" src={pokeBall} alt="pokeBall" /> Types</h3>
 			</div>
-			{types.filter(type => type.name !== 'unknown' && type.name !== 'shadow').map(type => (
+			{Object.keys(cachedTypes).filter(type => type !== 'unknown' && type !== 'shadow').map(type => (
 				<li 
 					onClick={() => handleClick(type)} 
-					key={type.name} 
-					className={`type type-${type.name} ${selectedTypes.includes(type.name) ? 'active' : ''}`}
-				>{type.name}
+					key={type} 
+					className={`type type-${type} ${selectedTypes.includes(type) ? 'active' : ''}`}
+				>{getNameByLanguage(type, state.language, state.types[type])}
 				</li>
 			))}
 		</ul>
 	)
 });
 
-export default FilterTypes
+export default FilterTypes;

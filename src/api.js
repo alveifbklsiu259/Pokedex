@@ -1,6 +1,8 @@
 // import { useEffect, useState } from "react";
 // import { usePokemonData } from "./components/PokemonsProvider";
 
+import { transformToKeyName } from "./util";
+
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
 // export const getIndividualPokemon = async (pokemon, dispatch) => {
@@ -64,10 +66,8 @@ export const getIndividualtData = async (dataType, pokemon) => {
  * @returns 
  */
 
-export const getPokemonsToFetch = (cachedPokemons, pokemonsToDisplay) => {
-	const cachedPokemonIds = Object.values(cachedPokemons).map(pokemon => pokemon.id);
-	return pokemonsToDisplay.filter(pokemon => !cachedPokemonIds.includes(pokemon));
-};
+export const getDataToFetch = (cachedData, dataToDisplay) => dataToDisplay.filter(data => !cachedData[data]);
+
 
 /**
  * 
@@ -77,26 +77,40 @@ export const getPokemonsToFetch = (cachedPokemons, pokemonsToDisplay) => {
  * @returns 
  */
 
-export const getMultiplePokemons = async pokemonsToFetch => {
+export const getMultipleData = async (dataType, dataToFetch, resultKey) => {
 	//pass in id or name
-	const dataResponses = await Promise.all(pokemonsToFetch.map(pokemon => fetch(`${BASE_URL}/pokemon/${pokemon}`)));
+	const dataResponses = await Promise.all(dataToFetch.map(entry => fetch(`${BASE_URL}/${dataType}/${entry}`)));
 	const datas = dataResponses.map(response => response.json());
 	const finalData = await Promise.all(datas);
 	const obj = {};
 	for (let i of finalData) {
-		obj[i.id] = i
+		obj[transformToKeyName(String(i[resultKey]))] = i
 	};
 	return obj;
 };
 
+// utility for getPokemons and getPokemonsOnScroll
+const batchDispatch = async (dispatch, pokemonsToFetch, nextRequest, displayedPokemons, pokemonsToDisplay) => {
+	let fetchedPokemons;
+	// only make request when necessary
+	if (pokemonsToFetch.length) {
+		fetchedPokemons = await getMultipleData('pokemon', pokemonsToFetch, 'id');
+	};
+	if (fetchedPokemons) {
+		dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: nextRequest}});
+	} else {
+		dispatch({type: 'nextRequestChanged', payload: nextRequest});
+	};
+	dispatch({type: 'displayChanged', payload: [...displayedPokemons, ...pokemonsToDisplay]});
+};
 
 export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndIds, request, sortOption, status) => {
 	// preload data for weight/height sort options
-	const preloadDataForSort = async pokemonsToFetch => {
+	const preloadData = async pokemonsToFetch => {
 		if (status !== 'loading') {
 			dispatch({type:'dataLoading'});
 		};
-		const fetchedPokemons = await getMultiplePokemons(pokemonsToFetch);
+		const fetchedPokemons = await getMultipleData('pokemon', pokemonsToFetch, 'id');
 		const allPokemons = {...cachedPokemons, ...fetchedPokemons};
 		return [fetchedPokemons, allPokemons];
 	};
@@ -134,21 +148,15 @@ export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndId
 			case 'numberDesc' : {
 				return [...request].sort((a, b) => b - a);
 			}
-			case 'nameAsc' : {
-				return sortPokemonsByName();
-			}
+			case 'nameAsc' : 
 			case 'nameDesc' : {
 				return sortPokemonsByName();
 			}
-			case 'heightAsc' : {
-				return sortPokemonsByWeightOrHeight('height');
-			}
+			case 'heightAsc' : 
 			case 'heightDesc' : {
 				return sortPokemonsByWeightOrHeight('height');
 			}
-			case 'weightAsc' : {
-				return sortPokemonsByWeightOrHeight('weight');
-			}
+			case 'weightAsc' :
 			case 'weightDesc' : {
 				return sortPokemonsByWeightOrHeight('weight');
 			}
@@ -159,13 +167,13 @@ export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndId
 		};
 	};
 
-	let pokemonsToFetch, nextRequest, pokemonsToDisplay, fetchedPokemons, allPokemons;
+	let pokemonsToFetch, nextRequest, pokemonsToDisplay, fetchedPokemons, allPokemons
 
-	// for weight / height sort options
+	// for weight / height sort options, fetch all pokemons for sorting
 	if (sortOption.includes('weight') || sortOption.includes('height')) {
-		pokemonsToFetch = getPokemonsToFetch(cachedPokemons, request);
+		pokemonsToFetch = getDataToFetch(cachedPokemons, request);
 		if (pokemonsToFetch.length) {
-			[fetchedPokemons, allPokemons] = await preloadDataForSort(pokemonsToFetch);
+			[fetchedPokemons, allPokemons] = await preloadData(pokemonsToFetch);
 		} else {
 			allPokemons = {...cachedPokemons};
 		};
@@ -174,44 +182,31 @@ export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndId
 	pokemonsToDisplay = sortedRequest.splice(0, 24);
 	nextRequest = sortedRequest.length ? sortedRequest : null;
 
-	//get uncached pokemons for name / id sort options
+	// get uncached pokemons for name / id sort options
 	if (pokemonsToFetch === undefined) {
-		pokemonsToFetch = getPokemonsToFetch(cachedPokemons, pokemonsToDisplay);
+		pokemonsToFetch = getDataToFetch(cachedPokemons, pokemonsToDisplay);
 	};
-	
-	// only make request when necessary
+
+	// for options other than heigh/weight
 	if (pokemonsToFetch.length && fetchedPokemons === undefined) {
 		if (status !== 'loading') {
 			dispatch({type:'dataLoading'});
 		};
-		fetchedPokemons = await getMultiplePokemons(pokemonsToFetch);
 	};
-
-	// for all sort options, if there's any fetched pokemons
-	if (fetchedPokemons !== undefined) {
-		dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: nextRequest}});
-	} else {
-		dispatch({type: 'nextRequestChanged', payload: nextRequest})
-	};
-	dispatch({type: 'displayChanged', payload: pokemonsToDisplay});
+	batchDispatch(dispatch, pokemonsToFetch, nextRequest, [], pokemonsToDisplay)
 };
 
 // request has already been sorted based on sort options
 export const getPokemonsOnScroll = async (dispatch, request, cachedPokemons, displayedPokemons) => {
 	dispatch({type: 'scrolling'});
-	let fetchedPokemons;
 	const pokemonsToDisplay = request.splice(0, 24);
 	const nextRequest = request.length ? request : null;
-	const pokemonsToFetch = getPokemonsToFetch(cachedPokemons, pokemonsToDisplay);
-	if (pokemonsToFetch.length) {
-		fetchedPokemons = await getMultiplePokemons(pokemonsToFetch);
-		dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: nextRequest}});
-	} else {
-		dispatch({type: 'nextRequestChanged', payload: nextRequest});
-	}
-	dispatch({type: 'displayChanged', payload: [...displayedPokemons, ...pokemonsToDisplay]});
-	// if all pokemons are cached, these dispatches will be batched, which means there will no scrolling status anymore
+	const pokemonsToFetch = getDataToFetch(cachedPokemons, pokemonsToDisplay);
+	batchDispatch(dispatch, pokemonsToFetch, nextRequest, displayedPokemons, pokemonsToDisplay)
 };
+
+
+
 
 
 // problem:

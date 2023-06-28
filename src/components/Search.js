@@ -18,6 +18,7 @@ export default function Search({closeModal}) {
 	const cachedPokemonNames = useMemo(() => {
 		return Object.keys(state.allPokemonNamesAndIds);
 	}, [state.allPokemonNamesAndIds]);
+	const cachedTypes = useMemo(() => state.types, [state.types]);
 	let pokemonRange = [];
 
 	// get range
@@ -66,10 +67,7 @@ export default function Search({closeModal}) {
 
 		// handle types
 		if (selectedTypes.length) {
-			const dataResponses = await Promise.all(selectedTypes.map(type => fetch(`https://pokeapi.co/api/v2/type/${type}`)));
-			const datas = dataResponses.map(response => response.json());
-			const finalData = await Promise.all(datas);
-			const typesArrayToCompare = finalData.map(type => type.pokemon);
+			const typesArrayToCompare = selectedTypes.map(type => state.types[type].pokemon);
 			const flattenedTypesArrayToCompare = typesArrayToCompare.map(type => type.map(pokemon => getIdFromURL(pokemon.pokemon.url)));
 			for (let i = 0; i < flattenedTypesArrayToCompare.length; i ++) {
 				intersection = intersection.filter(pokemon => flattenedTypesArrayToCompare[i].includes(pokemon));
@@ -121,6 +119,7 @@ export default function Search({closeModal}) {
 					setSelectedTypes={setSelectedTypes} 
 					selectedGenerations={selectedGenerations} 
 					setSelectedGenerations={setSelectedGenerations}
+					cachedTypes={cachedTypes}
 				/>
 				<button disabled={state.status === 'loading' ? true : false} className="btn btn-primary btn-lg btn-block w-100 my-3" type="submit">Search</button>
 			</form>

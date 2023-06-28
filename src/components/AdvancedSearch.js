@@ -10,6 +10,7 @@ const AdvancedSearch = memo(function AdvancedSearch({
 	setSelectedTypes,
 	selectedGenerations,
 	setSelectedGenerations,
+	cachedTypes
 }) {
 	const ref = useRef(null);
 	const collapseId = useId();
@@ -51,7 +52,8 @@ const AdvancedSearch = memo(function AdvancedSearch({
 					/>
 					<FilterTypes 
 						selectedTypes={selectedTypes} 
-						setSelectedTypes={setSelectedTypes} 
+						setSelectedTypes={setSelectedTypes}
+						cachedTypes={cachedTypes}
 					/>
 					<button 
 						onClick={reset} 

@@ -24,6 +24,7 @@ const initialState = {
 	allPokemonNamesAndIds: {},
 	intersection: [],
 	generations: {},
+	types: {},
 	moves: {},
 	machines: {}
 }
@@ -32,7 +33,7 @@ const reducer = (state, action) => {
 	switch (action.type) {
 		case 'languageChanged' : {
 			return {
-				...state, language : action.payload
+				...state, language: action.payload
 			}
 		}
 		case 'dataLoading' : {
@@ -72,7 +73,7 @@ const reducer = (state, action) => {
 		}
 		case 'pokemonSpeciesLoaded' : {
 			return {
-				...state, status: 'idle', pokemonSpecies: {...state.pokemonSpecies, [action.payload.id]: action.payload}
+				...state, status: 'idle', pokemonSpecies: {...state.pokemonSpecies, ...action.payload}
 			}
 		}
 		case "evolutionChainsLoaded" : {
@@ -111,7 +112,7 @@ const reducer = (state, action) => {
 				...state, display: action.payload, status: 'idle'
 			}
 		}
-		case 'getAllPokemonNamesAndIds' : {
+		case 'pokemonNamesAndIdsLoaded' : {
 			return {
 				...state, allPokemonNamesAndIds: action.payload
 			}
@@ -128,12 +129,17 @@ const reducer = (state, action) => {
 		}
 		case 'abilityLoaded' : {
 			return {
-				...state, abilities: {...state.abilities, [action.payload.abilityKey]: action.payload.data}
+				...state, status: 'idle', abilities: {...state.abilities, ...action.payload}
 			}
 		}
 		case 'getGenerations' : {
 			return {
 				...state, generations: action.payload
+			}
+		}
+		case 'getTypes' : {
+			return {
+				...state, types: action.payload
 			}
 		}
 		case 'movesLoaded' : {
@@ -152,11 +158,6 @@ const reducer = (state, action) => {
 				...state, machines: {...state.machines, ...newEntities}
 			}
 		}
-		case 'languageChanged' : {
-			return {
-				...state, language: action.payload
-			}
-		}
 		default : 
 			return state
 	}
@@ -169,7 +170,7 @@ export default function PokemonsProvider({children}) {
 	// see if i can batch dispatches between PokemonProvider and Pokemon
 	useEffect(()=> {
 		const getInitialPokemonData = async () => {
-			let generationData;
+			let generationData, typesData;
 			//  either remove this dataLoading dispatch or..
 			dispatch({type:'dataLoading'});
 			// get pokemons amount
@@ -188,7 +189,7 @@ export default function PokemonsProvider({children}) {
 				intersection.push(i);
 			};
 
-			const getGenerationInfo = async () => {
+			const getGenerationsData = async () => {
 				const response = await fetch('https://pokeapi.co/api/v2/generation');
 				const data = await response.json();
 				const responses = await Promise.all(data.results.map(generation => fetch(generation.url)));
@@ -199,14 +200,30 @@ export default function PokemonsProvider({children}) {
 					return pre;
 				}, {})
 			};
-			await getGenerationInfo();
+			await getGenerationsData();
+
+			const getTypesData = async () => {
+				const response = await fetch('https://pokeapi.co/api/v2/type');
+				const data = await response.json();
+				const responses = await Promise.all(data.results.map(type => fetch(type.url)));
+				const datas = responses.map(response => response.json());
+				const finalData = await Promise.all(datas);
+				typesData = finalData.reduce((pre, cur) => {
+					pre[transformToKeyName(cur.name)] = cur;
+					return pre;
+				}, {})
+			};
+			await getTypesData();
 
 			await getPokemons(dispatch, {}, pokemonsNamesAndId, intersection, 'numberAsc', 'loading');
 			dispatch({type: 'getPokemonCount', payload: data.count});
-			dispatch({type: 'getAllPokemonNamesAndIds', payload: pokemonsNamesAndId});
+			dispatch({type: 'pokemonNamesAndIdsLoaded', payload: pokemonsNamesAndId});
 			dispatch({type: 'intersectionChanged', payload: intersection});
 			dispatch({type: 'getGenerations', payload: generationData});
+			dispatch({type: 'getTypes', payload: typesData});
 			// cache input 
+
+			// encapsulate type/generation logic
 		};
 			getInitialPokemonData()
 	}, [dispatch]);

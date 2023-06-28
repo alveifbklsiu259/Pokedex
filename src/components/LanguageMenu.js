@@ -3,12 +3,17 @@ import { usePokemonData, useDispatchContenxt } from './PokemonsProvider';
 import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import { getDataToFetch, getMultipleData } from '../api';
+import { transformToDash } from '../util';
 
 const languageOptions = {
 	en: 'English',
 	ja: '日本語',
-	zh_Hant: '正體中文 (繁體)',
-	ko: '한국어'
+	zh_Hant: '繁體中文',
+	zh_Hans: '简体中文',
+	ko: '한국어',
+	fr: 'Français',
+	de: 'Deutsch',
 };
 
 export default function LanguageMenu() {
@@ -32,21 +37,38 @@ export default function LanguageMenu() {
 		};
 	}, [handleClose]);
 
-	const changeLanguage = e => {
+	const changeLanguage = async e => {
+		let speciesData = state.pokemonSpecies;
 		handleClose();
 		const selectedLanguage = Object.keys(languageOptions).find(option => languageOptions[option] === e.target.outerText);
 		dispatch({type: 'languageChanged', payload: selectedLanguage});
-		
-		
-		
-		
-		
-		
+
+		// get species
+		const range = [];
+		for (let i = 1; i <= state.pokemonCount; i ++) {
+			range.push(i)
+		};
+		const speciesDataToFetch = getDataToFetch(state.pokemonSpecies, range);
+		if (speciesDataToFetch.length) {
+			dispatch({type: 'dataLoading'});
+			const fetchedSpeciesData = await getMultipleData('pokemon-species', speciesDataToFetch, 'id');
+			dispatch({type: 'pokemonSpeciesLoaded', payload: fetchedSpeciesData});
+			speciesData = fetchedSpeciesData;
+		};
+		const pokemonsNamesAndId = Object.values(speciesData).reduce((pre, cur) => {
+			pre[cur.names.find(entry => entry.language.name === transformToDash(selectedLanguage)).name || cur.name] = cur.id;
+			return pre
+		}, {});
+		dispatch({type: 'pokemonNamesAndIdsLoaded', payload: pokemonsNamesAndId});
+
+		// I'll currently read language from state, when the logic is done, see if we can pass language down instead of reading from state
+		// search state.language
 		
 		
 		// if on root
 		// fetch pokemon-species to get relevant names, --> when click language btn, fetch pokemon-species, then fetch pokemon-species when scrolling.
 		// fetch types  to get relevant types
+		// datalist
 
 		// if on pokemon, we also need
 		// abilities
@@ -57,6 +79,8 @@ export default function LanguageMenu() {
 
 		// translate height, weight, stats,
 
+
+		//A form field element should have an id or name attribute
 	};
 
 	return (

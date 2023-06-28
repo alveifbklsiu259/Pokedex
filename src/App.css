@@ -68,7 +68,7 @@ h1 {
 .type {
     padding: 0 10px;
     height: fit-content;
-    min-width: 75px;
+    min-width: 80px;
     max-width: 100px;
     border-radius: 10px;
     display: block;
@@ -546,11 +546,6 @@ h1 {
 }
 
 /* advanced search */
-.advancedSearch {
-    max-height: 35vh;
-    overflow: auto;
-}
-
 .advancedSearch button {
     border: none;
     background-color: inherit;
@@ -764,6 +759,11 @@ h1 {
     color: #000;
     max-height: 60vh;
 }
+
+.searchModal .advancedSearch {
+    max-height: 35vh;
+    overflow: auto;
+} 
 
 .searchModal .card-body {
     margin: 0 !important;
