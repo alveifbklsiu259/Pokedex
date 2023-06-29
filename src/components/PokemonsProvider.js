@@ -27,7 +27,11 @@ const initialState = {
 	types: {},
 	moves: {},
 	machines: {},
-	items: {}
+	// belowe are data that currently only required when language !== 'en'
+	items: {},
+	versions: {},
+	move_damage_class: {},
+	stats: {}
 }
 
 const reducer = (state, action) => {
@@ -115,7 +119,7 @@ const reducer = (state, action) => {
 		}
 		case 'pokemonNamesAndIdsLoaded' : {
 			return {
-				...state, allPokemonNamesAndIds: action.payload
+				...state, status: 'idle', allPokemonNamesAndIds: action.payload
 			}
 		}
 		case 'intersectionChanged' : {
@@ -164,6 +168,21 @@ const reducer = (state, action) => {
 				...state, items: {...state.items, ...action.payload}
 			}
 		}
+		case 'getVersions' : {
+			return {
+				...state, status: 'idle', versions: action.payload
+			}
+		}
+		case 'getMoveDamageClass' : {
+			return {
+				...state, move_damage_class: action.payload
+			}
+		}
+		case 'getStats' : {
+			return {
+				...state, stats: action.payload
+			}
+		}
 		default : 
 			return state
 	}
@@ -171,7 +190,6 @@ const reducer = (state, action) => {
 
 export default function PokemonsProvider({children}) {
 	const [state, dispatch] = useReducer(reducer, initialState);
-
 	// can i batch dispatches in provider too?
 	// see if i can batch dispatches between PokemonProvider and Pokemon
 	useEffect(()=> {

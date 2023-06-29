@@ -43,6 +43,9 @@ export default function Pokemons() {
 			</>
 		)
 	};
+
+	console.log(state)
+
 	return (
 		<>
 			<div className="container">

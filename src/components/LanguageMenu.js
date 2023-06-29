@@ -4,7 +4,7 @@ import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { getDataToFetch, getMultipleData } from '../api';
-import { transformToDash } from '../util';
+import { getIdFromURL, transformToDash } from '../util';
 
 const languageOptions = {
 	en: 'English',
@@ -37,29 +37,76 @@ export default function LanguageMenu() {
 		};
 	}, [handleClose]);
 
-	const changeLanguage = async e => {
-		let speciesData = state.pokemonSpecies;
+	const changeLanguage = async option => {
+		const speciesData = state.pokemonSpecies;
+		let fetchedSpeciesData, fetchedVersions, fetchedMoveDamageClass, fetchedStats;
+		dispatch({type: 'languageChanged', payload: option});
 		handleClose();
-		const selectedLanguage = Object.keys(languageOptions).find(option => languageOptions[option] === e.target.outerText);
-		dispatch({type: 'languageChanged', payload: selectedLanguage});
 
-		// get species
-		const range = [];
-		for (let i = 1; i <= state.pokemonCount; i ++) {
-			range.push(i)
-		};
-		const speciesDataToFetch = getDataToFetch(state.pokemonSpecies, range);
-		if (speciesDataToFetch.length) {
+		if (Object.keys(state.pokemonSpecies).length !== state.pokemonCount || !Object.keys(state.versions).length || !Object.keys(state.move_damage_class).length || !Object.keys(state.stats).length) {
 			dispatch({type: 'dataLoading'});
-			const fetchedSpeciesData = await getMultipleData('pokemon-species', speciesDataToFetch, 'id');
-			dispatch({type: 'pokemonSpeciesLoaded', payload: fetchedSpeciesData});
-			speciesData = fetchedSpeciesData;
 		};
-		const pokemonsNamesAndId = Object.values(speciesData).reduce((pre, cur) => {
-			pre[cur.names.find(entry => entry.language.name === transformToDash(selectedLanguage)).name || cur.name] = cur.id;
+
+		// get species, need all of them
+		if (Object.keys(state.pokemonSpecies).length !== state.pokemonCount) {
+			const range = [];
+			for (let i = 1; i <= state.pokemonCount; i ++) {
+				range.push(i)
+			};
+			const speciesDataToFetch = getDataToFetch(state.pokemonSpecies, range);
+			fetchedSpeciesData = await getMultipleData('pokemon-species', speciesDataToFetch, 'id');
+		};
+
+		// get new name/id data
+		const newNamesIds = Object.values(fetchedSpeciesData || speciesData).reduce((pre, cur) => {
+			pre[cur.names.find(entry => entry.language.name === transformToDash(option)).name || cur.name] = cur.id;
 			return pre
 		}, {});
-		dispatch({type: 'pokemonNamesAndIdsLoaded', payload: pokemonsNamesAndId});
+
+		// get versions, this data is only required when language is not 'en'
+		if (!Object.keys(state.versions).length) {
+			const response = await fetch('https://pokeapi.co/api/v2/version?limit=999');
+			const data = await response.json();
+			const versionsToFetch = data.results.map(data => getIdFromURL(data.url));
+			fetchedVersions = await getMultipleData('version', versionsToFetch, 'name');
+		};
+
+		// get move-damage-class, this data is only required when language is not 'en'
+		if (!Object.keys(state.move_damage_class).length) {
+			const response = await fetch('https://pokeapi.co/api/v2/move-damage-class?limit=999');
+			const data = await response.json();
+			const moveDamageClassToFetch = data.results.map(data => getIdFromURL(data.url));
+			fetchedMoveDamageClass = await getMultipleData('move-damage-class', moveDamageClassToFetch, 'name');
+		};
+
+		if (!Object.keys(state.stats).length) {
+			const response = await fetch('https://pokeapi.co/api/v2/stat?limit=999');
+			const data = await response.json();
+			const statToFetch = data.results.map(data => getIdFromURL(data.url));
+			fetchedStats = await getMultipleData('stat', statToFetch, 'name');
+		};
+
+		if (fetchedSpeciesData) {
+			dispatch({type: 'pokemonSpeciesLoaded', payload: fetchedSpeciesData});
+		};
+
+		if (fetchedVersions) {
+			dispatch({type:'getVersions', payload: fetchedVersions});
+		};
+
+		if (fetchedMoveDamageClass) {
+			dispatch({type:'getMoveDamageClass', payload: fetchedMoveDamageClass});
+		};
+
+		if (fetchedStats) {
+			dispatch({type:'getStats', payload: fetchedStats});
+		};
+
+		dispatch({type: 'pokemonNamesAndIdsLoaded', payload: newNamesIds});
+		
+
+
+		
 
 		// I'll currently read language from state, when the logic is done, see if we can pass language down instead of reading from state
 		// search state.language
@@ -94,6 +141,7 @@ export default function LanguageMenu() {
 				aria-haspopup="true"
 				aria-expanded={open ? 'true' : undefined}
 				onClick={handleClick}
+				disabled={state.status === 'loading' ? true : false}
 			>
 				<i className="fa-solid fa-language"></i>
 			</Button>
@@ -128,12 +176,15 @@ export default function LanguageMenu() {
 						sx={{
 							mx: 1,
 							my: 0.4,
-							borderRadius: 2
+							borderRadius: 2,
+							'&.Mui-disabled': {
+								opacity: 1
+							}
 						}}
 						key={option} 
 						selected={option === language ? true : false} 
-						onClick={changeLanguage}
-						value={option}
+						onClick={() => {changeLanguage(option)}}
+						disabled={option === state.language ? true : false}
 					>
 						{languageOptions[option]}
 					</MenuItem>

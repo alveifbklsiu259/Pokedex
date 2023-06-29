@@ -29,7 +29,6 @@ const MoveEffect = ({data, selectedVersion}) => {
 	)
 }
 
-
 export default function MovesTable({columnData, movesData, selectedVersion, changefilteredMethod, filteredMethod, isDataReady}) {
 
 	return (

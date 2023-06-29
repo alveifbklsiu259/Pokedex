@@ -26,6 +26,22 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	const versions = state.generations[transformToKeyName(selectedGeneration)].version_groups;
 	const [selectedVersion, setSelectedVersion] = useState(versions[0].name);
 	const [filteredMethod, setFilteredMethod] = useState('level-up');
+
+	const getVersionText = version => {
+		if (state.language !== 'en') {
+			const matchedVersions =  Object.values(state.versions).filter(entry => entry.version_group.name === version);
+			let versionName = '';
+			matchedVersions.forEach((entry, index, array) => {
+				versionName += getNameByLanguage(entry.name, state.language, state.versions[transformToKeyName(entry.name)]);
+				if (index < array.length - 1) {
+					versionName += '/';
+				};
+			});
+			return versionName;
+		} else {
+			return version;
+		};
+	}
 	
 	// for pokemon that learns move(s) on evolution.
 	let maxEvoLevel;
@@ -111,6 +127,9 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 			// some moves can be learned at different levels.
 			const levelData = versionDetails.length === 1 ? checkLearnOnEvo(versionDetails[0].level_learned_at) : versionDetails.map(detail => checkLearnOnEvo(detail.level_learned_at));
 
+			// category
+			const categoryText = getNameByLanguage(cachedMove.damage_class.name, state.language, state.move_damage_class[cachedMove.damage_class.name]);
+
 			// machine
 			const machine = state.machines?.[lookupName]?.version_groups?.[selectedVersion];
 
@@ -128,7 +147,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 				[isFilteredByLevel ? 'level' : 'machine']: dispalyData,
 				move: capitalize(getNameByLanguage(entry.move.name, state.language, state.moves[transformToKeyName(entry.move.name)])),
 				type: typeData,
-				cat: cachedMove.damage_class.name,
+				cat: categoryText,
 				power: cachedMove.power !== null ? cachedMove.power : '—',
 				acc: cachedMove.accuracy !== null ? `${cachedMove.accuracy}%` : '—',
 				pp: cachedMove.pp,
@@ -311,7 +330,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 						{versions.map(version => (
 							<React.Fragment key={version.name}>
 								<li className={version.name === selectedVersion ? 'active' : ''}>
-									<button disabled={!isDataReady} className='text-capitalize' onClick={() => changeVersion(version.name)}>{version.name}</button>
+									<button disabled={!isDataReady} className='text-capitalize' onClick={() => changeVersion(version.name)}>{getVersionText(version.name)}</button>
 								</li>
 							</React.Fragment>
 						))}

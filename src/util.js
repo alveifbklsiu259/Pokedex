@@ -11,7 +11,8 @@ export const transformToDash = name => {
 };
 
 export const getNameByLanguage = (defaultName, language, entries) => {
-	return language === 'en' ? defaultName : entries.names?.find(entry => entry?.language?.name === transformToDash(language))?.name || defaultName;
+	const getMatchName = lang => entries?.names?.find(entry => entry?.language?.name === transformToDash(lang))?.name;
+	return language === 'en' ? defaultName : getMatchName(language) ? getMatchName(language) : language === 'ja' ? getMatchName('ja-Hrkt') || defaultName : defaultName;
 };
 
 export const getTextByLanguage = (language, entries, dataType, version) => {
@@ -26,8 +27,8 @@ export const getTextByLanguage = (language, entries, dataType, version) => {
 	};
 	result = getResult(language) || getResult('en');
 
-	if (language === 'ja') {
-		result = result?.replaceAll('　', '');
+	if (language === 'ja' || language === 'zh_Hant' || language === 'zh_Hans') {
+		result = result?.replace(/　|\n/g, '');
 	};
 
 	return result;

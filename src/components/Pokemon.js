@@ -59,12 +59,12 @@ export default function Pokemon() {
 	const cachedNextRequest = useMemo(() => state.nextRequest, [state.nextRequest]);
 	const cachedAbilities = useMemo(() => state.abilities, [state.abilities]);
 	const cachedEvolutionChains = useMemo(() => state.evolutionChains, [state.evolutionChains]);
-
 	const requiredData = [pokemon, speciesInfo, evolutionChains];
 	if (state.language !== 'en') {
 		requiredData.push(abilitiesData);
 	}
 	const isDataReady = requiredData.every(Boolean);
+
 	useEffect(() => {
 		// PokemonProvider also fetches data when it mounts, to avoid race condition, only fetch data when PokemonProvider's request is done. (since the dispatches in PokemonProvider are batched intentionally, status will only become "idle" when all requests in it are done.)
 		// To reduce unnecessary re-renders of this component, I think it would be great if we could find a way to batch dispatched between this Effect and the Effect from PokemonProvider, but since the re-renders are mainly caused by Context API, and I decided to migrate to Redux later, I'll just leave it as it is.
@@ -185,6 +185,7 @@ export default function Pokemon() {
 		};
 	}, [pokemon, speciesInfo, evolutionChains, urlParam , dispatch, isDataReady, cachedNextRequest, state.status, cachedPokemons, state.language, abilitiesToFetch, abilitiesData]);
 	let content;
+	console.log(state)
 	if (state.status === 'idle' && isDataReady) {
 		content = (
 			<>
@@ -197,7 +198,7 @@ export default function Pokemon() {
 						<Detail pokemon={pokemon} speciesInfo={speciesInfo} cachedAbilities={cachedAbilities} />
 						<Stats pokemon={pokemon}/>
 						<EvolutionChains cachedPokemons={cachedPokemons} cachedEvolutionChains={cachedEvolutionChains} evolutionChains={evolutionChains} chainId={chainId} />
-						<Moves pokemon={pokemon} chainId={chainId} speciesInfo={speciesInfo} key={pokemon.id} />
+						{/* <Moves pokemon={pokemon} chainId={chainId} speciesInfo={speciesInfo} key={pokemon.id} /> */}
 						<div className="row justify-content-center">
 							<Link to='/' className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</Link>
 						</div>
