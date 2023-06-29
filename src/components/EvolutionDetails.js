@@ -1,5 +1,8 @@
-import { useState, memo } from "react";
+import { useState, memo, useEffect } from "react";
 import Modal from "./Modal";
+import { getIndividualtData, getDataToFetch } from "../api";
+import { usePokemonData, useDispatchContenxt } from "./PokemonsProvider";
+import { transformToKeyName, getNameByLanguage } from "../util";
 
 const textsForOtherRequirements = {
 	gender: 'Gender',
@@ -22,6 +25,9 @@ const textsForOtherRequirements = {
 };
 
 const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cachedEvolutionChains}) {
+	const dispatch = useDispatchContenxt();
+	const state = usePokemonData();
+
 	const [isModalShown, setIsModalShown] = useState(false);
 
 	const chainDetails = cachedEvolutionChains[chainId].details[pokemonId];
@@ -41,6 +47,20 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cac
 		}, {});
 
 	const trigger = selectedDetail.trigger.name;
+	
+	useEffect(() => {
+		if (selectedDetail['item'] || selectedDetail['held_item']) {
+			const getItem = async () => {
+				const requireItem = selectedDetail['item']?.name || selectedDetail['held_item']?.name;
+				const itemToFetch = getDataToFetch(state.items, [transformToKeyName(requireItem)]);
+				if (itemToFetch.length) {
+					const fetchedItem = await getIndividualtData('item', requireItem);
+					dispatch({type: 'itemLoaded', payload: {[transformToKeyName(fetchedItem.name)]: fetchedItem}});
+				}
+			}
+			getItem();
+		}
+	}, [selectedDetail, state.items]);
 
 	let mainText;
 	switch(trigger) {
@@ -61,7 +81,7 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cac
 			if (requirements["item"]) {
 				mainText = (
 					<>
-						<span>{`Use ${requirements["item"]}`}</span>
+						<span>{`Use ${getNameByLanguage(requirements["item"], state.language, state.items[transformToKeyName(requirements["item"])])}`}</span>
 						<img className="item" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${requirements["item"]}.png`} alt={`${requirements["item"]}`} />
 					</>
 				)
@@ -114,7 +134,7 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cac
 			case 'held_item' : 
 				value = (
 					<>
-						{value}
+						{getNameByLanguage(value, state.language, state.items[transformToKeyName(value)])}
 						<img className="item" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${value}.png`} alt={`${value}`} />
 					</>
 				)

@@ -26,7 +26,8 @@ const initialState = {
 	generations: {},
 	types: {},
 	moves: {},
-	machines: {}
+	machines: {},
+	items: {}
 }
 
 const reducer = (state, action) => {
@@ -156,6 +157,11 @@ const reducer = (state, action) => {
 			}, {});
 			return {
 				...state, machines: {...state.machines, ...newEntities}
+			}
+		}
+		case 'itemLoaded' : {
+			return {
+				...state, items: {...state.items, ...action.payload}
 			}
 		}
 		default : 

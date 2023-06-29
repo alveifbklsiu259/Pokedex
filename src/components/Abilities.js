@@ -2,15 +2,18 @@ import { useState, memo } from 'react';
 import Spinner from './Spinner';
 import { useDispatchContenxt, usePokemonData } from './PokemonsProvider';
 import Modal from './Modal';
-import { transformToKeyName, transformToDash } from '../util';
+import { transformToKeyName, transformToDash, getNameByLanguage, getTextByLanguage } from '../util';
 
-const Abilities = memo(function Abilities({abilities, pokemon, cachedAbilities}) {
+const Abilities = memo(function Abilities({pokemon, cachedAbilities}) {
+	const dispatch = useDispatchContenxt();
+	const state = usePokemonData();
 	const [isModalShown, setIsModalShown] = useState(false);
 	const [isDetail, setIsDetail] = useState(false);
 	const [abilityData, setAbilityData] = useState(null);
-	const dispatch = useDispatchContenxt();
-	const state = usePokemonData();
 	const language = state.language;
+
+	const abilitiesArray = pokemon.abilities.map(entry => entry.ability.name);
+	const abilities = [...new Set(abilitiesArray)];
 
 	const showModal = async ability => {
 		const abilityKey = transformToKeyName(ability);
@@ -40,16 +43,8 @@ const Abilities = memo(function Abilities({abilities, pokemon, cachedAbilities})
 	let brief, detail;
 
 	if (abilityData) {
-		const getBrief = language => abilityData.flavor_text_entries?.find(flavor_text => flavor_text?.language?.name === transformToDash(language))?.flavor_text;
-		brief = getBrief(language) || getBrief('en');
-
-		const getDetail = language => abilityData.effect_entries?.find(entry => entry?.language?.name === transformToDash(language))?.effect;
-		detail = getDetail(language) || getDetail('en');
-
-		if (language === 'ja') {
-			brief = brief.replaceAll('　', '');
-			detail = detail.replaceAll('　', '');
-		};
+		brief = getTextByLanguage(language, abilityData.flavor_text_entries, 'flavor_text');
+		detail = getTextByLanguage(language, abilityData.effect_entries, 'effect');
 	};
 	const customClass = `modalBody ${!abilityData && isModalShown ? 'modalLoading' : ''}`
 
@@ -57,7 +52,7 @@ const Abilities = memo(function Abilities({abilities, pokemon, cachedAbilities})
 		<>
 			{abilities.map(ability => (
 			<div key={ability}>
-				<span className='me-2'>{ability}</span>
+				<span className='me-2'>{getNameByLanguage(ability, language, state.abilities[transformToKeyName(ability)])}</span>
 				<i onClick={() => {showModal(ability)}} className="fa-solid fa-circle-question"></i>
 				<br />
 			</div>
@@ -71,7 +66,7 @@ const Abilities = memo(function Abilities({abilities, pokemon, cachedAbilities})
 				{
 					abilityData ? (
 						<>
-							<h1 className='abilityName my-2'>{abilityData.names.find(entry => entry.language.name === transformToDash(language)).name}</h1>
+							<h1 className='abilityName my-2'>{abilityData.names.find(entry => entry.language.name === transformToDash(language))?.name}</h1>
 							<div className='abilityDescription p-3'>
 								<p>
 									{

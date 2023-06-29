@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { capitalize } from "@mui/material";
 import { usePokemonData, useDispatchContenxt } from "./PokemonsProvider";
-import { transformToKeyName, getIdFromURL } from "../util";
+import { transformToKeyName, getIdFromURL, getNameByLanguage } from "../util";
 import MovesTable from "./MovesTable";
 
 export default function Moves({speciesInfo, pokemon, chainId}) {
@@ -100,7 +100,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 
 			// type
 			const type = cachedMove.type.name;
-			const typeData = <span value={type} data-tag="allowRowEvents" className={`type type-${type}`}>{type.toUpperCase()}</span>;
+			const typeData = <span value={type} data-tag="allowRowEvents" className={`type type-${type}`}>{getNameByLanguage(type, state.language, state.types[type]).toUpperCase()}</span>;
 
 			// level-up; value attribute is used for sorting, if maxEvoLevel is 0, put it after level 1.
 			const learnOnEvolution = <span data-tag="allowRowEvents" value={maxEvoLevel === 0 ? 2 : maxEvoLevel} title="Learned when Evolution" className="learnUponEvolution">Evo.</span>;
@@ -123,9 +123,10 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 			);
 			const dispalyData = isFilteredByLevel ? levelData : machineData;
 
+
 			return {
 				[isFilteredByLevel ? 'level' : 'machine']: dispalyData,
-				move: capitalize(entry.move.name),
+				move: capitalize(getNameByLanguage(entry.move.name, state.language, state.moves[transformToKeyName(entry.move.name)])),
 				type: typeData,
 				cat: cachedMove.damage_class.name,
 				power: cachedMove.power !== null ? cachedMove.power : '—',

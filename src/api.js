@@ -14,8 +14,8 @@ const BASE_URL = 'https://pokeapi.co/api/v2';
 // 	return data
 // };
 
-export const getIndividualtData = async (dataType, pokemon) => {
-	const response = await fetch(`${BASE_URL}/${dataType}/${pokemon}`);
+export const getIndividualtData = async (dataType, entry) => {
+	const response = await fetch(`${BASE_URL}/${dataType}/${entry}`);
 	const data = await response.json();
 	return data;
 };

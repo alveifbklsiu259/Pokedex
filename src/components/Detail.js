@@ -1,5 +1,7 @@
 import React, { memo } from "react";
 import Abilities from "./Abilities";
+import { usePokemonData } from "./PokemonsProvider";
+import { getTextByLanguage } from "../util";
 
 function getGender(gender_rate) {
 	switch(gender_rate) {
@@ -19,15 +21,8 @@ function getGender(gender_rate) {
 };
 
 const Detail = memo(function Detail({pokemon, speciesInfo, cachedAbilities}) {
-	const flavorTexts = speciesInfo.flavor_text_entries;
-	let flavorText = '';
-	if (flavorTexts.length) {
-		flavorText =  flavorTexts.find(text => text.language.name === 'en').flavor_text
-	};
-	const abilitiesArray = pokemon.abilities.map(ability => ability.ability.name);
-	// there're some duplications from the api
-	const abilities = new Set(abilitiesArray);
-
+	const state = usePokemonData();
+	const flavorText = getTextByLanguage(state.language, speciesInfo.flavor_text_entries, 'flavor_text');
 	return (
 		<>
 			<div className="detail row text-center col-12 col-sm-6">
@@ -37,7 +32,7 @@ const Detail = memo(function Detail({pokemon, speciesInfo, cachedAbilities}) {
 					<span className="mt-4">{getGender(speciesInfo.gender_rate)}</span>
 				</p>
 				<div className="col-6 abilities p-0">Abilities <br />
-					<Abilities cachedAbilities={cachedAbilities} pokemon={pokemon} abilities={[...abilities]}/>
+					<Abilities cachedAbilities={cachedAbilities} pokemon={pokemon} />
 				</div>
 
 				<p className="col-12 m-3 p-2 text-start description">{flavorText}</p>

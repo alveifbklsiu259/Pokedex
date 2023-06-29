@@ -1,18 +1,14 @@
 import DataTable from "react-data-table-component"
 import { Switch, Stack, Typography, capitalize } from "@mui/material"
 import Spinner from "./Spinner";
+import { usePokemonData } from "./PokemonsProvider";
+import { getTextByLanguage } from "../util";
 
 const MoveEffect = ({data, selectedVersion}) => {
-	const language = 'en';
-	const effect = data.effect.find(entry => entry.language.name === language)?.effect || 'No data to show';
-	const flavorText = data.flavorText.find(entry => {
-		if (entry.version_group.name === selectedVersion) {
-			return entry.language.name === language && entry.version_group.name === selectedVersion;
-		} else {
-			return entry.language.name === language;
-		};
-	})?.flavor_text || 'No data to show';
-
+	const state = usePokemonData();
+	const language = state.language;
+	const effect = getTextByLanguage(language, data.effect, 'effect', selectedVersion);
+	const flavorText = getTextByLanguage(language, data.flavorText, 'flavor_text', selectedVersion);
 	return (
 		<div className="moveDes">
 			{data?.level?.type === 'span' && (

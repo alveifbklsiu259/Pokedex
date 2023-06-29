@@ -185,7 +185,6 @@ export default function Pokemon() {
 		};
 	}, [pokemon, speciesInfo, evolutionChains, urlParam , dispatch, isDataReady, cachedNextRequest, state.status, cachedPokemons, state.language, abilitiesToFetch, abilitiesData]);
 	let content;
-	console.log(state)
 	if (state.status === 'idle' && isDataReady) {
 		content = (
 			<>
