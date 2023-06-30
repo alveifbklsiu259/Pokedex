@@ -1,18 +1,19 @@
 import { ScrollRestoration, Outlet } from "react-router-dom";
+import RouterUtils from "./RouterUtils";
 import Search from "./Search";
 import Pokemons from "./Pokemons";
 import NavBar from "./NavBar";
 
 export default function RootRoute () {
 	return (
-		<>
+		<RouterUtils>
 			<ScrollRestoration getKey={location => {
 				const paths = ["/"];
 				return !paths.includes(location.pathname) || location.state === 'backToRoot' ? location.key : location.pathname;
 			}}/>
 			<NavBar />
 			<Outlet />
-		</>
+		</RouterUtils>
 	)
 }
 

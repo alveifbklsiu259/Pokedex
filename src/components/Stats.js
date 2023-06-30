@@ -1,11 +1,7 @@
 import { memo } from "react";
-import { usePokemonData } from "./PokemonsProvider";
 import { getNameByLanguage, transformToKeyName } from "../util";
 
-const Stats = memo(function Stats({pokemon}) {
-	const state = usePokemonData();
-
-
+const Stats = memo(function Stats({pokemon, cachedLanguage, cachedStats}) {
 	return (
 		<div className="col-12 mt-5 stats">
 			<h1 className="text-center" >Stats</h1>
@@ -13,7 +9,7 @@ const Stats = memo(function Stats({pokemon}) {
 				<tbody>
 					{pokemon.stats ? pokemon.stats.map(entry => (
 						<tr key={entry.stat.name}>
-							<td className='text-capitalize text-center' width='30%'> {getNameByLanguage(entry.stat.name, state.language, state.stats[transformToKeyName(entry.stat.name)])}</td>
+							<td className='text-capitalize text-center' width='30%'> {getNameByLanguage(entry.stat.name, cachedLanguage, cachedStats[transformToKeyName(entry.stat.name)])}</td>
 							<td width='10%'>{entry.base_stat}</td>
 							<td width='255px'>
 								<div className="stat-bar-bg">

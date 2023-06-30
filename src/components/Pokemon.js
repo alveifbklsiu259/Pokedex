@@ -4,10 +4,10 @@ import BasicInfo from "./BasicInfo";
 import Detail from "./Detail";
 import Stats from "./Stats";
 import EvolutionChains from "./EvolutionChains";
-import { usePokemonData, useDispatchContenxt } from "./PokemonsProvider";
+import { usePokemonData, useDispatchContenxt, useCachedData } from "./PokemonsProvider";
 import Spinner from "./Spinner";
 import ScrollToTop from "./ScrollToTop";
-import { getIndividualtData, getDataToFetch, getMultipleData } from "../api";
+import { getDataToFetch, getData } from "../api";
 import { getIdFromURL, transformToDash, transformToKeyName } from "../util";
 import ErrorPage from "./ErrorPage";
 import Varieties from "./Varieties";
@@ -27,10 +27,10 @@ export default function Pokemon() {
 
 	// pokemon data fot current page
 	const pokemon = state.pokemons[urlParam];
-	let speciesInfo = state.pokemonSpecies[urlParam];
+	let speciesInfo = useMemo(()=> state.pokemonSpecies[urlParam], [state.pokemonSpecies, urlParam]);
 	// for different forms, any non-default-form pokemon uses its default-form's species data rather than data from 'pokemon-species/[pokeId]'
-	if (!speciesInfo && pokemon) {
-		speciesInfo =  state.pokemonSpecies[getIdFromURL(pokemon.species.url)];
+	if (!speciesInfo && pokemon?.is_default === false) {
+		speciesInfo = state.pokemonSpecies[getIdFromURL(pokemon.species.url)];
 	};
 	// evolution chains
 	const evolutionChainsURL = speciesInfo?.evolution_chain?.url;
@@ -54,36 +54,53 @@ export default function Pokemon() {
 		};
 	};
 
-	// passed down to child component, so we don't need to use usePokemonData there.
-	const cachedPokemons = useMemo(() => state.pokemons, [state.pokemons]);
-	const cachedNextRequest = useMemo(() => state.nextRequest, [state.nextRequest]);
-	const cachedAbilities = useMemo(() => state.abilities, [state.abilities]);
-	const cachedEvolutionChains = useMemo(() => state.evolutionChains, [state.evolutionChains]);
+	// cache data for better performance, we can opt out this approach if switch to using redux
+	const cachedPokemons = useCachedData(state.pokemons);
+	const cachedNextRequest = useCachedData(state.nextRequest);
+	const cachedAbilities = useCachedData(state.abilities);
+	const cachedEvolutionChains = useCachedData(state.evolutionChains);
+	const cachedLanguage = useCachedData(state.language);
+	const cachedSpecies = useCachedData(state.pokemonSpecies);
+	const cachedTypes = useCachedData(state.types);
+	const cachedStats = useCachedData(state.stats);
+	const cachedItems = useCachedData(state.items);
+
+
+	console.log(state)
 	const requiredData = [pokemon, speciesInfo, evolutionChains];
 	if (state.language !== 'en') {
 		requiredData.push(abilitiesData);
 	}
 	const isDataReady = requiredData.every(Boolean);
+	console.log(isDataReady)
+	
+	// clicking pokemon in the evolution chain-->
+	// 1. go to pokemons/xxx (first render)
+	// 2. finds out species data is not ready --> dispatch loading (second render)
+	// 3. data ready --> dispatch (third render)
+
 
 	useEffect(() => {
 		// PokemonProvider also fetches data when it mounts, to avoid race condition, only fetch data when PokemonProvider's request is done. (since the dispatches in PokemonProvider are batched intentionally, status will only become "idle" when all requests in it are done.)
 		// To reduce unnecessary re-renders of this component, I think it would be great if we could find a way to batch dispatched between this Effect and the Effect from PokemonProvider, but since the re-renders are mainly caused by Context API, and I decided to migrate to Redux later, I'll just leave it as it is.
 		if (!isDataReady && state.status === 'idle') {
-			const getData = async () => {
+
+			const getPokemonData = async () => {
+				console.log('inside effect')
 				dispatch({type: 'dataLoading'});
 				let pokemonData, speciesData, chainsData, fetchedPokemons, fetchedAbilities;
 
 				try {
 					if (!pokemon) {
-						pokemonData = await getIndividualtData('pokemon', urlParam);
+						pokemonData = await getData('pokemon', urlParam);
 						// get form data if this pokemon is not the default form, this is for the case when directly loading non-default-form pokemon page, otherwise form data should be fetched when switching variety tab.
 						if (!pokemonData.is_default) {
-							const formData = await getIndividualtData('pokemon-form', getIdFromURL(pokemonData.forms[0].url));
+							const formData = await getData('pokemon-form', pokemonData.forms[0].url);
 							pokemonData.formData = formData;
 						};
 					};
 					if (!speciesInfo) {
-						speciesData = await getIndividualtData('pokemon-species', getIdFromURL(pokemonData ? pokemonData.species.url : pokemon.species.url));
+						speciesData = await getData('pokemon-species', pokemonData ? pokemonData.species.url : pokemon.species.url);
 					};
 					if (!evolutionChains) {
 						const getEvolutionChains = async () => {
@@ -150,11 +167,11 @@ export default function Pokemon() {
 							currentCachedPokemons = cachedPokemons;
 						};
 						const pokemonsToFetch = getDataToFetch(currentCachedPokemons, [...pokemonsInChain]);
-						fetchedPokemons = await getMultipleData('pokemon', pokemonsToFetch, 'id');
+						fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
 					};
 
 					if (state.language !== 'en' && !abilitiesData) {
-						fetchedAbilities = await getMultipleData('ability', abilitiesToFetch, 'name');
+						fetchedAbilities = await getData('ability', abilitiesToFetch, 'name');
 					};
 	
 					// to batch dispatches
@@ -181,23 +198,47 @@ export default function Pokemon() {
 					dispatch({type: 'error'});
 				}
 			};
-			getData();
+			getPokemonData();
 		};
 	}, [pokemon, speciesInfo, evolutionChains, urlParam , dispatch, isDataReady, cachedNextRequest, state.status, cachedPokemons, state.language, abilitiesToFetch, abilitiesData]);
 	let content;
-	console.log(state)
 	if (state.status === 'idle' && isDataReady) {
 		content = (
 			<>
 				<div className="container p-0">
 					<div className="row justify-content-center">
-						{speciesInfo.varieties.length > 1 && <Varieties cachedNextRequest={cachedNextRequest} cachedPokemons={cachedPokemons} speciesInfo={speciesInfo} pokemon={pokemon} />}
+						{speciesInfo.varieties.length > 1 && <Varieties speciesInfo={speciesInfo} pokemon={pokemon} cachedLanguage={cachedLanguage} cachedNextRequest={cachedNextRequest} cachedPokemons={cachedPokemons}/>}
 						<div className='basicInfoContainer row col-8 col-sm-6 justify-content-center'>
-							<BasicInfo pokemon={pokemon}/>
+							<BasicInfo 
+								pokemon={pokemon}
+								// cachedData
+								cachedLanguage={cachedLanguage}
+								cachedSpecies={cachedSpecies}
+								cachedTypes={cachedTypes}
+							/>
 						</div>
-						<Detail pokemon={pokemon} speciesInfo={speciesInfo} cachedAbilities={cachedAbilities} />
-						<Stats pokemon={pokemon}/>
-						<EvolutionChains cachedPokemons={cachedPokemons} cachedEvolutionChains={cachedEvolutionChains} evolutionChains={evolutionChains} chainId={chainId} />
+						<Detail 
+							pokemon={pokemon} 
+							speciesInfo={speciesInfo} 
+							cachedAbilities={cachedAbilities} 
+							cachedLanguage={cachedLanguage}
+						/>
+						<Stats 
+							pokemon={pokemon}
+							cachedStats={cachedStats}
+							cachedLanguage={cachedLanguage}
+						/>
+						<EvolutionChains 
+							cachedPokemons={cachedPokemons}
+							cachedEvolutionChains={cachedEvolutionChains}
+							evolutionChains={evolutionChains}
+							chainId={chainId} 
+							// cachedData
+							cachedLanguage={cachedLanguage}
+							cachedSpecies={cachedSpecies}
+							cachedTypes={cachedTypes}
+							cachedItems={cachedItems}
+						/>
 						{/* <Moves pokemon={pokemon} chainId={chainId} speciesInfo={speciesInfo} key={pokemon.id} /> */}
 						<div className="row justify-content-center">
 							<Link to='/' className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</Link>

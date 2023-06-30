@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import pokeBall from '../assets/pokeBall.png';
-import { usePokemonData, useDispatchContenxt } from './PokemonsProvider';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
+import pokeBall from '../assets/pokeBall.png';
+import { usePokemonData, useDispatchContenxt, useCachedData } from './PokemonsProvider';
 import { getPokemons } from '../api';
 import { getIdFromURL } from '../util';
 
@@ -13,17 +13,23 @@ export default function Search({closeModal}) {
 	const [searchParam, setSearchParam] = useState('');
 	const [selectedGenerations, setSelectedGenerations] = useState({});
 	const [selectedTypes, setSelectedTypes] = useState([]);
+	const [matchMethod, setMatchMethod] = useState('all');
 	const navigate = useNavigate();
-	// to cache Input
+
+	// cached data
 	const cachedPokemonNames = useMemo(() => {
 		return Object.keys(state.allPokemonNamesAndIds);
 	}, [state.allPokemonNamesAndIds]);
-	const cachedTypes = useMemo(() => state.types, [state.types]);
+	const cachedTypes = useCachedData(state.types);
+	const cachedLanguage = useCachedData(state.language);
+	const cachedGenerations = useCachedData(state.generations);
+	const cachedStatus = useCachedData(state.status);
+
 	let pokemonRange = [];
 
 	// get range
 	switch (Object.keys(selectedGenerations).length) {
-		// no selected generations, fetch all generations' pokemons
+		// if no selected generations, default to all.
 		case 0 : {
 			for (let i = 0; i < cachedPokemonNames.length; i ++) {
 				let obj = {};
@@ -67,10 +73,20 @@ export default function Search({closeModal}) {
 
 		// handle types
 		if (selectedTypes.length) {
-			const typesArrayToCompare = selectedTypes.map(type => state.types[type].pokemon);
-			const flattenedTypesArrayToCompare = typesArrayToCompare.map(type => type.map(pokemon => getIdFromURL(pokemon.pokemon.url)));
-			for (let i = 0; i < flattenedTypesArrayToCompare.length; i ++) {
-				intersection = intersection.filter(pokemon => flattenedTypesArrayToCompare[i].includes(pokemon));
+			if (matchMethod === 'all') {
+				const typeMatchingArray = selectedTypes.reduce((pre, cur) => {
+					pre.push(cachedTypes[cur].pokemon.map(entry => getIdFromURL(entry.pokemon.url)));
+					return pre;
+				}, []);
+				for (let i = 0; i < typeMatchingArray.length; i ++) {
+					intersection = intersection.filter(pokemon => typeMatchingArray[i].includes(pokemon));
+				};
+			} else if (matchMethod === 'part') {
+				const typeMatchingPokemonIds = selectedTypes.reduce((pre, cur) => {
+					cachedTypes[cur].pokemon.forEach(entry => pre.push(getIdFromURL(entry.pokemon.url)));
+					return pre;
+				}, []);
+				intersection = rangeIds.filter(id => typeMatchingPokemonIds.includes(id));
 			};
 		};
 
@@ -97,7 +113,7 @@ export default function Search({closeModal}) {
 				document.querySelector('.sort').scrollIntoView();
 			}, 10)
 		};
-	}
+	};
 
 	return (
 		<div className="card-body mb-4 p-4">
@@ -107,10 +123,11 @@ export default function Search({closeModal}) {
 			<p className="lead text-center">By Name or the National Pokédex number</p>
 			<form onSubmit={handleSubmit}>
 				<Input
-					pokemonNames={cachedPokemonNames}
 					searchParam={searchParam} 
 					setSearchParam={setSearchParam}
-					status={state.status}
+					status={cachedStatus}
+					pokemonNames={cachedPokemonNames}
+
 				/>
 				<AdvancedSearch
 					searchParam={searchParam}
@@ -119,9 +136,19 @@ export default function Search({closeModal}) {
 					setSelectedTypes={setSelectedTypes} 
 					selectedGenerations={selectedGenerations} 
 					setSelectedGenerations={setSelectedGenerations}
+					setMatchMethod={setMatchMethod}
+					// use cached data, then no need to use usePokemon below the tree.
 					cachedTypes={cachedTypes}
+					cachedLanguage={cachedLanguage}
+					cachedGenerations={cachedGenerations}
 				/>
-				<button disabled={state.status === 'loading' ? true : false} className="btn btn-primary btn-lg btn-block w-100 my-3" type="submit">Search</button>
+				<button 
+					disabled={cachedStatus === 'loading' ? true : false} 
+					className="btn btn-primary btn-lg btn-block w-100 my-3" 
+					type="submit"
+				>
+					Search
+				</button>
 			</form>
 		</div>
 	)

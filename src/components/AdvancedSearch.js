@@ -1,7 +1,7 @@
 import { useRef, memo, useId } from "react"
+import { useDispatchContenxt } from "./PokemonsProvider";
 import FilterGeneration from "./FilterGeneration";
 import FilterTypes from "./FilterTypes";
-import { useDispatchContenxt } from "./PokemonsProvider";
 
 const AdvancedSearch = memo(function AdvancedSearch({
 	searchParam,
@@ -10,7 +10,10 @@ const AdvancedSearch = memo(function AdvancedSearch({
 	setSelectedTypes,
 	selectedGenerations,
 	setSelectedGenerations,
-	cachedTypes
+	setMatchMethod,
+	cachedTypes,
+	cachedLanguage,
+	cachedGenerations
 }) {
 	const ref = useRef(null);
 	const collapseId = useId();
@@ -48,12 +51,15 @@ const AdvancedSearch = memo(function AdvancedSearch({
 				<div className="container m-0 row justify-content-center">
 					<FilterGeneration 
 						selectedGenerations={selectedGenerations} 
-						setSelectedGenerations={setSelectedGenerations} 
+						setSelectedGenerations={setSelectedGenerations}
+						cachedGenerations={cachedGenerations}
 					/>
 					<FilterTypes 
 						selectedTypes={selectedTypes} 
 						setSelectedTypes={setSelectedTypes}
+						setMatchMethod={setMatchMethod}
 						cachedTypes={cachedTypes}
+						cachedLanguage={cachedLanguage}
 					/>
 					<button 
 						onClick={reset} 

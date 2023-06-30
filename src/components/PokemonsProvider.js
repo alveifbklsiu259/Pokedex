@@ -1,6 +1,6 @@
-import { useReducer, createContext, useContext, useEffect } from 'react'
-import { getPokemons } from '../api';
-import { getIdFromURL, transformToKeyName } from '../util';
+import { useReducer, createContext, useContext, useEffect, useMemo } from 'react'
+import { getData, getPokemons, getEndpointData } from '../api';
+import { getIdFromURL } from '../util';
 
 const PokemonContext = createContext(null);
 const DispatchContext = createContext(null);
@@ -190,68 +190,45 @@ const reducer = (state, action) => {
 
 export default function PokemonsProvider({children}) {
 	const [state, dispatch] = useReducer(reducer, initialState);
-	// can i batch dispatches in provider too?
-	// see if i can batch dispatches between PokemonProvider and Pokemon
 	useEffect(()=> {
 		const getInitialPokemonData = async () => {
-			let generationData, typesData;
-			//  either remove this dataLoading dispatch or..
+			let generationData, typeData;
+			
 			dispatch({type:'dataLoading'});
-			// get pokemons amount
-			const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/?limit=9999`);
-			const data = await response.json();
-
-			// get all names and ids
+			// get pokemons count, all names and ids
+			const speciesResponse = await getEndpointData('pokemon-species')
 			const pokemonsNamesAndId = {};
-			for (let pokemon of data.results) {
+			for (let pokemon of speciesResponse.results) {
 				pokemonsNamesAndId[pokemon.name] = getIdFromURL(pokemon.url);
 			};
 
 			// set the range
 			const intersection = [];
-			for (let i = 1; i <= data.count; i++) {
+			for (let i = 1; i <= speciesResponse.count; i++) {
 				intersection.push(i);
 			};
 
-			const getGenerationsData = async () => {
-				const response = await fetch('https://pokeapi.co/api/v2/generation');
-				const data = await response.json();
-				const responses = await Promise.all(data.results.map(generation => fetch(generation.url)));
-				const datas = responses.map(response => response.json());
-				const finalData = await Promise.all(datas);
-				generationData = finalData.reduce((pre, cur) => {
-					pre[transformToKeyName(cur.name)] = cur;
-					return pre;
-				}, {})
-			};
-			await getGenerationsData();
+			// get generations
+			const generationResponse = await getEndpointData('generation');
+			generationData = await getData('generation', generationResponse.results.map(entry => entry.name), 'name');
 
-			const getTypesData = async () => {
-				const response = await fetch('https://pokeapi.co/api/v2/type');
-				const data = await response.json();
-				const responses = await Promise.all(data.results.map(type => fetch(type.url)));
-				const datas = responses.map(response => response.json());
-				const finalData = await Promise.all(datas);
-				typesData = finalData.reduce((pre, cur) => {
-					pre[transformToKeyName(cur.name)] = cur;
-					return pre;
-				}, {})
-			};
-			await getTypesData();
+			// get types
+			const typeResponse = await getEndpointData('type');
+			typeData = await getData('type', typeResponse.results.map(entry => entry.name), 'name');
 
+			// batch dispatches
 			await getPokemons(dispatch, {}, pokemonsNamesAndId, intersection, 'numberAsc', 'loading');
-			dispatch({type: 'getPokemonCount', payload: data.count});
+			dispatch({type: 'getPokemonCount', payload: speciesResponse.count});
 			dispatch({type: 'pokemonNamesAndIdsLoaded', payload: pokemonsNamesAndId});
 			dispatch({type: 'intersectionChanged', payload: intersection});
 			dispatch({type: 'getGenerations', payload: generationData});
-			dispatch({type: 'getTypes', payload: typesData});
+			dispatch({type: 'getTypes', payload: typeData});
 			// cache input 
-
+			// see if i can batch dispatches between PokemonProvider and Pokemon
 			// encapsulate type/generation logic
 		};
 			getInitialPokemonData()
 	}, [dispatch]);
-	
 
 	// see if we can move the getInitialPokemonData out, and call it if the user lands on /pokemons/xxx
 	// refresh pokemon page, there're chances that you will see dispatch being batched(normally should be two 2 loading 2 idle)
@@ -311,4 +288,9 @@ export function usePokemonData() {
 
 export function useDispatchContenxt() {
 	return useContext(DispatchContext)
+};
+
+// for passing cached data down the tree, so we don't have to register to reading the state value there (which will cause unnecessary re-renders), but this will make the code a bit messier, we can migrate to redux to solve this problem.
+export function useCachedData (data) {
+	return useMemo(() => data, [data]);
 };

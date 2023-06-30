@@ -3,7 +3,7 @@ import { usePokemonData, useDispatchContenxt } from './PokemonsProvider';
 import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { getDataToFetch, getMultipleData } from '../api';
+import { getDataToFetch, getData } from '../api';
 import { getIdFromURL, transformToDash } from '../util';
 
 const languageOptions = {
@@ -54,7 +54,7 @@ export default function LanguageMenu() {
 				range.push(i)
 			};
 			const speciesDataToFetch = getDataToFetch(state.pokemonSpecies, range);
-			fetchedSpeciesData = await getMultipleData('pokemon-species', speciesDataToFetch, 'id');
+			fetchedSpeciesData = await getData('pokemon-species', speciesDataToFetch, 'id');
 		};
 
 		// get new name/id data
@@ -68,7 +68,7 @@ export default function LanguageMenu() {
 			const response = await fetch('https://pokeapi.co/api/v2/version?limit=999');
 			const data = await response.json();
 			const versionsToFetch = data.results.map(data => getIdFromURL(data.url));
-			fetchedVersions = await getMultipleData('version', versionsToFetch, 'name');
+			fetchedVersions = await getData('version', versionsToFetch, 'name');
 		};
 
 		// get move-damage-class, this data is only required when language is not 'en'
@@ -76,14 +76,14 @@ export default function LanguageMenu() {
 			const response = await fetch('https://pokeapi.co/api/v2/move-damage-class?limit=999');
 			const data = await response.json();
 			const moveDamageClassToFetch = data.results.map(data => getIdFromURL(data.url));
-			fetchedMoveDamageClass = await getMultipleData('move-damage-class', moveDamageClassToFetch, 'name');
+			fetchedMoveDamageClass = await getData('move-damage-class', moveDamageClassToFetch, 'name');
 		};
 
 		if (!Object.keys(state.stats).length) {
 			const response = await fetch('https://pokeapi.co/api/v2/stat?limit=999');
 			const data = await response.json();
 			const statToFetch = data.results.map(data => getIdFromURL(data.url));
-			fetchedStats = await getMultipleData('stat', statToFetch, 'name');
+			fetchedStats = await getData('stat', statToFetch, 'name');
 		};
 
 		if (fetchedSpeciesData) {

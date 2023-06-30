@@ -1,7 +1,7 @@
 // import { useEffect, useState } from "react";
 // import { usePokemonData } from "./components/PokemonsProvider";
 
-import { transformToKeyName } from "./util";
+import { getIdFromURL, transformToKeyName } from "./util";
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
@@ -13,15 +13,6 @@ const BASE_URL = 'https://pokeapi.co/api/v2';
 // 	dispatch({type: 'individualPokemonLoaded', payload: data});
 // 	return data
 // };
-
-export const getIndividualtData = async (dataType, entry) => {
-	const response = await fetch(`${BASE_URL}/${dataType}/${entry}`);
-	const data = await response.json();
-	return data;
-};
-
-
-
 
 
 
@@ -56,37 +47,42 @@ export const getIndividualtData = async (dataType, entry) => {
 
 
 
-
-
-
-/**
- * 
- * @param {Object} cachedPokemons - The pokemons in cached
- * @param {Array} pokemonsToDisplay 
- * @returns 
- */
+export const getEndpointData = async dataType => {
+	const response = await fetch(`${BASE_URL}/${dataType}?limit=99999`);
+	const data = await response.json();
+	return data;
+};
 
 export const getDataToFetch = (cachedData, dataToDisplay) => dataToDisplay.filter(data => !cachedData[data]);
 
+// resultKey is only required when fetch multiple data
+// dataToFetch can be string/number (as making single request), or array(multiple request)
+export const getData = async (dataType, dataToFetch, resultKey) => {
+	let request;
+	if (dataToFetch instanceof Array) {
+		request = dataToFetch;
+	} else {
+		// when request is url;
+		if (dataToFetch?.includes?.(BASE_URL)) {
+			request = [getIdFromURL(dataToFetch)];
+		} else {
+			request = [dataToFetch];
+		};
+	};
 
-/**
- * 
- * @param {*} pokemonsToFetch 
- * @param {*} dispatch 
- * @param {*} nextRequest 
- * @returns 
- */
-
-export const getMultipleData = async (dataType, dataToFetch, resultKey) => {
-	//pass in id or name
-	const dataResponses = await Promise.all(dataToFetch.map(entry => fetch(`${BASE_URL}/${dataType}/${entry}`)));
+	const dataResponses = await Promise.all(request.map(entry => fetch(`${BASE_URL}/${dataType}/${entry}`)));
 	const datas = dataResponses.map(response => response.json());
 	const finalData = await Promise.all(datas);
-	const obj = {};
-	for (let i of finalData) {
-		obj[transformToKeyName(String(i[resultKey]))] = i
+
+	if (dataToFetch instanceof Array) {
+		const obj = {};
+		for (let i of finalData) {
+			obj[transformToKeyName(String(i[resultKey]))] = i
+		};
+		return obj;
+	} else {
+		return finalData[0];
 	};
-	return obj;
 };
 
 // utility for getPokemons and getPokemonsOnScroll
@@ -94,7 +90,7 @@ const batchDispatch = async (dispatch, pokemonsToFetch, nextRequest, displayedPo
 	let fetchedPokemons;
 	// only make request when necessary
 	if (pokemonsToFetch.length) {
-		fetchedPokemons = await getMultipleData('pokemon', pokemonsToFetch, 'id');
+		fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
 	};
 	if (fetchedPokemons) {
 		dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: nextRequest}});
@@ -110,7 +106,7 @@ export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndId
 		if (status !== 'loading') {
 			dispatch({type:'dataLoading'});
 		};
-		const fetchedPokemons = await getMultipleData('pokemon', pokemonsToFetch, 'id');
+		const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
 		const allPokemons = {...cachedPokemons, ...fetchedPokemons};
 		return [fetchedPokemons, allPokemons];
 	};
@@ -193,7 +189,7 @@ export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndId
 			dispatch({type:'dataLoading'});
 		};
 	};
-	batchDispatch(dispatch, pokemonsToFetch, nextRequest, [], pokemonsToDisplay)
+	await batchDispatch(dispatch, pokemonsToFetch, nextRequest, [], pokemonsToDisplay);
 };
 
 // request has already been sorted based on sort options
@@ -202,7 +198,7 @@ export const getPokemonsOnScroll = async (dispatch, request, cachedPokemons, dis
 	const pokemonsToDisplay = request.splice(0, 24);
 	const nextRequest = request.length ? request : null;
 	const pokemonsToFetch = getDataToFetch(cachedPokemons, pokemonsToDisplay);
-	batchDispatch(dispatch, pokemonsToFetch, nextRequest, displayedPokemons, pokemonsToDisplay)
+	await batchDispatch(dispatch, pokemonsToFetch, nextRequest, displayedPokemons, pokemonsToDisplay);
 };
 
 

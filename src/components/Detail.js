@@ -1,6 +1,5 @@
 import React, { memo } from "react";
 import Abilities from "./Abilities";
-import { usePokemonData } from "./PokemonsProvider";
 import { getTextByLanguage } from "../util";
 
 function getGender(gender_rate) {
@@ -20,9 +19,8 @@ function getGender(gender_rate) {
 	}
 };
 
-const Detail = memo(function Detail({pokemon, speciesInfo, cachedAbilities}) {
-	const state = usePokemonData();
-	const flavorText = getTextByLanguage(state.language, speciesInfo.flavor_text_entries, 'flavor_text');
+const Detail = memo(function Detail({pokemon, speciesInfo, cachedAbilities, cachedLanguage}) {
+	const flavorText = getTextByLanguage(cachedLanguage, speciesInfo.flavor_text_entries, 'flavor_text');
 	return (
 		<>
 			<div className="detail row text-center col-12 col-sm-6">
