@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateNoUpdates } from './RouterUtils';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
 import pokeBall from '../assets/pokeBall.png';
@@ -14,8 +14,7 @@ export default function Search({closeModal}) {
 	const [selectedGenerations, setSelectedGenerations] = useState({});
 	const [selectedTypes, setSelectedTypes] = useState([]);
 	const [matchMethod, setMatchMethod] = useState('all');
-	const navigate = useNavigate();
-
+	const navigateNoUpdates = useNavigateNoUpdates();
 	// cached data
 	const cachedPokemonNames = useMemo(() => {
 		return Object.keys(state.allPokemonNamesAndIds);
@@ -108,7 +107,7 @@ export default function Search({closeModal}) {
 		if (document.querySelector('.sort')) {
 			document.querySelector('.sort').scrollIntoView();
 		} else {
-			navigate('/', {state: 'backToRoot'});
+			navigateNoUpdates('/', {state: 'resetPosition'});
 			setTimeout(() => {
 				document.querySelector('.sort').scrollIntoView();
 			}, 10)
@@ -118,7 +117,7 @@ export default function Search({closeModal}) {
 	return (
 		<div className="card-body mb-4 p-4">
 			<h1 className="display-4 text-center">
-				<img className='pokeBall' src={pokeBall} alt="pokeBall" /> Search For Pokémons
+				<img className='pokeBall' src={pokeBall} alt="pokeBall" width='46px' height='46px' /> Search For Pokémons
 			</h1>
 			<p className="lead text-center">By Name or the National Pokédex number</p>
 			<form onSubmit={handleSubmit}>

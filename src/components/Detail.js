@@ -16,7 +16,7 @@ function getGender(gender_rate) {
 					<i className="fa-solid fa-mars"></i> / <i className="fa-solid fa-venus"></i>
 				</>
 			)
-	}
+	};
 };
 
 const Detail = memo(function Detail({pokemon, speciesInfo, cachedAbilities, cachedLanguage}) {
@@ -32,7 +32,6 @@ const Detail = memo(function Detail({pokemon, speciesInfo, cachedAbilities, cach
 				<div className="col-6 abilities p-0">Abilities <br />
 					<Abilities cachedAbilities={cachedAbilities} pokemon={pokemon} />
 				</div>
-
 				<p className="col-12 m-3 p-2 text-start description">{flavorText}</p>
 			</div>
 		</>

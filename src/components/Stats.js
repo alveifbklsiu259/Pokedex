@@ -9,7 +9,9 @@ const Stats = memo(function Stats({pokemon, cachedLanguage, cachedStats}) {
 				<tbody>
 					{pokemon.stats ? pokemon.stats.map(entry => (
 						<tr key={entry.stat.name}>
-							<td className='text-capitalize text-center' width='30%'> {getNameByLanguage(entry.stat.name, cachedLanguage, cachedStats[transformToKeyName(entry.stat.name)])}</td>
+							<td className='text-capitalize text-center' width='30%'>
+								{getNameByLanguage(entry.stat.name, cachedLanguage, cachedStats[transformToKeyName(entry.stat.name)])}
+							</td>
 							<td width='10%'>{entry.base_stat}</td>
 							<td width='255px'>
 								<div className="stat-bar-bg">

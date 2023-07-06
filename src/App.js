@@ -5,12 +5,13 @@ import RootRoute, { Index } from './components/RootRoute';
 import Pokemon from './components/Pokemon';
 import ErrorPage from './components/ErrorPage';
 
-
-const router = createBrowserRouter(createRoutesFromElements(
+export const router = createBrowserRouter(createRoutesFromElements(
 	<>
 		<Route errorElement={<ErrorPage />} path="/" element={<RootRoute />}>
-			<Route index element={<Index />} />
-			<Route path="/pokemons/:pokeId" element={<Pokemon /> } />
+			<Route errorElement={<ErrorPage />}>
+				<Route index element={<Index />} />
+				<Route path="/pokemons/:pokeId" element={<Pokemon /> } />
+			</Route>
 		</Route>
 	</>
 ));
@@ -55,6 +56,16 @@ export default App;
 8. error page
 9. go up button
 ----
+
+// east egg route
+// theme using styled component
+// map info
+// favorite pokemons
+// Pokemon icon in datalist
+// <ViewModuleIcon
+
+
+
 by default, show all pokemons + infinite scroll or pagination, by filtering different generation, we still have infinite scroll or pagination
 
 	// automatically submit when not typing // suspense?

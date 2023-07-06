@@ -1,7 +1,7 @@
 // import { useEffect, useState } from "react";
 // import { usePokemonData } from "./components/PokemonsProvider";
 
-import { getIdFromURL, transformToKeyName } from "./util";
+import { getIdFromURL, transformToKeyName, transformToDash } from "./util";
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
@@ -61,6 +61,13 @@ export const getData = async (dataType, dataToFetch, resultKey) => {
 	let request;
 	if (dataToFetch instanceof Array) {
 		request = dataToFetch;
+		request = request.map(element => {
+			if (typeof element === "string" && element.includes(BASE_URL)) {
+				return getIdFromURL(element);
+			} else {
+				return element;
+			};
+		});
 	} else {
 		// when request is url;
 		if (dataToFetch?.includes?.(BASE_URL)) {
@@ -81,7 +88,32 @@ export const getData = async (dataType, dataToFetch, resultKey) => {
 		};
 		return obj;
 	} else {
-		return finalData[0];
+		if (resultKey) {
+			return {[transformToKeyName(finalData[0][resultKey])] : finalData[0]};
+		} else {
+			return finalData[0];
+		}
+	};
+};
+
+export const getAbilitiesToDisplay = pokemonData => {
+	if (pokemonData === undefined || pokemonData.includes(undefined)) {
+		return undefined;
+	} else {
+		return [
+			...Object.values(pokemonData).reduce((pre, cur) => {
+				cur.abilities.forEach(entry => pre.add(transformToKeyName(entry.ability.name)));
+				return pre;
+			}, new Set())
+		];
+	};
+};
+
+export const getAbilities = async (pokemonData, cachedAbilities) => {
+	const abilitiesToDisplay = getAbilitiesToDisplay(pokemonData);
+	const abilitiesToFetch = getDataToFetch(cachedAbilities, abilitiesToDisplay).map(ability => transformToDash(ability));
+	if (abilitiesToFetch.length) {
+		return await getData('ability', abilitiesToFetch, 'name');
 	};
 };
 

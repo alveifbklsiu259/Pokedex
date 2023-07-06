@@ -68,7 +68,7 @@ const reducer = (state, action) => {
 		}
 		case 'pokemonsLoaded' : {
 			return {
-				...state, pokemons: {...state.pokemons, ...action.payload.data}, status:'idle', nextRequest: action.payload.nextRequest
+				...state, pokemons: {...state.pokemons, ...action.payload.data}, status: 'idle', nextRequest: action.payload.nextRequest
 			}
 		}
 		case 'generationLoaded' : {
@@ -232,7 +232,6 @@ export default function PokemonsProvider({children}) {
 
 	// see if we can move the getInitialPokemonData out, and call it if the user lands on /pokemons/xxx
 	// refresh pokemon page, there're chances that you will see dispatch being batched(normally should be two 2 loading 2 idle)
-
 	return (
 		<>
 			<PokemonContext.Provider value={state}>

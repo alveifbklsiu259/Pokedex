@@ -1,7 +1,7 @@
 import React, { memo } from "react";
-import { useDispatchContenxt } from "./PokemonsProvider";
 import BasicInfo from "./BasicInfo";
 import EvolutionDetails from "./EvolutionDetails";
+import { useDispatchContenxt } from "./PokemonsProvider";
 import { getData } from "../api";
 import { useNavigateNoUpdates } from "./RouterUtils";
 
@@ -15,6 +15,7 @@ const EvolutionChains = memo(function EvolutionChains({
 	cachedTypes,
 	cachedItems
 }) {
+	// prevent unnecessary re-render.
 	const navigateNoUpdates = useNavigateNoUpdates();
 	const dispatch = useDispatchContenxt();
 	// get max depth
@@ -24,26 +25,17 @@ const EvolutionChains = memo(function EvolutionChains({
 			maxDepth = chain.length;
 		};
 	});
-
-	// get species data befor navigating to new endpoint, thus prevent the Effect to run.
+	// get species data right after navigating to new endpoint, thus prevent the Effect to run.
 	const handleClick = async pokemonId => {
-		const a = async() => {
-			if (!cachedSpecies[pokemonId]) {
-				dispatch({type: 'dataLoading'});
-				const speciesData = await getData('pokemon-species', pokemonId);
-				console.log(speciesData)
-				dispatch({type: 'pokemonSpeciesLoaded', payload: speciesData});
-			};
-		}
-		console.log(cachedSpecies)
-		await a();
+		navigateNoUpdates(`/pokemons/${pokemonId}`);
 
-		// setTimeout(() => {
-		// 	// navigateNoUpdates(`/pokemons/${pokemonId}`);
-
-		// }, 3000)
+		if (!cachedSpecies[pokemonId]) {
+			dispatch({type: 'dataLoading'});
+			const speciesData = await getData('pokemon-species', pokemonId);
+			dispatch({type: 'pokemonSpeciesLoaded', payload: {[speciesData.id]: speciesData}});
+		};
 	};
-
+	// console.log('chain')
 	
 	let content;
 	if (evolutionChains.length === 1 && evolutionChains[0].length === 1) {
@@ -58,7 +50,7 @@ const EvolutionChains = memo(function EvolutionChains({
 					<React.Fragment key={pokemonId}>
 						<li>
 							<div style={{cursor: 'pointer'}} onClick={() => {handleClick(pokemonId)}} >
-								<BasicInfo 
+								<BasicInfo
 									pokemon={cachedPokemons[pokemonId]}
 									// cachedData
 									cachedLanguage={cachedLanguage}
@@ -69,8 +61,8 @@ const EvolutionChains = memo(function EvolutionChains({
 						</li>
 						{index < array.length - 1 && (
 							<li className='caret mt-5 mb-2'>
-								<EvolutionDetails 
-									chainId={chainId} 
+								<EvolutionDetails
+									chainId={chainId}
 									pokemonId={array[index + 1]}
 									cachedEvolutionChains={cachedEvolutionChains}
 									cachedItems={cachedItems}

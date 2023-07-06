@@ -1,5 +1,4 @@
 export default function Modal({customClass, isModalShown, setIsModalShown, setIsDetail, children}) {
-
 	const handleCloseModal = () => {
 		setIsModalShown(false);
 		if (setIsDetail) {

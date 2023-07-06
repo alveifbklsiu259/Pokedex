@@ -3,9 +3,9 @@ import { usePokemonData, useDispatchContenxt } from './PokemonsProvider';
 import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { getDataToFetch, getData } from '../api';
-import { getIdFromURL, transformToDash } from '../util';
-
+import { getDataToFetch, getData, getEndpointData, getAbilities } from '../api';
+import { getNameByLanguage, transformToKeyName, transformToDash } from '../util';
+import { useParams } from 'react-router-dom';
 const languageOptions = {
 	en: 'English',
 	ja: '日本語',
@@ -17,6 +17,9 @@ const languageOptions = {
 };
 
 export default function LanguageMenu() {
+	// get all abilities for this pokemon (including different forms, evo? what if we are gonna have navigating to next/pre pokemon component later? are those pokemon required?)
+	// when langeuage !== 'en', also fetch abilities when switching form tab (150)
+	const {pokeId} = useParams();
 	const [anchorEl, setAnchorEl] = useState(null);
 	const open = Boolean(anchorEl);
 	const state = usePokemonData();
@@ -25,7 +28,6 @@ export default function LanguageMenu() {
 	const handleClick = (event) => {
 		setAnchorEl(event.currentTarget);
 	};
-
 	const handleClose = useCallback(() => {
 		setAnchorEl(null);
 	}, [setAnchorEl])
@@ -39,95 +41,78 @@ export default function LanguageMenu() {
 
 	const changeLanguage = async option => {
 		const speciesData = state.pokemonSpecies;
-		let fetchedSpeciesData, fetchedVersions, fetchedMoveDamageClass, fetchedStats;
-		dispatch({type: 'languageChanged', payload: option});
 		handleClose();
 
-		if (Object.keys(state.pokemonSpecies).length !== state.pokemonCount || !Object.keys(state.versions).length || !Object.keys(state.move_damage_class).length || !Object.keys(state.stats).length) {
+		let fetchedSpecies, fetchedVersions, fetchedMoveDamageClass, fetchedStats, fetchedAbilities;
+		const isSpeciesReady = Object.keys(state.pokemonSpecies).length === state.pokemonCount;
+		const isVersionsReady = Boolean(Object.keys(state.versions).length);
+		const isMoveDamageClassReady = Boolean(Object.keys(state.move_damage_class).length);
+		const isStatsReady = Boolean(Object.keys(state.stats).length);
+		let isAbilitiesReady = pokeId ? state.pokemons[pokeId].abilities.every(entry => state.abilities[transformToKeyName(entry.ability.name)]) : true;
+
+		if (!isSpeciesReady || !isVersionsReady || !isMoveDamageClassReady || !isStatsReady) {
 			dispatch({type: 'dataLoading'});
 		};
 
-		// get species, need all of them
-		if (Object.keys(state.pokemonSpecies).length !== state.pokemonCount) {
+		// get species, need all of them.
+		if (!isSpeciesReady) {
 			const range = [];
 			for (let i = 1; i <= state.pokemonCount; i ++) {
 				range.push(i)
 			};
 			const speciesDataToFetch = getDataToFetch(state.pokemonSpecies, range);
-			fetchedSpeciesData = await getData('pokemon-species', speciesDataToFetch, 'id');
+			fetchedSpecies = await getData('pokemon-species', speciesDataToFetch, 'id');
 		};
 
-		// get new name/id data
-		const newNamesIds = Object.values(fetchedSpeciesData || speciesData).reduce((pre, cur) => {
-			pre[cur.names.find(entry => entry.language.name === transformToDash(option)).name || cur.name] = cur.id;
-			return pre
+		// update name/id data
+		const newNamesIds = Object.values(fetchedSpecies || speciesData).reduce((pre, cur) => {
+			pre[getNameByLanguage(cur.name, option, cur)] = cur.id;
+			return pre;
 		}, {});
+		const dataToFetch = response => response.results.map(data => data.url);
 
-		// get versions, this data is only required when language is not 'en'
-		if (!Object.keys(state.versions).length) {
-			const response = await fetch('https://pokeapi.co/api/v2/version?limit=999');
-			const data = await response.json();
-			const versionsToFetch = data.results.map(data => getIdFromURL(data.url));
-			fetchedVersions = await getData('version', versionsToFetch, 'name');
+		// get versions, only required when language !== 'en'
+		if (!isVersionsReady) {
+			const versionsResponse = await getEndpointData('version');
+			fetchedVersions = await getData('version', dataToFetch(versionsResponse), 'name');
 		};
 
-		// get move-damage-class, this data is only required when language is not 'en'
-		if (!Object.keys(state.move_damage_class).length) {
-			const response = await fetch('https://pokeapi.co/api/v2/move-damage-class?limit=999');
-			const data = await response.json();
-			const moveDamageClassToFetch = data.results.map(data => getIdFromURL(data.url));
-			fetchedMoveDamageClass = await getData('move-damage-class', moveDamageClassToFetch, 'name');
+		// get move-damage-class, only required when language !== 'en'
+		if (!isMoveDamageClassReady) {
+			const moveDamageClassResponse = await getEndpointData('move-damage-class');
+			fetchedMoveDamageClass = await getData('move-damage-class', dataToFetch(moveDamageClassResponse), 'name');
 		};
 
-		if (!Object.keys(state.stats).length) {
-			const response = await fetch('https://pokeapi.co/api/v2/stat?limit=999');
-			const data = await response.json();
-			const statToFetch = data.results.map(data => getIdFromURL(data.url));
-			fetchedStats = await getData('stat', statToFetch, 'name');
+		// get stats, only required when language !== 'en'
+		if (!isStatsReady) {
+			const statsResponse = await getEndpointData('stat');
+			fetchedStats = await getData('stat', dataToFetch(statsResponse), 'name');
 		};
 
-		if (fetchedSpeciesData) {
-			dispatch({type: 'pokemonSpeciesLoaded', payload: fetchedSpeciesData});
+		// to prevent Effect in Pokemon to run, get abilities when changing language on /pokemons/xxx.
+		if (!isAbilitiesReady && option !== 'en') {
+			fetchedAbilities = await getAbilities([state.pokemons[pokeId]], state.abilities);
 		};
 
+		// to batch dispatches
+		if (fetchedSpecies) {
+			dispatch({type: 'pokemonSpeciesLoaded', payload: fetchedSpecies});
+		};
 		if (fetchedVersions) {
 			dispatch({type:'getVersions', payload: fetchedVersions});
 		};
-
 		if (fetchedMoveDamageClass) {
 			dispatch({type:'getMoveDamageClass', payload: fetchedMoveDamageClass});
 		};
-
 		if (fetchedStats) {
 			dispatch({type:'getStats', payload: fetchedStats});
 		};
-
+		if (fetchedAbilities) {
+			dispatch({type: 'abilityLoaded', payload: fetchedAbilities});
+		};
 		dispatch({type: 'pokemonNamesAndIdsLoaded', payload: newNamesIds});
-		
+		dispatch({type: 'languageChanged', payload: option});
 
-
-		
-
-		// I'll currently read language from state, when the logic is done, see if we can pass language down instead of reading from state
-		// search state.language
-		
-		
-		// if on root
-		// fetch pokemon-species to get relevant names, --> when click language btn, fetch pokemon-species, then fetch pokemon-species when scrolling.
-		// fetch types  to get relevant types
-		// datalist
-
-		// if on pokemon, we also need
-		// abilities
-		// flavor text
-		// version names
-		// moves name
-		// move effect, flavor text
-
-		// translate height, weight, stats,
-
-
-		//A form field element should have an id or name attribute
 	};
 
 	return (
@@ -167,7 +152,7 @@ export default function LanguageMenu() {
 						backgroundColor: '#8bbaff',
 					},
 					'& .MuiMenuItem-root.Mui-selected': {
-						backgroundColor: '#0d6efd !important',
+						backgroundColor: '#0d6efd',
 					},
 				}}
 			>
@@ -183,7 +168,7 @@ export default function LanguageMenu() {
 						}}
 						key={option} 
 						selected={option === language ? true : false} 
-						onClick={() => {changeLanguage(option)}}
+						onClick={() => changeLanguage(option)}
 						disabled={option === state.language ? true : false}
 					>
 						{languageOptions[option]}

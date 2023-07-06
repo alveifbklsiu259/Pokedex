@@ -3,6 +3,7 @@ import Spinner from './Spinner';
 import { useDispatchContenxt, usePokemonData } from './PokemonsProvider';
 import Modal from './Modal';
 import { transformToKeyName, transformToDash, getNameByLanguage, getTextByLanguage } from '../util';
+import { getAbilitiesToDisplay, getData } from '../api';
 
 const Abilities = memo(function Abilities({pokemon, cachedAbilities}) {
 	const dispatch = useDispatchContenxt();
@@ -12,29 +13,26 @@ const Abilities = memo(function Abilities({pokemon, cachedAbilities}) {
 	const [abilityData, setAbilityData] = useState(null);
 	const language = state.language;
 
-	const abilitiesArray = pokemon.abilities.map(entry => entry.ability.name);
-	const abilities = [...new Set(abilitiesArray)];
+	const abilities = getAbilitiesToDisplay([pokemon]).map(ability => transformToDash(ability));
 
 	const showModal = async ability => {
 		const abilityKey = transformToKeyName(ability);
+		let fetchedAbility;
 
-		if (abilityData && abilityData.name !== ability) {
+		// for spinner to show
+		if (abilityData?.name !== ability) {
 			setAbilityData(null);
 		};
 
 		setIsModalShown(true);
 
 		if (!cachedAbilities[abilityKey]) {
-			const target = pokemon.abilities.find(entry => entry.ability.name === ability);
-			const response = await fetch(target.ability.url);
-			const data = await response.json();
-			const result = {[abilityKey]: data};
-			dispatch({type: 'abilityLoaded', payload: result});
-			setAbilityData(data);
-		} else {
-			setAbilityData(cachedAbilities[abilityKey]);
-		}
-	}
+			fetchedAbility = await getData('ability', ability, 'name');
+			dispatch({type: 'abilityLoaded', payload: fetchedAbility});
+		};
+
+		setAbilityData(fetchedAbility?.[abilityKey] || cachedAbilities[abilityKey]);
+	};
 
 	const showModalDetail = () => {
 		setIsDetail(!isDetail);
@@ -57,32 +55,34 @@ const Abilities = memo(function Abilities({pokemon, cachedAbilities}) {
 				<br />
 			</div>
 			))}
-			<Modal 
-				customClass={customClass} 
-				isModalShown={isModalShown} 
-				setIsModalShown={setIsModalShown} 
-				setIsDetail={setIsDetail}
-			>
-				{
-					abilityData ? (
-						<>
-							<h1 className='abilityName my-2'>{abilityData.names.find(entry => entry.language.name === transformToDash(language))?.name}</h1>
-							<div className='abilityDescription p-3'>
-								<p>
-									{
-										isDetail ? detail ? detail : brief ? brief : 'No data to show' : brief ? brief : 'No data to show'
-									}
-								</p>
-							</div>
-							<div className='modalBtnContainer'>
-								<button onClick={showModalDetail} className="btn btn-warning">Show {isDetail ? 'Brief' : 'Detail'}</button>
-							</div>
-						</>
-					) : (
-						<Spinner />
-					)
-				}
-			</Modal>
+			{isModalShown && (
+				<Modal
+					customClass={customClass} 
+					isModalShown={isModalShown} 
+					setIsModalShown={setIsModalShown} 
+					setIsDetail={setIsDetail}
+				>
+					{
+						abilityData ? (
+							<>
+								<h1 className='abilityName my-2'>{getNameByLanguage(abilityData.name, language, abilityData)}</h1>
+								<div className='abilityDescription p-3'>
+									<p>
+										{
+											isDetail ? (detail ? detail : (brief ? brief : 'No data to show')) : brief ? brief : 'No data to show'
+										}
+									</p>
+								</div>
+								<div className='modalBtnContainer'>
+									<button onClick={showModalDetail} className="btn btn-warning">Show {isDetail ? 'Brief' : 'Detail'}</button>
+								</div>
+							</>
+						) : (
+							<Spinner />
+						)
+					}
+				</Modal>
+			)}
 		</>
 	)
 });

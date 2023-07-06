@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { router } from "../App";
 import { usePokemonData, useDispatchContenxt } from "./PokemonsProvider"
 import Input from "./Input";
 import { getPokemons } from "../api";
 
 export default function ErrorPage() {
 	const [searchParam, setSearchParam] = useState('');
-	const navigate = useNavigate();
 	const dispatch = useDispatchContenxt();
 	const state = usePokemonData();
 	
@@ -16,7 +15,7 @@ export default function ErrorPage() {
 
 	const handleBack = () => {
 		dispatch({type: 'backToRoot'});
-		navigate('/', {state: 'backToRoot'});
+		router.navigate('/', {state: 'resetPosition'});
 	};
 	
 	const handleSubmit = e => {
@@ -41,7 +40,7 @@ export default function ErrorPage() {
 		dispatch({type: 'intersectionChanged', payload: intersection});
 		dispatch({type: 'searchParamChanged', payload: searchParam});
 		getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, intersection, state.sortBy, state.status);
-		navigate('/');
+		router.navigate('/');
 	};
 
 	return (

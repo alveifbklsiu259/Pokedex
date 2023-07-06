@@ -40,10 +40,12 @@ h1 {
 
 .card-body {
     background-color: blanchedalmond;
+    width: 100%;
 }
 
 .card-body .pokeBall {
-    width: 10%;
+    width: 46px;
+    height: 46px;
 }
 
 .card {

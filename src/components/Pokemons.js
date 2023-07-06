@@ -23,6 +23,7 @@ export default function Pokemons() {
 			getPokemonsOnScroll(dispatch, state.nextRequest, state.pokemons, state.display);
 		};
 	}, [state.status, state.nextRequest, state.pokemons, state.display, dispatch]);
+	console.log(state)
 
 	useEffect(() => {
 		window.addEventListener('scroll', handleScroll);
@@ -44,7 +45,7 @@ export default function Pokemons() {
 						cachedLanguage={cachedLanguage}
 						cachedSpecies={cachedSpecies}
 						cachedTypes={cachedTypes}
-						/>
+					/>
 				))}
 				<ScrollToTop />
 				{state.status === 'scrolling' && <Spinner />}

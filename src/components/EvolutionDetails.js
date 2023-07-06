@@ -26,9 +26,7 @@ const textsForOtherRequirements = {
 
 const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cachedEvolutionChains, cachedItems, cachedLanguage}) {
 	const dispatch = useDispatchContenxt();
-
 	const [isModalShown, setIsModalShown] = useState(false);
-
 	const chainDetails = cachedEvolutionChains[chainId].details[pokemonId];
 
 	// handle some exceptions
@@ -46,19 +44,21 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cac
 		}, {});
 
 	const trigger = selectedDetail.trigger.name;
-	useEffect(() => {
-		if (selectedDetail['item'] || selectedDetail['held_item']) {
-			const getItem = async () => {
-				const requireItem = selectedDetail['item']?.name || selectedDetail['held_item']?.name;
-				const itemToFetch = getDataToFetch(cachedItems, [transformToKeyName(requireItem)]);
-				if (itemToFetch.length) {
-					const fetchedItem = await getData('item', requireItem);
-					dispatch({type: 'itemLoaded', payload: {[transformToKeyName(fetchedItem.name)]: fetchedItem}});
-				}
-			}
-			getItem();
-		}
-	}, [selectedDetail, cachedItems]);
+	// useEffect(() => {
+	// 	if ((selectedDetail['item'] || selectedDetail['held_item']) && cachedLanguage !== 'en') {
+	// 		console.log('inside')
+
+	// 		const getItem = async () => {
+	// 			const requireItem = selectedDetail['item']?.name || selectedDetail['held_item']?.name;
+	// 			const itemToFetch = getDataToFetch(cachedItems, [transformToKeyName(requireItem)]);
+	// 			if (itemToFetch.length) {
+	// 				const fetchedItem = await getData('item', requireItem);
+	// 				dispatch({type: 'itemLoaded', payload: {[transformToKeyName(fetchedItem.name)]: fetchedItem}});
+	// 			}
+	// 		}
+	// 		getItem();
+	// 	}
+	// }, [selectedDetail, cachedItems, cachedLanguage]);
 
 	let mainText;
 	switch(trigger) {
