@@ -1,9 +1,7 @@
 import React, { memo } from "react";
 import BasicInfo from "./BasicInfo";
 import EvolutionDetails from "./EvolutionDetails";
-import { useDispatchContenxt } from "./PokemonsProvider";
-import { getData } from "../api";
-import { useNavigateNoUpdates } from "./RouterUtils";
+import { useDispatchContenxt, usePokemonData, useNavigateToPokemon } from "./PokemonsProvider";
 
 const EvolutionChains = memo(function EvolutionChains({
 	evolutionChains,
@@ -15,27 +13,16 @@ const EvolutionChains = memo(function EvolutionChains({
 	cachedTypes,
 	cachedItems
 }) {
-	// prevent unnecessary re-render.
-	const navigateNoUpdates = useNavigateNoUpdates();
 	const dispatch = useDispatchContenxt();
-	// get max depth
+	const state = usePokemonData();
+	const navigateToPokemon = useNavigateToPokemon();
+	// get max depth (for layout)
 	let maxDepth = 1;
 	evolutionChains.forEach(chain => {
 		if (chain.length > maxDepth) {
 			maxDepth = chain.length;
 		};
 	});
-	// get species data right after navigating to new endpoint, thus prevent the Effect to run.
-	const handleClick = async pokemonId => {
-		navigateNoUpdates(`/pokemons/${pokemonId}`);
-
-		if (!cachedSpecies[pokemonId]) {
-			dispatch({type: 'dataLoading'});
-			const speciesData = await getData('pokemon-species', pokemonId);
-			dispatch({type: 'pokemonSpeciesLoaded', payload: {[speciesData.id]: speciesData}});
-		};
-	};
-	// console.log('chain')
 	
 	let content;
 	if (evolutionChains.length === 1 && evolutionChains[0].length === 1) {
@@ -49,7 +36,7 @@ const EvolutionChains = memo(function EvolutionChains({
 				{evolutionChains[0].map((pokemonId, index, array) => (
 					<React.Fragment key={pokemonId}>
 						<li>
-							<div style={{cursor: 'pointer'}} onClick={() => {handleClick(pokemonId)}} >
+							<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon(dispatch, [pokemonId], ['pokemonSpecies', 'abilities'], state)}} >
 								<BasicInfo
 									pokemon={cachedPokemons[pokemonId]}
 									// cachedData
@@ -86,7 +73,7 @@ const EvolutionChains = memo(function EvolutionChains({
 									chain.map((pokemonId, index, array) => (
 										<React.Fragment key={pokemonId}>
 											<li className="multiplePath">
-												<div style={{cursor: 'pointer'}} onClick={() => {handleClick(pokemonId)}} >
+												<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon(dispatch, [pokemonId], ['pokemonSpecies', 'abilities'], state)}} >
 													<BasicInfo 
 														pokemon={cachedPokemons[pokemonId]}
 														// cachedData

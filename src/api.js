@@ -233,6 +233,257 @@ export const getPokemonsOnScroll = async (dispatch, request, cachedPokemons, dis
 	await batchDispatch(dispatch, pokemonsToFetch, nextRequest, displayedPokemons, pokemonsToDisplay);
 };
 
+export const getChainData = async(chainUrl, cachedPokemons, fetchedPokemon) => {
+	let chainData, pokemonsFromChain;
+	const getEvolutionChains = async () => {
+		const evolutionChainResponse = await getData('evolution-chain', chainUrl)
+
+		// get chains, details
+		let evolutionDetails = {};
+		let chainIds = [];
+		let index = 0;
+		let depth = 1;
+		chainIds[index] = {};
+		const getIdsFromChain = chains => {
+			// get details
+			if (chains.evolution_details.length) {
+				evolutionDetails[getIdFromURL(chains.species.url)] = chains.evolution_details;
+			};
+			// get ids
+			chainIds[index][`depth-${depth}`] = getIdFromURL(chains.species.url);
+			if (chains.evolves_to.length) {
+				depth ++;
+				chains.evolves_to.forEach((chain, index, array) => {
+					getIdsFromChain(chain);
+					// the last chain in each depth
+					if (index === array.length - 1) {
+						depth --;
+					};
+				});
+			} else {
+				if (index !== 0) {
+					const minDepth = Number(Object.keys(chainIds[index])[0].split('-')[1]);
+					for (let i = 1; i < minDepth; i++) {
+						// get pokemon ids from the prvious chain, since they share the same pokemon(s)
+						chainIds[index][`depth-${i}`] = chainIds[index - 1][`depth-${i}`];
+					};
+				};
+				index ++;
+				chainIds[index] = {};
+			};
+		};
+		getIdsFromChain(evolutionChainResponse.chain);
+		chainIds.pop();
+
+		// sort chains
+		const sortedChains = chainIds.map(chain => {
+			const sortedKeys = Object.keys(chain).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
+			const sortedChain = sortedKeys.reduce((previousReturn, currentElement) => {
+				previousReturn[currentElement] = chain[currentElement];
+				return previousReturn;
+			}, {});
+			return Object.values(sortedChain);
+		});
+		return {sortedChains, evolutionDetails};
+	};
+	chainData = await getEvolutionChains();
+
+	// get pokemon data from the chain(s)
+	const pokemonsInChain = new Set(chainData.sortedChains.flat());
+
+	let currentCachedPokemons;
+	if (fetchedPokemon) {
+		currentCachedPokemons = {...cachedPokemons, ...{[fetchedPokemon.id]: fetchedPokemon}};
+	} else {
+		currentCachedPokemons = cachedPokemons;
+	};
+	const pokemonsToFetch = getDataToFetch(currentCachedPokemons, [...pokemonsInChain]);
+	pokemonsFromChain = await getData('pokemon', pokemonsToFetch, 'id');
+
+	return [chainData, pokemonsFromChain];
+};
+
+export const getRequiredData = async(dispatch, requestPokemonIds, requests, state) => {
+	// navigateNoUpdates(`/pokemons/${requestPokemonIds[0]}`);
+
+	const pokemonData = requestPokemonIds.map(id => state['pokemons'][id]);
+	const speciesData = requestPokemonIds.map(id => state['pokemonSpecies'][id]);
+	// in our use cases, all requestPokemons will have the same evolution chain, so we can just randomly grab one.
+	const randomSpecies = speciesData.find(data => data);
+	const chainData = randomSpecies ? state['evolutionChains'][getIdFromURL(randomSpecies.evolution_chain.url)] : undefined;
+	
+	const getItemsFromChain = chainData => {
+		const requiredItems = [];
+		Object.values(chainData.details).forEach(pokemon => {
+			let selectedDetail = pokemon.find(detail => detail.trigger.name === 'use-item') || pokemon[0];
+			const item = selectedDetail['item']?.name || selectedDetail['held_item']?.name;
+			if (item) {
+				requiredItems.push(item);
+			};
+		});
+		return requiredItems;
+	};
+
+	const getPrerequisiteData = dataType => {
+		return fetchedData[dataType] ? [...cachedData[dataType], ...Object.values(fetchedData[dataType])].filter(data => data) : cachedData[dataType] ? [...cachedData[dataType]] : requestPokemonIds.map(id => state[dataType][id]);
+	};
+
+	// some data relies on other data, so if the following data is present in the requests, they have to be fetched before other data.
+	const sortedRequests = requests.sort((a, b) => b.indexOf('p') - a.indexOf('p'));
+	if (requests.includes('evolutionChains')) {
+		const indexOfChain = requests.indexOf('evolutionChains');
+		// pokemons/pokemonSpecies have to come before evolutionChains
+		const insertIndex = requests.findLastIndex(req => req.startsWith('p')) + 1;
+		sortedRequests.splice(indexOfChain, 1);
+		sortedRequests.splice(insertIndex, 0, 'evolutionChains');
+	};
+
+	// each entry in cachedData is an array of object/undefined
+	const cachedData = sortedRequests.reduce((pre, cur) => {
+		switch(cur) {
+			case 'evolutionChains' : 
+				pre[cur] = [chainData];
+				break;
+			case 'items' : {
+				const requiredItems = !chainData ? [undefined] : getItemsFromChain(chainData);
+				pre[cur] = requiredItems.map(item => state[cur][transformToKeyName(item)]);
+				break;
+			}
+			case 'abilities' : {
+				const abilitiesToDisplay = getAbilitiesToDisplay(pokemonData);
+				pre[cur] = abilitiesToDisplay ? abilitiesToDisplay.map(ability => state[cur][ability]) : [undefined];
+				break;
+			};
+			default : 
+				pre[cur] = requestPokemonIds.map(id => state[cur][id]);
+		};
+		return pre;
+	}, {});
+
+	// some data is only required when language is not 'en';
+	const langCondition = sortedRequests.reduce((pre, cur) => {
+		switch (cur) {
+			case 'items' :
+			case 'abilities' : 
+				pre[cur] = 'en';
+				break;
+			default : 
+				pre[cur] = null;
+		};
+		return pre;
+	}, {});
+
+	for (let req of sortedRequests) {
+		if (cachedData[req] && cachedData[req].includes(undefined) && langCondition[req] !== state.language) {
+			dispatch({type:'dataLoading'});
+			break;
+		};
+	};
+
+	// fetchedData will be:
+	// pokemons/pokemonSpecies/abilities: object/undefined
+	// chain: an array of object / undefined
+	const fetchedData = {};
+	for (let req of sortedRequests) {
+		if (cachedData[req] && cachedData[req].includes(undefined) && langCondition[req] !== state.language) {
+			switch(req) {
+				case 'pokemons' : {
+					const pokemonsToFetch = getDataToFetch(state[req], requestPokemonIds);
+					// fetchedData[req] = await getData('pokemon', pokemonsToFetch, 'id');
+					const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
+					// also get formData (for Move.js)
+					const formsToFetch = [];
+					Object.values(fetchedPokemons).forEach(pokemon => {
+						if (!pokemon.is_default) {
+							formsToFetch.push(pokemon.forms[0].url);
+						};
+					});
+					const formData = await getData('pokemon-form', formsToFetch, 'name');
+					Object.values(formData).forEach(entry => {
+						fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
+					});
+					fetchedData[req] = fetchedPokemons;
+					break;
+				};
+				case 'abilities' : {
+					const pokemonData = getPrerequisiteData('pokemons');
+					fetchedData[req] = await getAbilities(pokemonData, state[req]);
+					break;
+				};
+				case 'evolutionChains' : {
+					const speciesData = getPrerequisiteData('pokemonSpecies');
+					const chainToFetch = getDataToFetch(state[req], [getIdFromURL(speciesData[0].evolution_chain.url)]);
+
+					if (chainToFetch.length) {
+						const [{sortedChains: chains, evolutionDetails: details} ,fetchedPokemons] = await getChainData(chainToFetch[0], state.pokemons, cachedData['pokemons']);
+						fetchedData[req] = [{[chainToFetch[0]]: {chains, details}}, fetchedPokemons];
+					};
+					break;
+				};
+				case 'items' : {
+					const speciesData = getPrerequisiteData('pokemonSpecies');
+					const chainData = state.evolutionChains[getIdFromURL(speciesData[0].evolution_chain.url)] || fetchedData['evolutionChains'][0][getIdFromURL(speciesData[0].evolution_chain.url)];
+
+					const requiredItems = getItemsFromChain(chainData);
+					const itemToFetch = getDataToFetch(state[req], requiredItems.map(item => transformToKeyName(item)));
+					if (itemToFetch.length) {
+						fetchedData[req] = await getData('item', requiredItems, 'name');
+					};
+					break;
+				};
+				default : {
+					const endpoint = req === 'pokemonSpecies' ? 'pokemon-species' : null;
+					if (endpoint) {
+						const dataToFetch = getDataToFetch(state[req], requestPokemonIds);
+						fetchedData[req] = await getData(endpoint, dataToFetch, 'id');
+					};
+				};
+			};
+		};
+	};
+
+
+	sortedRequests.forEach(req => {
+		const data = fetchedData[req];
+		if (data) {
+			switch(req) {
+				case 'pokemons' : {
+					dispatch({type: 'pokemonsLoaded', payload: {data: data, nextRequest: 'unchanged'}});
+					break;
+				}
+				case 'evolutionChains' : {
+					const [chainData, fetchedPokemons] = data;
+					dispatch({type: 'evolutionChainsLoaded', payload: chainData});
+
+					if (Object.keys(fetchedPokemons)) {
+						dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: 'unchanged'}});
+					};
+					break;
+				}
+				default : {
+					const dispatchType = req === 'pokemonSpecies' ? 'pokemonSpeciesLoaded' : req === 'abilities' ? 'abilityLoaded' : req === 'items' ? 'itemLoaded' : null;
+					if (dispatchType) {
+						dispatch({type: dispatchType, payload: data});
+					}
+				}
+			};
+		};
+	});
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

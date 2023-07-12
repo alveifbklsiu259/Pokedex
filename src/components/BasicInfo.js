@@ -1,22 +1,5 @@
 import { memo } from "react";
-import { Link } from "react-router-dom";
 import { getIdFromURL, getNameByLanguage } from "../util";
-
-// this component is for memoization (Link)
-export const PokemonCards = memo(function PokemonCards({pokemon, cachedLanguage, cachedSpecies,	cachedTypes}) {
-	return (
-		<div className="col-6 col-md-4 col-lg-3 card pb-3">
-			<Link to={`/pokemons/${pokemon.id}`} style={{height: '100%'}}>
-				<BasicInfo
-					pokemon={pokemon}
-					cachedLanguage={cachedLanguage}
-					cachedSpecies={cachedSpecies}
-					cachedTypes={cachedTypes}
-				/>
-			</Link>
-		</div>
-	)
-});
 
 const BasicInfo = memo(function BasicInfo({pokemon, cachedLanguage, cachedSpecies, cachedTypes}) {
 	let pokemonName = getNameByLanguage(pokemon.name, cachedLanguage, cachedSpecies[getIdFromURL(pokemon.species.url)]);

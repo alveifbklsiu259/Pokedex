@@ -1,6 +1,7 @@
 import { useReducer, createContext, useContext, useEffect, useMemo } from 'react'
-import { getData, getPokemons, getEndpointData } from '../api';
+import { getData, getPokemons, getEndpointData, getRequiredData } from '../api';
 import { getIdFromURL } from '../util';
+import { useNavigateNoUpdates } from './RouterUtils';
 
 const PokemonContext = createContext(null);
 const DispatchContext = createContext(null);
@@ -68,7 +69,7 @@ const reducer = (state, action) => {
 		}
 		case 'pokemonsLoaded' : {
 			return {
-				...state, pokemons: {...state.pokemons, ...action.payload.data}, status: 'idle', nextRequest: action.payload.nextRequest
+				...state, pokemons: {...state.pokemons, ...action.payload.data}, status: 'idle', nextRequest: action.payload.nextRequest === 'unchanged' ? state.nextRequest : action.payload.nextRequest
 			}
 		}
 		case 'generationLoaded' : {
@@ -83,12 +84,7 @@ const reducer = (state, action) => {
 		}
 		case "evolutionChainsLoaded" : {
 			return {
-				...state, status: 'idle', evolutionChains: {...state.evolutionChains, [action.payload.id]: {chains: action.payload.chains, details: action.payload.details}}
-			}
-		}
-		case "individualPokemonLoaded" : {
-			return {
-				...state, status: 'idle', pokemons: {...state.pokemons, [action.payload.id]: action.payload}
+				...state, status: 'idle', evolutionChains: {...state.evolutionChains, ...action.payload}
 			}
 		}
 		case "searchParamChanged" : {
@@ -290,6 +286,16 @@ export function useDispatchContenxt() {
 };
 
 // for passing cached data down the tree, so we don't have to register to reading the state value there (which will cause unnecessary re-renders), but this will make the code a bit messier, we can migrate to redux to solve this problem.
-export function useCachedData (data) {
+export function useCachedData(data) {
 	return useMemo(() => data, [data]);
 };
+
+export function useNavigateToPokemon() {
+	const navigate = useNavigateNoUpdates();
+	
+	const navigateToPokemon = (dispatch, requestPokemonIds, requests, state) => {
+		navigate(`/pokemons/${requestPokemonIds[0]}`);
+		getRequiredData(dispatch, requestPokemonIds, requests, state);
+	};
+	return navigateToPokemon;
+}

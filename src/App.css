@@ -205,6 +205,10 @@ h1 {
     font-size: 1.3em;
 }
 
+.pokemonCard {
+    cursor: pointer;
+}
+
 /* detail */
 .detail p {
     font-size: 1.2em

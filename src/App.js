@@ -63,6 +63,7 @@ export default App;
 // favorite pokemons
 // Pokemon icon in datalist
 // <ViewModuleIcon
+// change to zh-hanz -- search 133, sometimes it has err
 
 
 

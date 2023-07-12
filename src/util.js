@@ -1,13 +1,13 @@
-export const getIdFromURL = (url) => {
-	return Number(url.slice(url.lastIndexOf('/', url.lastIndexOf('/') - 1) + 1, url.lastIndexOf('/')))
-}
+export const getIdFromURL = url => {
+	return url ? Number(url.slice(url.lastIndexOf('/', url.lastIndexOf('/') - 1) + 1, url.lastIndexOf('/'))) : undefined;
+};
 
 export const transformToKeyName = name => {
-	return name.replaceAll('-', '_');
+	return name ? name.replaceAll('-', '_') : undefined;
 };
 
 export const transformToDash = name => {
-	return name.replaceAll('_', '-');
+	return name ? name.replaceAll('_', '-') : undefined;
 };
 
 export const getNameByLanguage = (defaultName, language, entries) => {
