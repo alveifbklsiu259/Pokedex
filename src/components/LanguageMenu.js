@@ -3,8 +3,8 @@ import { usePokemonData, useDispatchContenxt } from './PokemonsProvider';
 import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { getDataToFetch, getData, getEndpointData, getAbilities } from '../api';
-import { getNameByLanguage, transformToKeyName, transformToDash } from '../util';
+import { getAllSpecies, getRequiredData } from '../api';
+import { getIdFromURL, getNameByLanguage } from '../util';
 import { useParams } from 'react-router-dom';
 const languageOptions = {
 	en: 'English',
@@ -17,8 +17,6 @@ const languageOptions = {
 };
 
 export default function LanguageMenu() {
-	// get all abilities for this pokemon (including different forms, evo? what if we are gonna have navigating to next/pre pokemon component later? are those pokemon required?)
-	// when langeuage !== 'en', also fetch abilities when switching form tab (150)
 	const {pokeId} = useParams();
 	const [anchorEl, setAnchorEl] = useState(null);
 	const open = Boolean(anchorEl);
@@ -35,84 +33,26 @@ export default function LanguageMenu() {
 	useEffect(() => {
 		window.addEventListener('scroll', handleClose);
 		return () => {
-			window.removeEventListener('scroll', handleClose)
+			window.removeEventListener('scroll', handleClose);
 		};
 	}, [handleClose]);
-
+		
 	const changeLanguage = async option => {
-		const speciesData = state.pokemonSpecies;
+		const hasAllSpecies = Object.keys(state.pokemonSpecies).length === state.pokemonCount;
+		const callback = !hasAllSpecies ? getAllSpecies : undefined;
+		let requests = pokeId ? ['pokemons', 'abilities', 'items', 'version', 'move-damage-class', 'stat'] : ['version', 'move-damage-class', 'stat'];
+		
+		let requestPokemonIds = pokeId ? state.pokemonSpecies[getIdFromURL(state.pokemons[pokeId].species.url)].varieties.map(variety => getIdFromURL(variety.pokemon.url)) : [undefined];
+
 		handleClose();
-
-		let fetchedSpecies, fetchedVersions, fetchedMoveDamageClass, fetchedStats, fetchedAbilities;
-		const isSpeciesReady = Object.keys(state.pokemonSpecies).length === state.pokemonCount;
-		const isVersionsReady = Boolean(Object.keys(state.versions).length);
-		const isMoveDamageClassReady = Boolean(Object.keys(state.move_damage_class).length);
-		const isStatsReady = Boolean(Object.keys(state.stats).length);
-		let isAbilitiesReady = pokeId ? state.pokemons[pokeId].abilities.every(entry => state.abilities[transformToKeyName(entry.ability.name)]) : true;
-
-		if (!isSpeciesReady || !isVersionsReady || !isMoveDamageClassReady || !isStatsReady) {
-			dispatch({type: 'dataLoading'});
-		};
-
-		// get species, need all of them.
-		if (!isSpeciesReady) {
-			const range = [];
-			for (let i = 1; i <= state.pokemonCount; i ++) {
-				range.push(i)
-			};
-			const speciesDataToFetch = getDataToFetch(state.pokemonSpecies, range);
-			fetchedSpecies = await getData('pokemon-species', speciesDataToFetch, 'id');
-		};
-
-		// update name/id data
-		const newNamesIds = Object.values(fetchedSpecies || speciesData).reduce((pre, cur) => {
+		const speciesData = await getRequiredData(state, dispatch, requestPokemonIds, requests, option, callback) || state.pokemonSpecies;
+		const newNamesIds = Object.values(speciesData).reduce((pre, cur) => {
 			pre[getNameByLanguage(cur.name, option, cur)] = cur.id;
 			return pre;
 		}, {});
-		const dataToFetch = response => response.results.map(data => data.url);
-
-		// get versions, only required when language !== 'en'
-		if (!isVersionsReady) {
-			const versionsResponse = await getEndpointData('version');
-			fetchedVersions = await getData('version', dataToFetch(versionsResponse), 'name');
-		};
-
-		// get move-damage-class, only required when language !== 'en'
-		if (!isMoveDamageClassReady) {
-			const moveDamageClassResponse = await getEndpointData('move-damage-class');
-			fetchedMoveDamageClass = await getData('move-damage-class', dataToFetch(moveDamageClassResponse), 'name');
-		};
-
-		// get stats, only required when language !== 'en'
-		if (!isStatsReady) {
-			const statsResponse = await getEndpointData('stat');
-			fetchedStats = await getData('stat', dataToFetch(statsResponse), 'name');
-		};
-
-		// to prevent Effect in Pokemon to run, get abilities when changing language on /pokemons/xxx.
-		if (!isAbilitiesReady && option !== 'en') {
-			fetchedAbilities = await getAbilities([state.pokemons[pokeId]], state.abilities);
-		};
-
-		// to batch dispatches
-		if (fetchedSpecies) {
-			dispatch({type: 'pokemonSpeciesLoaded', payload: fetchedSpecies});
-		};
-		if (fetchedVersions) {
-			dispatch({type:'getVersions', payload: fetchedVersions});
-		};
-		if (fetchedMoveDamageClass) {
-			dispatch({type:'getMoveDamageClass', payload: fetchedMoveDamageClass});
-		};
-		if (fetchedStats) {
-			dispatch({type:'getStats', payload: fetchedStats});
-		};
-		if (fetchedAbilities) {
-			dispatch({type: 'abilityLoaded', payload: fetchedAbilities});
-		};
+		
 		dispatch({type: 'pokemonNamesAndIdsLoaded', payload: newNamesIds});
 		dispatch({type: 'languageChanged', payload: option});
-
 	};
 
 	return (

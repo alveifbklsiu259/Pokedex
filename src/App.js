@@ -64,14 +64,15 @@ export default App;
 // Pokemon icon in datalist
 // <ViewModuleIcon
 // change to zh-hanz -- search 133, sometimes it has err
-
+// when chaing url directly in the url bar, the whole state gets re-set, this is not correct...
+// is it a good idea to move getDataToFetch into getData? // we can do that, but not urgent.
 
 
 by default, show all pokemons + infinite scroll or pagination, by filtering different generation, we still have infinite scroll or pagination
 
 	// automatically submit when not typing // suspense?
 
-sort by stats/colors/shapes
+sort by stat/colors/shapes
 		add forms
 		numbers starting 10000 are different form, should not appear on the pokedex, and when click them to their page will have an error
 		if we go direct to /pokemons/999, since we don't have data in our pokemons state, we want to do individual fetch

@@ -29,10 +29,10 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 
 	const getVersionText = version => {
 		if (state.language !== 'en') {
-			const matchedVersions =  Object.values(state.versions).filter(entry => entry.version_group.name === version);
+			const matchedVersions =  Object.values(state.version).filter(entry => entry.version_group.name === version);
 			let versionName = '';
 			matchedVersions.forEach((entry, index, array) => {
-				versionName += getNameByLanguage(entry.name, state.language, state.versions[transformToKeyName(entry.name)]);
+				versionName += getNameByLanguage(entry.name, state.language, state.version[transformToKeyName(entry.name)]);
 				if (index < array.length - 1) {
 					versionName += '/';
 				};

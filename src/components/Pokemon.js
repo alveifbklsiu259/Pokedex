@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import BasicInfo from "./BasicInfo";
 import Detail from "./Detail";
@@ -10,8 +10,8 @@ import Moves from "./Moves";
 import ErrorPage from "./ErrorPage";
 import Varieties from "./Varieties";
 import { usePokemonData, useDispatchContenxt, useCachedData } from "./PokemonsProvider";
-import { getDataToFetch, getData, getAbilitiesToDisplay, getAbilities, getChainData } from "../api";
-import { getIdFromURL } from "../util";
+import { getAbilitiesToDisplay, getRequiredData, getItemsFromChain } from "../api";
+import { getIdFromURL, transformToKeyName } from "../util";
 
 export default function Pokemon() {
 	const state = usePokemonData();
@@ -25,23 +25,21 @@ export default function Pokemon() {
 		urlParam = state.allPokemonNamesAndIds[pokeId.toLowerCase()] || pokeId;
 	};
 
-	// pokemon data fot current page
-	const pokemon = state.pokemons[urlParam];
-	let speciesInfo = useMemo(()=> state.pokemonSpecies[urlParam], [state.pokemonSpecies, urlParam]);
-	// for different forms (any non-default-form pokemon uses its default-form's species data rather than data from 'pokemon-species/[pokeId]').
-	if (!speciesInfo && pokemon?.is_default === false) {
-		speciesInfo = state.pokemonSpecies[getIdFromURL(pokemon.species.url)];
-	};
-	// evolution chains
-	const evolutionChainsURL = speciesInfo?.evolution_chain?.url;
-	const chainId = evolutionChainsURL ? getIdFromURL(evolutionChainsURL) : undefined;
-	const evolutionChains = state.evolutionChains?.[chainId]?.chains;
+	// the reason why searching in other languages doesn't work is because even if we change lange, the get the latest data in allPokemonNamesAndIds, when we enter what we type in the url bar, the whole state gets reset, and we're back to English name id pairs. maybe the workaround would be in the PokemonProviders, if language !== 'en', we have to change name id pairs there.
 
-	// abilities, only required when language is not 'en'.
-	let abilitiesToDisplay, isAbilitiesReady;
+
+	// required data for current page
+	const pokemon = state.pokemons[urlParam];
+	const speciesInfo = state.pokemonSpecies[getIdFromURL(pokemon?.species?.url)];
+	const chainId = getIdFromURL(speciesInfo?.evolution_chain?.url);
+	const evolutionChains = state.evolutionChains?.[chainId];
+	const requiredItems = getItemsFromChain(evolutionChains);
+
+	let abilitiesToDisplay, isAbilitiesReady, isItemsReady;
 	if (state.language !== 'en') {
-		abilitiesToDisplay = getAbilitiesToDisplay([pokemon]);
+		abilitiesToDisplay = getAbilitiesToDisplay(pokemon);
 		isAbilitiesReady = abilitiesToDisplay ? abilitiesToDisplay.every(ability => state.abilities[ability]) : false;
+		isItemsReady = requiredItems ? requiredItems.every(item => state.items[transformToKeyName(item)]) : false;
 	};
 
 	// cache data for better performance, we can opt out this approach if switching to redux
@@ -51,95 +49,24 @@ export default function Pokemon() {
 	const cachedLanguage = useCachedData(state.language);
 	const cachedSpecies = useCachedData(state.pokemonSpecies);
 	const cachedTypes = useCachedData(state.types);
-	const cachedStats = useCachedData(state.stats);
+	const cachedStat = useCachedData(state.stat);
 	const cachedItems = useCachedData(state.items);
 
-	const requiredData = [pokemon, speciesInfo, evolutionChains];
-	const isDataReady = state.language === 'en' ? requiredData.every(Boolean) : (requiredData.every(Boolean) && isAbilitiesReady);
-	
-	// evolutionDetails --> fetch items
-	// console.log(state)
-
-
-
-	// go back to checking EvolutionDetails after optimalizing NavBar/LanguageMenu fron Pokemons.js
-
-	// can i cahnge the way modal dispaly? instead of hiding it, only show it when isModalShown is true.
-	// optimize other modal dispaly in pokemon
-	// translate height, weight, stats,
-	//A form field element should have an id or name attribute
-
-	// when switching to redux, we can read state.display in Navbar to determin if we want to reset scroll position when click back to root.
-
-	// can we use window.location to replace useParams?
-
-	// in evolutionchain, see if we can put the right image , for example wooper has two chain, the second should be it's paldea form
-
-	// see if we can add a click event in Pokemons.js, fetch data before navigating, then we will not use the Effect in Pokemon.js
-// console.log(state)
-
+	const defaultRequiredData = [pokemon, speciesInfo, evolutionChains];
+	const isDataReady = state.language === 'en' ? defaultRequiredData.every(Boolean) : (defaultRequiredData.every(Boolean) && isAbilitiesReady && isItemsReady);
 	console.log(state)
 	useEffect(() => {
 		// PokemonProvider also fetches data when it mounts, to avoid race condition, only fetch data when PokemonProvider's request is done. (since the dispatches in PokemonProvider are batched intentionally, status will only become "idle" when all requests in it are done.)
 		// To reduce unnecessary re-renders of this component, I think it would be great if we could find a way to batch dispatched between this Effect and the Effect from PokemonProvider, but since the re-renders are mainly caused by Context API, and I decided to migrate to Redux later, I'll just leave it as it is.
 		if (!isDataReady && state.status === 'idle') {
-			// console.log('eff')
-			const getPokemonData = async () => {
-				dispatch({type: 'dataLoading'});
-				let pokemonData, speciesData, chainsData, pokemonsFromChain, fetchedAbilities;
-
-				try {
-					if (!pokemon) {
-						pokemonData = await getData('pokemon', urlParam);
-						// get form data if this pokemon is not the default form, form data is for Moves.js
-						// this is for the case when directly loading non-default-form pokemon page, otherwise form data should be fetched when switching form tab.
-						if (!pokemonData.is_default) {
-							const formData = await getData('pokemon-form', pokemonData.forms[0].url);
-							pokemonData.formData = formData;
-						};
-					};
-					if (!speciesInfo) {
-						speciesData = await getData('pokemon-species', pokemonData ? pokemonData.species.url : pokemon.species.url);
-					};
-					if (!evolutionChains) {
-						[chainsData, pokemonsFromChain] = await getChainData((speciesData || speciesInfo).evolution_chain.url, state.pokemons, pokemonData);
-					};
-
-					if (state.language !== 'en' && !isAbilitiesReady) {
-						// fetchedAbilities = await getData('ability', abilitiesToFetch, 'name');
-						fetchedAbilities = await getAbilities([pokemon || pokemonData], state.abilities);
-						console.log(fetchedAbilities)
-					};
-	
-					// to batch dispatches
-					if (pokemonData) {
-						dispatch({type: 'pokemonsLoaded', payload: {data: {[pokemonData.id]: pokemonData}, nextRequest: 'unchanged'}});
-					};
-					if (speciesData) {
-						dispatch({type: 'pokemonSpeciesLoaded', payload: {[speciesData.id]: speciesData}});
-					};
-					if (chainsData) {
-						dispatch({type: 'evolutionChainsLoaded', payload: {
-							[getIdFromURL((speciesData || speciesInfo).evolution_chain.url)] : {
-								chains: chainsData.sortedChains,
-								details: chainsData.evolutionDetails
-							}
-						}});
-					};
-					if (state.language !== 'en' && fetchedAbilities) {
-						dispatch({type: 'abilityLoaded', payload: fetchedAbilities});
-					};
-					if (pokemonsFromChain && Object.keys(pokemonsFromChain).length) {
-						dispatch({type: 'pokemonsLoaded', payload: {data: pokemonsFromChain, nextRequest: 'unchanged'}});
-					};
-				} catch(err) {
-					console.log(err)
-					dispatch({type: 'error'});
-				}
+			try {
+				getRequiredData(state, dispatch, [urlParam], ['pokemons', 'pokemonSpecies', 'evolutionChains']);
+			} catch(err) {
+				console.log(err)
+				dispatch({type: 'error'});
 			};
-			getPokemonData();
 		};
-	}, [pokemon, speciesInfo, evolutionChains, urlParam , dispatch, isDataReady, state.status, state.pokemons, state.language, isAbilitiesReady]);
+	}, [dispatch, isDataReady, state, urlParam]);
 	let content;
 	if (state.status === 'idle' && isDataReady) {
 		content = (
@@ -169,13 +96,13 @@ export default function Pokemon() {
 						/>
 						<Stats
 							pokemon={pokemon}
-							cachedStats={cachedStats}
+							cachedStat={cachedStat}
 							cachedLanguage={cachedLanguage}
 						/>
 						<EvolutionChains
 							cachedPokemons={cachedPokemons}
 							cachedEvolutionChains={cachedEvolutionChains}
-							evolutionChains={evolutionChains}
+							evolutionChains={evolutionChains.chains}
 							chainId={chainId}
 							// cachedData
 							cachedLanguage={cachedLanguage}
@@ -211,3 +138,13 @@ export default function Pokemon() {
 		</>
 	)
 };
+
+
+	// translate height, weight, stat,
+	//A form field element should have an id or name attribute
+
+	// when switching to redux, we can read state.display in Navbar to determin if we want to reset scroll position when click back to root.
+
+	// can we use window.location to replace useParams?
+
+	// in evolutionchain, see if we can put the right image , for example wooper has two chain, the second should be it's paldea form

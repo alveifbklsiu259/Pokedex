@@ -97,11 +97,12 @@ export const getData = async (dataType, dataToFetch, resultKey) => {
 };
 
 export const getAbilitiesToDisplay = pokemonData => {
-	if (pokemonData === undefined || pokemonData.includes(undefined)) {
+	let data = pokemonData instanceof Array ? pokemonData : [pokemonData]
+	if (data.includes(undefined)) {
 		return undefined;
 	} else {
 		return [
-			...Object.values(pokemonData).reduce((pre, cur) => {
+			...Object.values(data).reduce((pre, cur) => {
 				cur.abilities.forEach(entry => pre.add(transformToKeyName(entry.ability.name)));
 				return pre;
 			}, new Set())
@@ -303,16 +304,10 @@ export const getChainData = async(chainUrl, cachedPokemons, fetchedPokemon) => {
 	return [chainData, pokemonsFromChain];
 };
 
-export const getRequiredData = async(dispatch, requestPokemonIds, requests, state) => {
-	// navigateNoUpdates(`/pokemons/${requestPokemonIds[0]}`);
-
-	const pokemonData = requestPokemonIds.map(id => state['pokemons'][id]);
-	const speciesData = requestPokemonIds.map(id => state['pokemonSpecies'][id]);
-	// in our use cases, all requestPokemons will have the same evolution chain, so we can just randomly grab one.
-	const randomSpecies = speciesData.find(data => data);
-	const chainData = randomSpecies ? state['evolutionChains'][getIdFromURL(randomSpecies.evolution_chain.url)] : undefined;
-	
-	const getItemsFromChain = chainData => {
+export const getItemsFromChain = chainData => {
+	if (!chainData) {
+		return undefined
+	} else {
 		const requiredItems = [];
 		Object.values(chainData.details).forEach(pokemon => {
 			let selectedDetail = pokemon.find(detail => detail.trigger.name === 'use-item') || pokemon[0];
@@ -322,47 +317,87 @@ export const getRequiredData = async(dispatch, requestPokemonIds, requests, stat
 			};
 		});
 		return requiredItems;
-	};
+	}
+};
 
-	const getPrerequisiteData = dataType => {
-		return fetchedData[dataType] ? [...cachedData[dataType], ...Object.values(fetchedData[dataType])].filter(data => data) : cachedData[dataType] ? [...cachedData[dataType]] : requestPokemonIds.map(id => state[dataType][id]);
+export const getAllSpecies = async state => {
+	const dispatchType = 'pokemonSpeciesLoaded';
+	let fetchedSpecies;
+	const hasAllSpecies = Object.keys(state.pokemonSpecies).length === state.pokemonCount;
+	if (!hasAllSpecies) {
+		const range = [];
+		for (let i = 1; i <= state.pokemonCount; i ++) {
+			range.push(i);
+		};
+		const speciesDataToFetch = getDataToFetch(state.pokemonSpecies, range);
+		fetchedSpecies = await getData('pokemon-species', speciesDataToFetch, 'id');
 	};
+	return [dispatchType, fetchedSpecies];
+};
 
-	// some data relies on other data, so if the following data is present in the requests, they have to be fetched before other data.
+export const getRequiredData = async(state, dispatch, requestPokemonIds, requests, lang, callback) => {
+	// lang is an optional parameter (used when language change);
+	// callback is an optional function, it may be useful if we have other data to fetch/dispatch, the benefit is that no extra re-render.
+	let callbackResult;
+	const language = lang ? lang : state.language;
+	const cachedData = {}, fetchedData = {};
+	const getCachedData = (dataType, ids) => {
+		// cachedData[dataType] may contain undefined element.
+		return fetchedData[dataType] ? [...cachedData[dataType], ...Object.values(fetchedData[dataType])].filter(data => data) : cachedData[dataType]?.every(Boolean) ? [...cachedData[dataType]] : ids.map(id => state[dataType][id]);
+	};
+	const speciesIds = requestPokemonIds.map(id => getIdFromURL(state['pokemons'][id]?.species?.url));
+	const speciesData = getCachedData('pokemonSpecies', speciesIds);
+
+	// in our use cases, all requestPokemons will have the same evolution chain, so we can just randomly grab one.
+	const randomSpecies = speciesData.find(data => data);
+	const chainData = randomSpecies ? state['evolutionChains'][getIdFromURL(randomSpecies.evolution_chain.url)] : undefined;
+
+	// some data relies on other data, so if one of the following data is present in the requests, they have to be fetched before other data.
+	// pokemons, pokemonSpecies, evolutionChains
 	const sortedRequests = requests.sort((a, b) => b.indexOf('p') - a.indexOf('p'));
 	if (requests.includes('evolutionChains')) {
 		const indexOfChain = requests.indexOf('evolutionChains');
-		// pokemons/pokemonSpecies have to come before evolutionChains
-		const insertIndex = requests.findLastIndex(req => req.startsWith('p')) + 1;
+		const indexOfInsertion = requests.findLastIndex(req => req.startsWith('p')) + 1;
 		sortedRequests.splice(indexOfChain, 1);
-		sortedRequests.splice(insertIndex, 0, 'evolutionChains');
+		sortedRequests.splice(indexOfInsertion, 0, 'evolutionChains');
 	};
 
 	// each entry in cachedData is an array of object/undefined
-	const cachedData = sortedRequests.reduce((pre, cur) => {
-		switch(cur) {
+	sortedRequests.forEach(req => {
+		switch(req) {
+			case 'pokemons' : {
+				cachedData[req] = getCachedData('pokemons' ,requestPokemonIds);
+				break;
+			}
+			case 'pokemonSpecies' : {
+				cachedData[req] = getCachedData('pokemonSpecies', speciesIds);
+				break;
+			}
 			case 'evolutionChains' : 
-				pre[cur] = [chainData];
+				cachedData[req] = [chainData];
 				break;
 			case 'items' : {
 				const requiredItems = !chainData ? [undefined] : getItemsFromChain(chainData);
-				pre[cur] = requiredItems.map(item => state[cur][transformToKeyName(item)]);
+				cachedData[req] = requiredItems.map(item => state[req][transformToKeyName(item)]);
 				break;
 			}
 			case 'abilities' : {
+				const pokemonData = getCachedData('pokemons', requestPokemonIds);
 				const abilitiesToDisplay = getAbilitiesToDisplay(pokemonData);
-				pre[cur] = abilitiesToDisplay ? abilitiesToDisplay.map(ability => state[cur][ability]) : [undefined];
+				cachedData[req] = abilitiesToDisplay ? abilitiesToDisplay.map(ability => state[req][ability]) : [undefined];
 				break;
 			};
-			default : 
-				pre[cur] = requestPokemonIds.map(id => state[cur][id]);
+			default :
+				// stat, version, move_damage_class, the structure of their cached data doesn't really matter, only fetch them once when language change.
+				cachedData[req] = Object.keys(state[transformToKeyName(req)]).length ? Object.values(state[transformToKeyName(req)]) : [undefined];
 		};
-		return pre;
-	}, {});
-
+	});
 	// some data is only required when language is not 'en';
 	const langCondition = sortedRequests.reduce((pre, cur) => {
 		switch (cur) {
+			case 'version' :
+			case 'stat' :
+			case 'move-damage-class' :
 			case 'items' :
 			case 'abilities' : 
 				pre[cur] = 'en';
@@ -374,7 +409,7 @@ export const getRequiredData = async(dispatch, requestPokemonIds, requests, stat
 	}, {});
 
 	for (let req of sortedRequests) {
-		if (cachedData[req] && cachedData[req].includes(undefined) && langCondition[req] !== state.language) {
+		if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
 			dispatch({type:'dataLoading'});
 			break;
 		};
@@ -382,38 +417,46 @@ export const getRequiredData = async(dispatch, requestPokemonIds, requests, stat
 
 	// fetchedData will be:
 	// pokemons/pokemonSpecies/abilities: object/undefined
-	// chain: an array of object / undefined
-	const fetchedData = {};
+	// chain: an array of object, or undefined
 	for (let req of sortedRequests) {
-		if (cachedData[req] && cachedData[req].includes(undefined) && langCondition[req] !== state.language) {
+		if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
 			switch(req) {
 				case 'pokemons' : {
 					const pokemonsToFetch = getDataToFetch(state[req], requestPokemonIds);
-					// fetchedData[req] = await getData('pokemon', pokemonsToFetch, 'id');
-					const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
-					// also get formData (for Move.js)
-					const formsToFetch = [];
-					Object.values(fetchedPokemons).forEach(pokemon => {
-						if (!pokemon.is_default) {
-							formsToFetch.push(pokemon.forms[0].url);
-						};
-					});
-					const formData = await getData('pokemon-form', formsToFetch, 'name');
-					Object.values(formData).forEach(entry => {
-						fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
-					});
-					fetchedData[req] = fetchedPokemons;
+					if (pokemonsToFetch.length) {
+						const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
+						// also get formData (for Move.js)
+						const formsToFetch = [];
+						Object.values(fetchedPokemons).forEach(pokemon => {
+							if (!pokemon.is_default) {
+								formsToFetch.push(pokemon.forms[0].url);
+							};
+						});
+						const formData = await getData('pokemon-form', formsToFetch, 'name');
+						Object.values(formData).forEach(entry => {
+							fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
+						});
+						fetchedData[req] = fetchedPokemons;
+					};
+					break;
+				};
+				case 'pokemonSpecies' : {
+					const pokemonData = getCachedData('pokemons', requestPokemonIds);
+					const speciesIds = Object.values(pokemonData).map(data => getIdFromURL(data.species.url));
+					const dataToFetch = getDataToFetch(state[req], speciesIds);
+					if (dataToFetch.length) {
+						fetchedData[req] = await getData('pokemon-species', dataToFetch, 'id');
+					};
 					break;
 				};
 				case 'abilities' : {
-					const pokemonData = getPrerequisiteData('pokemons');
+					const pokemonData = getCachedData('pokemons', requestPokemonIds);
 					fetchedData[req] = await getAbilities(pokemonData, state[req]);
 					break;
 				};
 				case 'evolutionChains' : {
-					const speciesData = getPrerequisiteData('pokemonSpecies');
+					const speciesData = getCachedData('pokemonSpecies', speciesIds);
 					const chainToFetch = getDataToFetch(state[req], [getIdFromURL(speciesData[0].evolution_chain.url)]);
-
 					if (chainToFetch.length) {
 						const [{sortedChains: chains, evolutionDetails: details} ,fetchedPokemons] = await getChainData(chainToFetch[0], state.pokemons, cachedData['pokemons']);
 						fetchedData[req] = [{[chainToFetch[0]]: {chains, details}}, fetchedPokemons];
@@ -421,9 +464,8 @@ export const getRequiredData = async(dispatch, requestPokemonIds, requests, stat
 					break;
 				};
 				case 'items' : {
-					const speciesData = getPrerequisiteData('pokemonSpecies');
+					const speciesData = getCachedData('pokemonSpecies', speciesIds);
 					const chainData = state.evolutionChains[getIdFromURL(speciesData[0].evolution_chain.url)] || fetchedData['evolutionChains'][0][getIdFromURL(speciesData[0].evolution_chain.url)];
-
 					const requiredItems = getItemsFromChain(chainData);
 					const itemToFetch = getDataToFetch(state[req], requiredItems.map(item => transformToKeyName(item)));
 					if (itemToFetch.length) {
@@ -432,17 +474,24 @@ export const getRequiredData = async(dispatch, requestPokemonIds, requests, stat
 					break;
 				};
 				default : {
-					const endpoint = req === 'pokemonSpecies' ? 'pokemon-species' : null;
-					if (endpoint) {
-						const dataToFetch = getDataToFetch(state[req], requestPokemonIds);
-						fetchedData[req] = await getData(endpoint, dataToFetch, 'id');
-					};
+					// stat, version, move_damage_class
+					const dataResponse = await getEndpointData(req);
+					const dataToFetch = dataResponse.results.map(data => data.url);
+					fetchedData[req] = await getData(req, dataToFetch, 'name');
 				};
 			};
 		};
 	};
 
+	if (callback) {
+		const [dispatchType, data] = await callback(state);
+		if (data) {
+			dispatch({type: dispatchType, payload: data});
+		};
+		callbackResult = data;
+	};
 
+	// batch dispatches intentionally
 	sortedRequests.forEach(req => {
 		const data = fetchedData[req];
 		if (data) {
@@ -461,30 +510,26 @@ export const getRequiredData = async(dispatch, requestPokemonIds, requests, stat
 					break;
 				}
 				default : {
-					const dispatchType = req === 'pokemonSpecies' ? 'pokemonSpeciesLoaded' : req === 'abilities' ? 'abilityLoaded' : req === 'items' ? 'itemLoaded' : null;
-					if (dispatchType) {
-						dispatch({type: dispatchType, payload: data});
-					}
-				}
+					// const dispatchType = req === 'pokemonSpecies' ? 'pokemonSpeciesLoaded' : req === 'abilities' ? 'abilityLoaded' : req === 'items' ? 'itemLoaded' : req === 'version' ? 'getVersion' : req === 'move-damage-class' ? 'getMoveDamageClass' : req === 'stat' ? 'getStat' : null;
+					const dispatchType = {
+						'pokemonSpecies': 'pokemonSpeciesLoaded',
+						'abilities': 'abilityLoaded',
+						'items': 'itemLoaded',
+						'version': 'getVersion',
+						'move-damage-class': 'getMoveDamageClass',
+						'stat': 'getStat'
+					};
+
+					if (dispatchType[req]) {
+						dispatch({type: dispatchType[req], payload: data});
+					};
+				};
 			};
 		};
 	});
+
+	return callbackResult;
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

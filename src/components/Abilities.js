@@ -12,8 +12,7 @@ const Abilities = memo(function Abilities({pokemon, cachedAbilities}) {
 	const [isDetail, setIsDetail] = useState(false);
 	const [abilityData, setAbilityData] = useState(null);
 	const language = state.language;
-
-	const abilities = getAbilitiesToDisplay([pokemon]).map(ability => transformToDash(ability));
+	const abilities = getAbilitiesToDisplay(pokemon).map(ability => transformToDash(ability));
 
 	const showModal = async ability => {
 		const abilityKey = transformToKeyName(ability);

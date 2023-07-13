@@ -36,7 +36,7 @@ const EvolutionChains = memo(function EvolutionChains({
 				{evolutionChains[0].map((pokemonId, index, array) => (
 					<React.Fragment key={pokemonId}>
 						<li>
-							<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon(dispatch, [pokemonId], ['pokemonSpecies', 'abilities'], state)}} >
+							<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon(state, dispatch, [pokemonId], ['pokemonSpecies', 'abilities'])}} >
 								<BasicInfo
 									pokemon={cachedPokemons[pokemonId]}
 									// cachedData
@@ -73,7 +73,7 @@ const EvolutionChains = memo(function EvolutionChains({
 									chain.map((pokemonId, index, array) => (
 										<React.Fragment key={pokemonId}>
 											<li className="multiplePath">
-												<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon(dispatch, [pokemonId], ['pokemonSpecies', 'abilities'], state)}} >
+												<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon(state, dispatch, [pokemonId], ['pokemonSpecies', 'abilities'])}} >
 													<BasicInfo 
 														pokemon={cachedPokemons[pokemonId]}
 														// cachedData

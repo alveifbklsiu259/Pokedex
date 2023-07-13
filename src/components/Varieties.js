@@ -12,7 +12,7 @@ const Varieties = memo(function Varieties({speciesInfo, pokemon}) {
 		const formIds = speciesInfo.varieties.map(entry => getIdFromURL(entry.pokemon.url));
 		formIds.splice(formIds.indexOf(targetPokemonId), 1);
 		const requestPokemonIds = [targetPokemonId, ...formIds];
-		navigateToPokemon(dispatch, requestPokemonIds, ['pokemons', 'abilities'], state);
+		navigateToPokemon(state, dispatch, requestPokemonIds, ['pokemons', 'abilities']);
 	};
 	
 	const getVarietyName = ({pokemon, is_default}) => {

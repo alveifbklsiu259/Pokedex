@@ -30,9 +30,9 @@ const initialState = {
 	machines: {},
 	// belowe are data that currently only required when language !== 'en'
 	items: {},
-	versions: {},
+	version: {},
 	move_damage_class: {},
-	stats: {}
+	stat: {}
 }
 
 const reducer = (state, action) => {
@@ -161,12 +161,12 @@ const reducer = (state, action) => {
 		}
 		case 'itemLoaded' : {
 			return {
-				...state, items: {...state.items, ...action.payload}
+				...state, status: 'idle', items: {...state.items, ...action.payload}
 			}
 		}
-		case 'getVersions' : {
+		case 'getVersion' : {
 			return {
-				...state, status: 'idle', versions: action.payload
+				...state, status: 'idle', version: action.payload
 			}
 		}
 		case 'getMoveDamageClass' : {
@@ -174,9 +174,9 @@ const reducer = (state, action) => {
 				...state, move_damage_class: action.payload
 			}
 		}
-		case 'getStats' : {
+		case 'getStat' : {
 			return {
-				...state, stats: action.payload
+				...state, stat: action.payload
 			}
 		}
 		default : 
@@ -222,6 +222,16 @@ export default function PokemonsProvider({children}) {
 			// cache input 
 			// see if i can batch dispatches between PokemonProvider and Pokemon
 			// encapsulate type/generation logic
+
+			// handling direct changes in url
+			// the below code is not enough, other data needs to be fetched.
+
+			// const lang = window.sessionStorage.getItem('pokedexLang');
+			// if (lang !== 'en') {
+			// 	dispatch({type: 'languageChanged', payload: lang});
+			// }
+			// or can we directly set lange to sessionStorage, so we don't have to dispatch languageChange, but we still have to fetch other data
+			// if (initialState.language !== 'en') {get generations/species...}
 		};
 			getInitialPokemonData()
 	}, [dispatch]);
@@ -293,9 +303,9 @@ export function useCachedData(data) {
 export function useNavigateToPokemon() {
 	const navigate = useNavigateNoUpdates();
 	
-	const navigateToPokemon = (dispatch, requestPokemonIds, requests, state) => {
+	const navigateToPokemon = (state, dispatch, requestPokemonIds, requests) => {
 		navigate(`/pokemons/${requestPokemonIds[0]}`);
-		getRequiredData(dispatch, requestPokemonIds, requests, state);
+		getRequiredData(state, dispatch, requestPokemonIds, requests);
 	};
 	return navigateToPokemon;
 }
