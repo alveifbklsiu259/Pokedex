@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { router } from "../App";
-import { usePokemonData, useDispatchContenxt } from "./PokemonsProvider"
+import { usePokemonData, useDispatchContenxt, useCachedData } from "./PokemonsProvider"
 import Input from "./Input";
 import { getPokemons } from "../api";
 
@@ -9,9 +9,7 @@ export default function ErrorPage() {
 	const dispatch = useDispatchContenxt();
 	const state = usePokemonData();
 	
-	const cachedPokemonNames = useMemo(() => {
-		return Object.keys(state.allPokemonNamesAndIds);
-	}, [state.allPokemonNamesAndIds]);
+	const cachedAllPokemonNamesAndIds = useCachedData(state.allPokemonNamesAndIds);
 
 	const handleBack = () => {
 		dispatch({type: 'backToRoot'});
@@ -61,9 +59,10 @@ export default function ErrorPage() {
 					<form className="d-flex" onSubmit={handleSubmit}>
 						<div className="flex-fill">
 							<Input 
-								pokemonNames={cachedPokemonNames}
+								cachedAllPokemonNamesAndIds={cachedAllPokemonNamesAndIds}
 								searchParam={searchParam}
 								setSearchParam={setSearchParam}
+								status={state.status}
 							/>
 						</div>
 						<button className="btn btn-primary btn-block ms-2" type="submit"><i className="fa-solid fa-magnifying-glass"></i></button>

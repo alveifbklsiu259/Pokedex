@@ -11,34 +11,36 @@ const DataList = forwardRef(({
 	showDataList, 
 	hoveredPokemon, 
 	setHoveredPokemon, 
-	activePokemon
+	activePokemon,
+	cachedAllPokemonNamesAndIds
 }, datalistRef) => {
 
-	const handleMouseOver = e => {
-		setHoveredPokemon(e.target.textContent)
+	const handleMouseOver = pokemon => {
+		setHoveredPokemon(pokemon);
 	};
 
 	const handleMouseLeave = () => {
 		setHoveredPokemon('')
 	};
 
-	const handleClick = e => {
+	const handleClick = pokemon => {
 		const input = inputRef.current;
 		setHoveredPokemon('');
 		setShowDataList(false);
 		resetFocus(datalistRef.current);
 		// handleFocus needs the latest matchList, since matchList is calculated by searchParam, use flushSync
 		flushSync(() => {
-			setSearchParam(e.target.textContent);
+			setSearchParam(pokemon);
 		});
 		input.focus();
 	};
 
-	const handleTouchEnd = e => {
+	// because on mobile device, there's no "hover", hover detection happens when tapping on something (without let go), so at each touch end (hover detection on mobile) we reset the hovered pokemon; when the mobile user click each item list (which will not trigger hover event) we trigger click event.
+	const handleTouchEnd = (e, pokemon) => {
 		if (!hoveredPokemon) {
 			// prevent click firing twice
 			e.preventDefault();
-			handleClick(e);
+			handleClick(pokemon);
 		};
 		// for onBlur to work on mobile
 		setHoveredPokemon('');
@@ -66,14 +68,16 @@ const DataList = forwardRef(({
 			{matchList.map(pokemon => (
 				<div
 					className={`${hoveredPokemon === pokemon ? 'datalist_hover' : ''} ${activePokemon === pokemon ? 'datalist_active' : ''}`}
-					onMouseOver={handleMouseOver}
+					onMouseOver={() => {handleMouseOver(pokemon)}}
 					onMouseLeave={handleMouseLeave}
-					onClick={handleClick}
+					onClick={() => {handleClick(pokemon)}}
 					// for mobile device
-					onTouchMove={handleMouseOver}
-					onTouchEnd={handleTouchEnd}
+					onTouchMove={() => {handleMouseOver(pokemon)}}
+					onTouchEnd={(e) => handleTouchEnd(e, pokemon)}
 					key={pokemon}
-				>{colorMatching(pokemon, searchParam)}
+				>
+					<span>{colorMatching(pokemon, searchParam)}</span>
+					<img width='96px' height='96px' src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${cachedAllPokemonNamesAndIds[pokemon]}.png`} alt={pokemon}/>
 				</div>
 			))}
 		</div>

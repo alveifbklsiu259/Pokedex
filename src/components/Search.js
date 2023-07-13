@@ -16,9 +16,8 @@ export default function Search({closeModal}) {
 	const [matchMethod, setMatchMethod] = useState('all');
 	const navigateNoUpdates = useNavigateNoUpdates();
 	// cached data
-	const cachedPokemonNames = useMemo(() => {
-		return Object.keys(state.allPokemonNamesAndIds);
-	}, [state.allPokemonNamesAndIds]);
+	const cachedAllPokemonNamesAndIds = useCachedData(state.allPokemonNamesAndIds);
+	const pokemonNames = Object.keys(cachedAllPokemonNamesAndIds);
 	const cachedTypes = useCachedData(state.types);
 	const cachedLanguage = useCachedData(state.language);
 	const cachedGenerations = useCachedData(state.generations);
@@ -30,10 +29,10 @@ export default function Search({closeModal}) {
 	switch (Object.keys(selectedGenerations).length) {
 		// if no selected generations, default to all.
 		case 0 : {
-			for (let i = 0; i < cachedPokemonNames.length; i ++) {
+			for (let i = 0; i < pokemonNames.length; i ++) {
 				let obj = {};
-				obj.name = cachedPokemonNames[i];
-				obj.url = `https://pokeapi.co/api/v2/pokemon-species/${state.allPokemonNamesAndIds[cachedPokemonNames[i]]}/`
+				obj.name = pokemonNames[i];
+				obj.url = `https://pokeapi.co/api/v2/pokemon-species/${state.allPokemonNamesAndIds[pokemonNames[i]]}/`
 				pokemonRange.push(obj);
 			};
 			break;
@@ -125,8 +124,7 @@ export default function Search({closeModal}) {
 					searchParam={searchParam} 
 					setSearchParam={setSearchParam}
 					status={cachedStatus}
-					pokemonNames={cachedPokemonNames}
-
+					cachedAllPokemonNamesAndIds={cachedAllPokemonNamesAndIds}
 				/>
 				<AdvancedSearch
 					searchParam={searchParam}

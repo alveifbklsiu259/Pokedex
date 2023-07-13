@@ -14,7 +14,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 		if (!pokemon.formData?.is_battle_only) {
 			debutGeneration = generations.find(generation => generation.version_groups.some(version => version.name === pokemon.formData.version_group.name)).name;
 		} else {
-			// should use the default form's data, the data was already cached when dealing with evolution chain.
+			// should use the default form's data.
 			pokemonData = state.pokemons[getIdFromURL(pokemon.species.url)];
 		};
 	};
@@ -41,11 +41,11 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 		} else {
 			return version;
 		};
-	}
+	};
 	
 	// for pokemon that learns move(s) on evolution.
 	let maxEvoLevel;
-	if (speciesInfo.evolves_from_species!== null) {
+	if (speciesInfo.evolves_from_species !== null) {
 		const chainData = state.evolutionChains[chainId];
 		maxEvoLevel = 0;
 
@@ -86,11 +86,11 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 
 		const test = versionDetail => Object.keys(conditions).every(key => {
 			if (conditions[key] instanceof Array) {
-				return conditions[key].some(condition => versionDetail[key].name === condition)
+				return conditions[key].some(condition => versionDetail[key].name === condition);
 			} else {
 				return conditions[key] === versionDetail[key].name;
 			};
-		})
+		});
 
 		const matches = pokemonData.moves.filter(move => move.version_group_details.some(test));
 		const results = matches.map(move => ({...move, version_group_details: move.version_group_details.filter(test)}));

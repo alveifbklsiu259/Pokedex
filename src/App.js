@@ -61,12 +61,18 @@ export default App;
 // theme using styled component
 // map info
 // favorite pokemons
-// Pokemon icon in datalist
 // <ViewModuleIcon
 // change to zh-hanz -- search 133, sometimes it has err
 // when chaing url directly in the url bar, the whole state gets re-set, this is not correct...
 // is it a good idea to move getDataToFetch into getData? // we can do that, but not urgent.
+// translate height, weight, stat,
+	//A form field element should have an id or name attribute
 
+	// when switching to redux, we can read state.display in Navbar to determin if we want to reset scroll position when click back to root.
+
+	// can we use window.location to replace useParams?
+
+	// in evolutionchain, see if we can put the right image , for example wooper has two chain, the second should be it's paldea form
 
 by default, show all pokemons + infinite scroll or pagination, by filtering different generation, we still have infinite scroll or pagination
 

@@ -54,17 +54,19 @@ export default function Pokemon() {
 
 	const defaultRequiredData = [pokemon, speciesInfo, evolutionChains];
 	const isDataReady = state.language === 'en' ? defaultRequiredData.every(Boolean) : (defaultRequiredData.every(Boolean) && isAbilitiesReady && isItemsReady);
-	console.log(state)
 	useEffect(() => {
 		// PokemonProvider also fetches data when it mounts, to avoid race condition, only fetch data when PokemonProvider's request is done. (since the dispatches in PokemonProvider are batched intentionally, status will only become "idle" when all requests in it are done.)
 		// To reduce unnecessary re-renders of this component, I think it would be great if we could find a way to batch dispatched between this Effect and the Effect from PokemonProvider, but since the re-renders are mainly caused by Context API, and I decided to migrate to Redux later, I'll just leave it as it is.
 		if (!isDataReady && state.status === 'idle') {
-			try {
-				getRequiredData(state, dispatch, [urlParam], ['pokemons', 'pokemonSpecies', 'evolutionChains']);
-			} catch(err) {
-				console.log(err)
-				dispatch({type: 'error'});
-			};
+			const getIndividualPokemonData = async () => {
+				try {
+					await getRequiredData(state, dispatch, [urlParam], ['pokemons', 'pokemonSpecies', 'evolutionChains']);
+				} catch(err) {
+					console.log(err)
+					dispatch({type: 'error'});
+				};
+			}
+			getIndividualPokemonData();
 		};
 	}, [dispatch, isDataReady, state, urlParam]);
 	let content;
@@ -110,7 +112,12 @@ export default function Pokemon() {
 							cachedTypes={cachedTypes}
 							cachedItems={cachedItems}
 						/>
-						{/* <Moves pokemon={pokemon} chainId={chainId} speciesInfo={speciesInfo} key={pokemon.id} /> */}
+						{/* <Moves 
+							pokemon={pokemon}
+							chainId={chainId}
+							speciesInfo={speciesInfo}
+							key={pokemon.id}
+						/> */}
 						<div className="row justify-content-center">
 							<Link to='/' className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</Link>
 						</div>
@@ -138,13 +145,3 @@ export default function Pokemon() {
 		</>
 	)
 };
-
-
-	// translate height, weight, stat,
-	//A form field element should have an id or name attribute
-
-	// when switching to redux, we can read state.display in Navbar to determin if we want to reset scroll position when click back to root.
-
-	// can we use window.location to replace useParams?
-
-	// in evolutionchain, see if we can put the right image , for example wooper has two chain, the second should be it's paldea form
