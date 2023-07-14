@@ -24,59 +24,59 @@ const textsForOtherRequirements = {
 
 const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cachedEvolutionChains, cachedItems, cachedLanguage}) {
 	const [isModalShown, setIsModalShown] = useState(false);
-	const chainDetails = cachedEvolutionChains[chainId].details[pokemonId];
+	// some evolution detail data is missing from the API, e.g. 489, 490...
+	const chainDetails = cachedEvolutionChains[chainId].details?.[pokemonId];
+	let selectedDetail = chainDetails?.[0];
 
-	// handle some exceptions
-	let selectedDetail = chainDetails[0];
-	if (chainDetails.length > 1 && chainDetails.find(chainDetail => chainDetail.trigger.name === 'use-item')) {
+	if (chainDetails && chainDetails.length > 1 && chainDetails.find(chainDetail => chainDetail.trigger.name === 'use-item')) {
 		selectedDetail = chainDetails.find(chainDetail => chainDetail.trigger.name === 'use-item');
 	};
-
-	const requirements = Object.entries(selectedDetail)
-		.filter(([condition, value]) => (value || value === 0) && condition !== 'trigger')
-		.reduce((pre, cur) => {
-			// if it's an object, just pass the name
-			pre[cur[0]] = typeof cur[1] === 'object' ? cur[1].name : cur[1];
-			return pre;
-		}, {});
-
-	const trigger = selectedDetail.trigger.name;
-
-	let mainText;
-	switch(trigger) {
-		case 'level-up' : 
-			if (requirements["min_level"]) {
-				mainText = `Level ${requirements["min_level"]}`
-				delete requirements["min_level"];
-			} else {
-				mainText = `Level up`
-			};
-			break;
-
-		case 'trade' : 
-			mainText = `Trade`
-			break;
-
-		case 'use-item' : 
-			if (requirements["item"]) {
-				mainText = (
-					<>
-						<span>{`Use ${getNameByLanguage(requirements["item"], cachedLanguage, cachedItems[transformToKeyName(requirements["item"])])}`}</span>
-						<img className="item" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${requirements["item"]}.png`} alt={`${requirements["item"]}`} />
-					</>
-				)
-				delete requirements["item"];
-			};
-			break;
+	let requirements, trigger, mainText;
+	if (selectedDetail) {
+		requirements = Object.entries(selectedDetail)
+			.filter(([condition, value]) => (value || value === 0) && condition !== 'trigger')
+			.reduce((pre, cur) => {
+				// if it's an object, just pass the name
+				pre[cur[0]] = typeof cur[1] === 'object' ? cur[1].name : cur[1];
+				return pre;
+			}, {});
+		trigger = selectedDetail.trigger.name;
 		
-		case 'shed' : 
-			mainText = 'Level 20, Empty spot in party, Pokéball in bag';
-			break;
-		case 'other' :
-			mainText = 'No Data'
-			break;
-		default : 
-			mainText = '';
+		switch(trigger) {
+			case 'level-up' : 
+				if (requirements["min_level"]) {
+					mainText = `Level ${requirements["min_level"]}`
+					delete requirements["min_level"];
+				} else {
+					mainText = `Level up`
+				};
+				break;
+	
+			case 'trade' : 
+				mainText = `Trade`
+				break;
+	
+			case 'use-item' : 
+				if (requirements["item"]) {
+					mainText = (
+						<>
+							<span>{`Use ${getNameByLanguage(requirements["item"], cachedLanguage, cachedItems[transformToKeyName(requirements["item"])])}`}</span>
+							<img className="item" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${requirements["item"]}.png`} alt={`${requirements["item"]}`} />
+						</>
+					)
+					delete requirements["item"];
+				};
+				break;
+			
+			case 'shed' : 
+				mainText = 'Level 20, Empty spot in party, Pokéball in bag';
+				break;
+			case 'other' :
+				mainText = 'No Data'
+				break;
+			default : 
+				mainText = '';
+		};
 	};
 
 	const rephrase = (requirements, requirement) => {
@@ -130,41 +130,46 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cac
 		return value;
 	};
 
-	const otherRequirements = (
-		<ul className="p-0 mt-2 mb-4">
-			{
-				Object.keys(requirements).map(requirement => (
-					<li key={requirement}>
-						{textsForOtherRequirements[requirement]} : {rephrase(requirements, requirement)}
-					</li>
-				))
-			}
-		</ul>
-	);
+	let otherRequirements;
+	if (chainDetails) {
+		otherRequirements = (
+			<ul className="p-0 mt-2 mb-4">
+				{
+					Object.keys(requirements).map(requirement => (
+						<li key={requirement}>
+							{textsForOtherRequirements[requirement]} : {rephrase(requirements, requirement)}
+						</li>
+					))
+				}
+			</ul>
+		);
+	}
 
 	const showModal = () => {
 		setIsModalShown(true);
 	};
 
 	return (
-		<>
-			<div className="evolutionDetails">
-				<div className="mainText">{mainText}</div>
-				{Object.keys(requirements).length ? <i className="fa-solid fa-circle-info" onClick={showModal}></i> : ''}
-			</div>
-			{
-				Object.keys(requirements).length > 0 && (
-					<Modal
-						customClass='modalBody evolutionDetailsModal'
-						isModalShown={isModalShown} 
-						setIsModalShown={setIsModalShown}
-					>
-						<h1 className='my-2'>Other Requirements</h1>
-						{otherRequirements}
-					</Modal>
-				)
-			}
-		</>
+		chainDetails && (
+			<>
+				<div className="evolutionDetails">
+					<div className="mainText">{mainText}</div>
+					{Object.keys(requirements).length ? <i className="fa-solid fa-circle-info" onClick={showModal}></i> : ''}
+				</div>
+				{
+					Object.keys(requirements).length > 0 && (
+						<Modal
+							customClass='modalBody evolutionDetailsModal'
+							isModalShown={isModalShown} 
+							setIsModalShown={setIsModalShown}
+						>
+							<h1 className='my-2'>Other Requirements</h1>
+							{otherRequirements}
+						</Modal>
+					)
+				}
+			</>
+		)
 	)
 });
 export default EvolutionDetails;

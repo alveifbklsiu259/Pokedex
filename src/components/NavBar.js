@@ -52,6 +52,7 @@ export default function NavBar() {
 							<Button size='large' variant="contained" onClick={showModal}><i className="fa-solid fa-magnifying-glass"></i></Button>
 							<LanguageMenu />
 							{/* {isModalShown && <LanguageMenu />} */}
+							{/* see if we can disable pokedex link when loading */}
 						</Box>
 						</Toolbar>
 					</AppBar>

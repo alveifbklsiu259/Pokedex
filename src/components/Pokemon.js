@@ -9,7 +9,7 @@ import ScrollToTop from "./ScrollToTop";
 import Moves from "./Moves";
 import ErrorPage from "./ErrorPage";
 import Varieties from "./Varieties";
-import { usePokemonData, useDispatchContenxt, useCachedData } from "./PokemonsProvider";
+import { usePokemonData, useDispatchContenxt, useCachedData, useNavigateToPokemon } from "./PokemonsProvider";
 import { getAbilitiesToDisplay, getRequiredData, getItemsFromChain } from "../api";
 import { getIdFromURL, transformToKeyName } from "../util";
 
@@ -51,7 +51,6 @@ export default function Pokemon() {
 	const cachedTypes = useCachedData(state.types);
 	const cachedStat = useCachedData(state.stat);
 	const cachedItems = useCachedData(state.items);
-
 	const defaultRequiredData = [pokemon, speciesInfo, evolutionChains];
 	const isDataReady = state.language === 'en' ? defaultRequiredData.every(Boolean) : (defaultRequiredData.every(Boolean) && isAbilitiesReady && isItemsReady);
 	useEffect(() => {
@@ -69,11 +68,21 @@ export default function Pokemon() {
 			getIndividualPokemonData();
 		};
 	}, [dispatch, isDataReady, state, urlParam]);
+
+	// on Pokemons, sort by names, change language should re-sort the order.
+
+	const pokemonCount = state.pokemonCount;
+	const nationalNumber = getIdFromURL(state.pokemons[urlParam]?.species?.url);
+	const nextPokemonId = nationalNumber === pokemonCount ? 1 : nationalNumber + 1;
+	const previousPokemonId = nationalNumber === 1 ? pokemonCount : nationalNumber - 1;
+
 	let content;
 	if (state.status === 'idle' && isDataReady) {
 		content = (
 			<>
-				<div className="container p-0">
+				<RelatedPokemon pokemonId={previousPokemonId} order='previous'/>
+				<RelatedPokemon pokemonId={nextPokemonId} order='next'/>
+				<div className={`container p-0 ${speciesInfo.varieties.length > 1 ? "marginWithVarieties" : 'marginWithoutVarieties'} `}>
 					<div className="row justify-content-center">
 						{speciesInfo.varieties.length > 1 && (
 							<Varieties 
@@ -145,3 +154,16 @@ export default function Pokemon() {
 		</>
 	)
 };
+
+export function RelatedPokemon ({pokemonId, order}) {
+	const state = usePokemonData();
+	const dispatch = useDispatchContenxt();
+	const navigateToPokemon = useNavigateToPokemon();
+
+	return (
+		<div className={`navigation ${order} `} onClick={() => {navigateToPokemon(state, dispatch, [pokemonId], ['pokemons', 'pokemonSpecies', 'evolutionChains', 'abilities', 'items'])}}>
+			<span>{String(pokemonId).padStart(4, 0)}</span>
+			<img src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`} alt={pokemonId} />
+		</div>
+	)
+}
