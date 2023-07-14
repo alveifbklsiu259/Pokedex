@@ -2,6 +2,7 @@ import { useEffect, useCallback, useMemo } from "react";
 import { usePokemonData, useDispatchContenxt, useCachedData, useNavigateToPokemon } from "./PokemonsProvider";
 import Sort from "./Sort";
 import BasicInfo from "./BasicInfo";
+import PokemonTable from "./PokemonTable";
 import ScrollToTop from "./ScrollToTop";
 import Spinner from "./Spinner";
 import { getPokemonsOnScroll } from "../api";
@@ -63,9 +64,10 @@ export default function Pokemons() {
 		<>
 			<div className="container">
 				<Sort status={state.status}/>
-				<div className="row g-5">
+				{/* <div className="row g-5">
 					{content}
-				</div>
+				</div> */}
+				< PokemonTable/>
 			</div>
 		</>
 	)

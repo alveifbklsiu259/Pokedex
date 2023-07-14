@@ -57,7 +57,9 @@ export default function Pokemon() {
 		// PokemonProvider also fetches data when it mounts, to avoid race condition, only fetch data when PokemonProvider's request is done. (since the dispatches in PokemonProvider are batched intentionally, status will only become "idle" when all requests in it are done.)
 		// To reduce unnecessary re-renders of this component, I think it would be great if we could find a way to batch dispatched between this Effect and the Effect from PokemonProvider, but since the re-renders are mainly caused by Context API, and I decided to migrate to Redux later, I'll just leave it as it is.
 		if (!isDataReady && state.status === 'idle') {
+			console.log('eff')
 			const getIndividualPokemonData = async () => {
+				
 				try {
 					await getRequiredData(state, dispatch, [urlParam], ['pokemons', 'pokemonSpecies', 'evolutionChains']);
 				} catch(err) {
