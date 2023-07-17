@@ -6,6 +6,7 @@ import { useNavigateNoUpdates } from './RouterUtils';
 const PokemonContext = createContext(null);
 const DispatchContext = createContext(null);
 const initialState = {
+	viewMode: 'module',
 	language: 'en',
 	pokemons: {},
 	pokemonCount: null,
@@ -37,6 +38,11 @@ const initialState = {
 
 const reducer = (state, action) => {
 	switch (action.type) {
+		case 'viewModeChanged' : {
+			return {
+				...state, viewMode: action.payload
+			}
+		}
 		case 'languageChanged' : {
 			return {
 				...state, language: action.payload

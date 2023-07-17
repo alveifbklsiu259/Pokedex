@@ -42,7 +42,7 @@ const Input = memo(function Input({cachedAllPokemonNamesAndIds, searchParam, set
 		const focusName = (datalist, nextFocus) => {
 			setCurrentFocus(nextFocus);
 			//auto focus on screen
-			datalist.scrollTop = datalist.children[nextFocus].offsetTop - datalist.offsetTop
+			datalist.scrollTop = datalist.children[nextFocus].offsetTop - datalist.offsetTop;
 		};
 		
 		switch (e.keyCode) {

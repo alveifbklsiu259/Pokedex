@@ -5,6 +5,7 @@ import BasicInfo from "./BasicInfo";
 import PokemonTable from "./PokemonTable";
 import ScrollToTop from "./ScrollToTop";
 import Spinner from "./Spinner";
+import ViewMode from "./ViewMode";
 import { getPokemonsOnScroll } from "../api";
 
 export default function Pokemons() {
@@ -27,10 +28,11 @@ export default function Pokemons() {
 	}, [state.status, state.nextRequest, state.pokemons, state.display, dispatch]);
 
 	useEffect(() => {
-		window.addEventListener('scroll', handleScroll);
-		return () => window.removeEventListener('scroll', handleScroll);
-	}, [handleScroll]);
-	console.log(state)
+		if (state.viewMode === 'module') {
+			window.addEventListener('scroll', handleScroll);
+			return () => window.removeEventListener('scroll', handleScroll);
+		}
+	}, [handleScroll, state.viewMode]);
 
 	let content;
 	if (state.status === 'loading') {
@@ -59,15 +61,24 @@ export default function Pokemons() {
 			</>
 		)
 	};
+	console.log(state)
+	// srcollintoView
+	// preload
 
 	return (
 		<>
 			<div className="container">
-				<Sort status={state.status}/>
-				{/* <div className="row g-5">
-					{content}
-				</div> */}
-				< PokemonTable/>
+			<ViewMode />
+				{
+					state.viewMode === 'module'? (
+						<>
+							<Sort status={state.status}/>
+							<div className="row g-5">
+								{content}
+							</div>
+						</>
+				) : < PokemonTable/>
+				}
 			</div>
 		</>
 	)

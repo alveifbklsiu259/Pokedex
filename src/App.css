@@ -108,6 +108,18 @@ h1 {
     margin-top: 50px;
 }
 
+/* pokemonTable */
+.typeData {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    row-gap: 2px;
+}
+
+.totalData {
+    font-weight: bold;
+}
+
 /* Types */
 
 .type {
@@ -567,6 +579,11 @@ h1 {
     padding: 0;
 }
 
+.rdt_TableHeadRow .rdt_TableCol .rdt_TableCol_Sortable > div {
+    white-space: normal;
+    text-align: center;
+}
+
 .rdt_TableRow .rdt_TableCell {
     padding: 0;
     font-size: 16px;
@@ -696,7 +713,7 @@ h1 {
     cursor: pointer;
     display: flex;
     flex-direction: row-reverse;
-    justify-content: start;
+    justify-content: flex-end;
     align-items: center;
     gap: 10px;
     font-size: 1.4em;

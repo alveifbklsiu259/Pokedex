@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigateNoUpdates } from './RouterUtils';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
@@ -103,14 +103,17 @@ export default function Search({closeModal}) {
 		};
 
 		// currently on root
-		if (document.querySelector('.sort')) {
-			document.querySelector('.sort').scrollIntoView();
-		} else {
-			navigateNoUpdates('/', {state: 'resetPosition'});
-			setTimeout(() => {
+		if (state.viewMode === 'module') {
+			if (document.querySelector('.sort')) {
 				document.querySelector('.sort').scrollIntoView();
-			}, 10)
-		};
+			} else {
+				navigateNoUpdates('/', {state: 'resetPosition'});
+				setTimeout(() => {
+					document.querySelector('.sort').scrollIntoView();
+				}, 10)
+			};
+		}
+		
 	};
 
 	return (

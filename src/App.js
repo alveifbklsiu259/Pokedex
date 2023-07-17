@@ -61,9 +61,11 @@ export default App;
 // theme using styled component
 // map info
 // favorite pokemons
-// <ViewModuleIcon
 // change to zh-hanz -- search 133, sometimes it has err
-// when chaing url directly in the url bar, the whole state gets re-set, this is not correct...
+// when chaing url directly in the url bar, the whole state gets re-set, this is not correct..., maybe we shoud localstorage the whole state?
+
+
+
 // is it a good idea to move getDataToFetch into getData? // we can do that, but not urgent.
 // translate height, weight, stat,
 	//A form field element should have an id or name attribute

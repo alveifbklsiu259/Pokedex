@@ -123,12 +123,12 @@ export default function Pokemon() {
 							cachedTypes={cachedTypes}
 							cachedItems={cachedItems}
 						/>
-						{/* <Moves 
+						<Moves 
 							pokemon={pokemon}
 							chainId={chainId}
 							speciesInfo={speciesInfo}
 							key={pokemon.id}
-						/> */}
+						/>
 						<div className="row justify-content-center">
 							<Link to='/' className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</Link>
 						</div>
