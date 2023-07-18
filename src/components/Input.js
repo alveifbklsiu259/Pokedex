@@ -81,9 +81,7 @@ const Input = memo(function Input({cachedAllPokemonNamesAndIds, searchParam, set
 					datalist.children[currentFocus].click();
 				};
 				// submit the form
-				if (matchList.length === 1 && matchList[0] === searchParam) {
-					setShowDataList(false);
-				};
+				setShowDataList(false);
 				break;
 			}
 			// escape

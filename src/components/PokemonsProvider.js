@@ -309,9 +309,9 @@ export function useCachedData(data) {
 export function useNavigateToPokemon() {
 	const navigate = useNavigateNoUpdates();
 	
-	const navigateToPokemon = (state, dispatch, requestPokemonIds, requests) => {
+	const navigateToPokemon = (state, dispatch, requestPokemonIds, requests, lang, callback) => {
 		navigate(`/pokemons/${requestPokemonIds[0]}`);
-		getRequiredData(state, dispatch, requestPokemonIds, requests);
+		getRequiredData(state, dispatch, requestPokemonIds, requests, lang, callback);
 	};
 	return navigateToPokemon;
 }

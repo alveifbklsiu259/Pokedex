@@ -10,7 +10,7 @@ export const router = createBrowserRouter(createRoutesFromElements(
 		<Route errorElement={<ErrorPage />} path="/" element={<RootRoute />}>
 			<Route errorElement={<ErrorPage />}>
 				<Route index element={<Index />} />
-				<Route path="/pokemons/:pokeId" element={<Pokemon /> } />
+				<Route path="/pokemons/:pokeId" element={<Pokemon />} />
 			</Route>
 		</Route>
 	</>

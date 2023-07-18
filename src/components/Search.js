@@ -4,7 +4,7 @@ import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
 import pokeBall from '../assets/pokeBall.png';
 import { usePokemonData, useDispatchContenxt, useCachedData } from './PokemonsProvider';
-import { getPokemons } from '../api';
+import { getDataToFetch, getPokemons } from '../api';
 import { getIdFromURL } from '../util';
 
 export default function Search({closeModal}) {
@@ -41,11 +41,17 @@ export default function Search({closeModal}) {
 			pokemonRange = Object.values(selectedGenerations).flat();
 	};
 
-	// synchronizing state when necessary
 	useEffect(() => {
+		// synchronizing state
 		setSearchParam(state.searchParam);
-		setSelectedGenerations(sg => JSON.stringify(state.advancedSearch.generations) !== JSON.stringify(sg) ? state.advancedSearch.generations : sg);
-		setSelectedTypes(st => JSON.stringify(state.advancedSearch.types) !== JSON.stringify(st) ? state.advancedSearch.types : st);
+		setSelectedGenerations(state.advancedSearch.generations);
+		setSelectedTypes(state.advancedSearch.types);
+		/* Note: At first, I though the code below would be better than just setting state to context state value, but no, since they point to the same references(when we dispatch, state.serchParam && searchParam, state.advancedSearch.generations && selectedTypes, state.advancedSearch.types && selectedGenerations, each pair point to the same reference).
+		Since the value is identical, React will throw away this render pass(if you log anything in Search component, you'll see three logs after search button is clicked, but if you check profiler, there're only two related re-renders.(which is expected, one setting status to loading, one setting status to idle plus getting data))
+		reference: https://github.com/facebook/react/issues/20817#issuecomment-778672150
+		) */
+		// setSelectedGenerations(sg => JSON.stringify(state.advancedSearch.generations) !== JSON.stringify(sg) ? state.advancedSearch.generations : sg);
+		// setSelectedTypes(st => JSON.stringify(state.advancedSearch.types) !== JSON.stringify(st) ? state.advancedSearch.types : st);
 	}, [state.searchParam, state.advancedSearch]);
 
 	const handleSubmit = async e => {
@@ -90,13 +96,12 @@ export default function Search({closeModal}) {
 
 		// only dispatch when necessary
 		if (JSON.stringify(state.intersection) !== JSON.stringify(intersection)) {
+			await getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, intersection, state.sortBy, state.status);
 			dispatch({type: 'intersectionChanged', payload: intersection});
 			dispatch({type: 'searchParamChanged', payload: searchParam});
 			dispatch({type: 'advancedSearchChanged', payload: {field: 'generations', data: selectedGenerations}});
 			dispatch({type: 'advancedSearchChanged', payload: {field: 'types', data: selectedTypes}});
-			getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, intersection, state.sortBy, state.status);
 		};
-
 		// for search modal
 		if (closeModal) {
 			closeModal();
@@ -113,7 +118,6 @@ export default function Search({closeModal}) {
 				}, 10)
 			};
 		}
-		
 	};
 
 	return (

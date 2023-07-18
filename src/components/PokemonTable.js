@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import DataTable from "react-data-table-component"
 import { usePokemonData, useDispatchContenxt, useNavigateToPokemon } from "./PokemonsProvider"
 import Spinner from "./Spinner";
@@ -9,7 +10,7 @@ export default function PokemonTable() {
 	const dispatch = useDispatchContenxt();
 	const navigateToPokemon = useNavigateToPokemon();
 
-	const pokemonTableData = [...state.intersection].sort((a,b)=> a - b).map(id => {
+	const pokemonTableData = useMemo(() => [...state.intersection].sort((a,b)=> a - b).map(id => {
 		const species = state.pokemonSpecies[id];
 		const pokemon = state.pokemons[id];
 		const pokemonName = getNameByLanguage(species.name, state.language, species);
@@ -18,7 +19,7 @@ export default function PokemonTable() {
 			// value is for sorting
 			<div value={id} className={`idData idData-${id}`}>
 				<div data-tag="allowRowEvents">{String(id).padStart(4, 0)}</div>
-				<img data-tag="allowRowEvents" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${[id]}.png`} alt={pokemonName} className="id"/>
+				<img width='96px' height='96px' data-tag="allowRowEvents" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${[id]}.png`} alt={pokemonName} className="id"/>
 			</div>
 		);
 		
@@ -53,47 +54,44 @@ export default function PokemonTable() {
 			total: totalData
 		};
 		return {...basicInfo, ...stats}
-	});
+	}), [state.intersection, state.language, state.pokemonSpecies, state.pokemons, state.types]);
 
-	const sortElement = data => (rowA, rowB) => {
-		const a = rowA[data].props.value;
-		const b = rowB[data].props.value;
-		return String(a).localeCompare(String(b), undefined, {numeric: true});
-	};
+	const columnData = useMemo(() => Object.keys(pokemonTableData[0]).map(data => {
+		const formatTableHeader = data => {
+			const columnHeader = getNameByLanguage(data, state.language, state.stat[transformToKeyName(data)]);
+			switch (columnHeader) {
+				case 'hp' : 
+					return 'HP'
+				case 'special-attack' : 
+					return 'Sp.Atk'
+				case 'special-defense' :
+					return 'Sp.Def'
+				case 'number' :
+					return '#'
+				case 'height' :
+					return `${capitalize(columnHeader)} (cm)`
+				case 'weight' :
+					return `${capitalize(columnHeader)} (kg)`
+				default : 
+					return capitalize(columnHeader)
+			};
+		};
 
-	let columnData;
-	if (Object.keys(pokemonTableData).length) {
-		columnData = Object.keys(pokemonTableData[0]).map(data => {
-			const formatTableHeader = data => {
-				const columnHeader = getNameByLanguage(data, state.language, state.stat[transformToKeyName(data)]);
-				switch (columnHeader) {
-					case 'hp' : 
-						return 'HP'
-					case 'special-attack' : 
-						return 'Sp.Atk'
-					case 'special-defense' :
-						return 'Sp.Def'
-					case 'number' :
-						return '#'
-					case 'height' :
-						return `${capitalize(columnHeader)} (cm)`
-					case 'weight' :
-						return `${capitalize(columnHeader)} (kg)`
-					default : 
-						return capitalize(columnHeader)
-				};
-			};
-			
-			return {
-				id: data,
-				name: formatTableHeader(data),
-				selector: row => row[data],
-				sortable: data === 'type' ? false : true,
-				center: true,
-				sortFunction: data === 'number' || data === 'total' ? sortElement(data) : null,
-			};
-		});
-	};
+		const sortElement = data => (rowA, rowB) => {
+			const a = rowA[data].props.value;
+			const b = rowB[data].props.value;
+			return String(a).localeCompare(String(b), undefined, {numeric: true});
+		};
+
+		return {
+			id: data,
+			name: formatTableHeader(data),
+			selector: row => row[data],
+			sortable: data === 'type' ? false : true,
+			center: true,
+			sortFunction: data === 'number' || data === 'total' ? sortElement(data) : null,
+		};
+	}), [pokemonTableData, state.language, state.stat]);
 
 
 // 	setTimeout(() =>document.querySelector('.idData-546').scrollIntoView({
@@ -116,11 +114,12 @@ export default function PokemonTable() {
 			pointerOnHover
 			onRowClicked={row => navigateToPokemon(state, dispatch, [row.number.props.value], [ 'evolutionChains', 'abilities', 'items'])}
 			pagination
-			paginationPerPage={100}
-			paginationRowsPerPageOptions={[10, 30, 50, 100, 1000]}
+			// when sorting there seems to be no way to memoize each row(there's no memo wrapped around rdt_TableRow) or each cell(there's memo, but the prop "rowIndex" will change), so I think the only thing I can do is limit the number of rows shown per page.
+			paginationPerPage={10}
+			paginationRowsPerPageOptions={[10, 30, 50, 100]}
 			fixedHeader
 			fixedHeaderScrollHeight="70vh"
-			// paginationDefaultPage={sessionStorage.getItem('pokemonTablePage') || 1}
+			// paginationDefaultPage={Number(sessionStorage.getItem('pokemonTablePage')) || 1}
 			onChangePage={page => {
 				// sessionStorage.setItem('pokemonTablePage', page);
 				document.querySelector('.viewMode').nextSibling.scrollTo({
@@ -132,6 +131,7 @@ export default function PokemonTable() {
 		/>
 	)
 };
+
 
 // no fixedHeader, 
 

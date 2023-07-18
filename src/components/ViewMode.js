@@ -15,21 +15,23 @@ export default function ViewMode() {
 		}
 	}, [view, setView, state.viewMode])
 
-	const handleChange = async nextView => {
+	const handleChange = async(event, nextView) => {
 		if (nextView !== null) {
 			setView(nextView);
-			// dataloading?
+			
+			const range = [];
+			for (let i = 1; i <= state.pokemonCount; i ++) {
+				range.push(i);
+			};
+			const isSpeciesReady = Object.keys(state.pokemonSpecies).length === state.pokemonCount;
+			const isPokemonsReady = Object.keys(state.pokemons).length < state.pokemonCount ? false : range.every(id => state.pokemons[id]);
 
-			if (nextView === 'list' && Object.keys(state.pokemonSpecies).length !== state.pokemonCount) {
-				const range = [];
-				for (let i = 1; i <= state.pokemonCount; i ++) {
-					range.push(i);
-				};
+			if (nextView === 'list' && (!isSpeciesReady || !isPokemonsReady)) {
 				await getRequiredData(state, dispatch, range, ['pokemons', 'pokemonSpecies']);
 			};
 
 			dispatch({type: 'viewModeChanged', payload: nextView});
-		}
+		};
 	};
 
 	return (

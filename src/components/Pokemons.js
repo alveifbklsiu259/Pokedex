@@ -34,19 +34,22 @@ export default function Pokemons() {
 		}
 	}, [handleScroll, state.viewMode]);
 
-	let content;
+	const noMatchContent = useMemo(() => <p className="text-center">No Matched Pokémons</p>, []);
+
+
+	let moduleContent, listContent;
 	if (state.status === 'loading') {
-		content = <Spinner />
+		moduleContent = <Spinner />
 	} else if (state.status === 'idle' && cachedDispaly.length === 0) {
-		content = <p className="text-center">No Pokémons to show</p>
+		moduleContent = noMatchContent;
 	} else if (state.status === 'idle' || state.status === 'scrolling') {
-		content = (
+		moduleContent = (
 			<>
 				{cachedDispaly.map(pokemon => (
 					<div 
-						key={pokemon.id} 
-						className="col-6 col-md-4 col-lg-3 card pb-3 pokemonCard" 
-						onClick={() => navigateToPokemon(state, dispatch, [pokemon.id],['pokemons', 'pokemonSpecies', 'evolutionChains', 'abilities', 'items'])}
+						key={pokemon.id}
+						className="col-6 col-md-4 col-lg-3 card pb-3 pokemonCard"
+						onClick={() => navigateToPokemon(state, dispatch, [pokemon.id],['pokemons', 'pokemonSpecies', 'evolutionChains','abilities', 'items'])}
 					>
 						<BasicInfo
 							pokemon={pokemon}
@@ -61,7 +64,16 @@ export default function Pokemons() {
 			</>
 		)
 	};
+
 	console.log(state)
+
+	if (state.intersection.length) {
+		// when search result changes, pokemonTable's page will stay the same(which is not desired, we want to reset to the first page), provide a key to cause re-render.
+		listContent = < PokemonTable key={JSON.stringify(state.intersection)}/>;
+	} else {
+		listContent = noMatchContent;
+	};
+
 	// srcollintoView
 	// preload
 
@@ -74,10 +86,10 @@ export default function Pokemons() {
 						<>
 							<Sort status={state.status}/>
 							<div className="row g-5">
-								{content}
+								{moduleContent}
 							</div>
 						</>
-				) : < PokemonTable/>
+				) : listContent
 				}
 			</div>
 		</>
