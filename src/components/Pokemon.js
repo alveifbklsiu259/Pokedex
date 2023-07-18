@@ -71,7 +71,7 @@ export default function Pokemon() {
 	}, [dispatch, isDataReady, state, urlParam]);
 
 	// on Pokemons, sort by names, change language should re-sort the order.
-
+	console.log(state)
 	const pokemonCount = state.pokemonCount;
 	const nationalNumber = getIdFromURL(state.pokemons[urlParam]?.species?.url);
 	const nextPokemonId = nationalNumber === pokemonCount ? 1 : nationalNumber + 1;

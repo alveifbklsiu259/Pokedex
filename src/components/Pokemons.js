@@ -65,8 +65,6 @@ export default function Pokemons() {
 		)
 	};
 
-	console.log(state)
-
 	if (state.intersection.length) {
 		// when search result changes, pokemonTable's page will stay the same(which is not desired, we want to reset to the first page), provide a key to cause re-render.
 		listContent = < PokemonTable key={JSON.stringify(state.intersection)}/>;
@@ -75,7 +73,6 @@ export default function Pokemons() {
 	};
 
 	// srcollintoView
-	// preload
 
 	return (
 		<>
