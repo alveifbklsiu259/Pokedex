@@ -56,6 +56,25 @@ export default function Search({closeModal}) {
 	const handleSubmit = async e => {
 		e.preventDefault();
 
+		// for search modal
+		// closing modal, mavigating to root, setting status to loading(if any) will happen at the same render.
+		if (closeModal) {
+			closeModal()
+		};
+
+		if (document.querySelector('.sort')) {
+			document.querySelector('.sort').scrollIntoView();
+		} else {
+			// could be displaying table or on pokemons/xxx.
+			if (!document.querySelector('.viewMode')) {
+				// on pokemons/xxx
+				navigateNoUpdates('/', {state: 'resetPosition'});
+			};
+			setTimeout(() => {
+				document.querySelector('.viewMode').scrollIntoView();
+			}, 10)
+		};
+
 		// handle search param
 		const trimmedText = searchParam.trim();
 		let searchResult = [];
@@ -92,7 +111,6 @@ export default function Search({closeModal}) {
 				intersection = rangeIds.filter(id => typeMatchingPokemonIds.includes(id));
 			};
 		};
-
 		// only dispatch when necessary
 		if (JSON.stringify(state.intersection) !== JSON.stringify(intersection)) {
 			await getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, intersection, state.sortBy, state.status);
@@ -101,22 +119,6 @@ export default function Search({closeModal}) {
 			dispatch(advancedSearchChanged({field: 'generations', data: selectedGenerations}));
 			dispatch(advancedSearchChanged({field: 'types', data: selectedTypes}));
 		};
-		// for search modal
-		if (closeModal) {
-			closeModal();
-		};
-
-		// currently on root
-		if (state.viewMode === 'module') {
-			if (document.querySelector('.sort')) {
-				document.querySelector('.sort').scrollIntoView();
-			} else {
-				navigateNoUpdates('/', {state: 'resetPosition'});
-				setTimeout(() => {
-					document.querySelector('.sort').scrollIntoView();
-				}, 10)
-			};
-		}
 	};
 
 	return (
