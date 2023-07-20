@@ -1,7 +1,5 @@
-// import { useEffect, useState } from "react";
-// import { usePokemonData } from "./components/PokemonsProvider";
-
 import { getIdFromURL, transformToKeyName, transformToDash } from "./util";
+import { dataLoading, pokemonsLoaded, displayChanged, nextRequestChanged, scrolling, pokemonSpeciesLoaded, evolutionChainsLoaded } from "./features/pokemonData/pokemonDataSlice";
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
@@ -126,18 +124,18 @@ const batchDispatch = async (dispatch, pokemonsToFetch, nextRequest, displayedPo
 		fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
 	};
 	if (fetchedPokemons) {
-		dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: nextRequest}});
+		dispatch(pokemonsLoaded({data: fetchedPokemons, nextRequest: nextRequest}));
 	} else {
-		dispatch({type: 'nextRequestChanged', payload: nextRequest});
+		dispatch(nextRequestChanged(nextRequest));
 	};
-	dispatch({type: 'displayChanged', payload: [...displayedPokemons, ...pokemonsToDisplay]});
+	dispatch(displayChanged([...displayedPokemons, ...pokemonsToDisplay]));
 };
 
 export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndIds, request, sortOption, status) => {
 	// preload data for weight/height sort options
 	const preloadData = async pokemonsToFetch => {
 		if (status !== 'loading') {
-			dispatch({type:'dataLoading'});
+			dispatch(dataLoading());
 		};
 		const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
 		const allPokemons = {...cachedPokemons, ...fetchedPokemons};
@@ -219,7 +217,7 @@ export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndId
 	// for options other than heigh/weight
 	if (pokemonsToFetch.length && fetchedPokemons === undefined) {
 		if (status !== 'loading') {
-			dispatch({type:'dataLoading'});
+			dispatch(dataLoading());
 		};
 	};
 	await batchDispatch(dispatch, pokemonsToFetch, nextRequest, [], pokemonsToDisplay);
@@ -227,9 +225,10 @@ export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndId
 
 // request has already been sorted based on sort options
 export const getPokemonsOnScroll = async (dispatch, request, cachedPokemons, displayedPokemons) => {
-	dispatch({type: 'scrolling'});
-	const pokemonsToDisplay = request.splice(0, 24);
-	const nextRequest = request.length ? request : null;
+	dispatch(scrolling());
+	const copiedRequest = [...request];
+	const pokemonsToDisplay = copiedRequest.splice(0, 24);
+	const nextRequest = copiedRequest.length ? copiedRequest : null;
 	const pokemonsToFetch = getDataToFetch(cachedPokemons, pokemonsToDisplay);
 	await batchDispatch(dispatch, pokemonsToFetch, nextRequest, displayedPokemons, pokemonsToDisplay);
 };
@@ -321,7 +320,7 @@ export const getItemsFromChain = chainData => {
 };
 
 export const getAllSpecies = async state => {
-	const dispatchType = 'pokemonSpeciesLoaded';
+	const dispatchType = pokemonSpeciesLoaded;
 	let fetchedSpecies;
 	const hasAllSpecies = Object.keys(state.pokemonSpecies).length === state.pokemonCount;
 	if (!hasAllSpecies) {
@@ -416,7 +415,7 @@ export const getRequiredData = async(state, dispatch, requestPokemonIds, request
 
 	for (let req of sortedRequests) {
 		if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
-			dispatch({type:'dataLoading'});
+			dispatch(dataLoading());
 			break;
 		};
 	};
@@ -492,7 +491,7 @@ export const getRequiredData = async(state, dispatch, requestPokemonIds, request
 	if (callback) {
 		const [dispatchType, data] = await callback(state);
 		if (data) {
-			dispatch({type: dispatchType, payload: data});
+			dispatch(dispatchType(data));
 		};
 		callbackResult = data;
 	};
@@ -502,9 +501,9 @@ export const getRequiredData = async(state, dispatch, requestPokemonIds, request
 		'pokemonSpecies': 'pokemonSpeciesLoaded',
 		'abilities': 'abilityLoaded',
 		'items': 'itemLoaded',
-		'version': 'getVersion',
-		'move-damage-class': 'getMoveDamageClass',
-		'stat': 'getStat'
+		'version': 'versionLoaded',
+		'move-damage-class': 'moveDamageClassLoaded',
+		'stat': 'statLoaded'
 	};
 
 	sortedRequests.forEach(req => {
@@ -512,23 +511,22 @@ export const getRequiredData = async(state, dispatch, requestPokemonIds, request
 		if (data) {
 			switch(req) {
 				case 'pokemons' : {
-					dispatch({type: 'pokemonsLoaded', payload: {data: data, nextRequest: 'unchanged'}});
+					dispatch(pokemonsLoaded({data: data, nextRequest: 'unchanged'}));
 					break;
 				}
 				case 'evolutionChains' : {
 					const [chainData, fetchedPokemons] = data;
-					dispatch({type: 'evolutionChainsLoaded', payload: chainData});
+					dispatch(evolutionChainsLoaded(chainData));
 
 					if (Object.keys(fetchedPokemons)) {
-						dispatch({type: 'pokemonsLoaded', payload: {data: fetchedPokemons, nextRequest: 'unchanged'}});
+						dispatch(pokemonsLoaded({data: fetchedPokemons, nextRequest: 'unchanged'}));
 					};
 					break;
 				}
-				default : {
+				default : 
 					if (dispatchType[req]) {
-						dispatch({type: dispatchType[req], payload: data});
+						dispatch({type: `pokeData/${dispatchType[req]}`, payload: data});
 					};
-				};
 			};
 		};
 	});

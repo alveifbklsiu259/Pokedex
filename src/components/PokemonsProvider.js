@@ -3,6 +3,25 @@ import { getData, getPokemons, getEndpointData, getRequiredData } from '../api';
 import { getIdFromURL } from '../util';
 import { useNavigateNoUpdates } from './RouterUtils';
 
+
+//https://redux.js.org/tutorials/essentials/part-2-app-structure#writing-async-logic-with-thunks:~:text=and%20Redux.-,Writing,-Async%20Logic%20with
+// dont quite this part, if we're using core redux, why do we use two dispatches, check the expense tracker project.
+
+// see if we have multiple slices, e.g. language, status, pokemonData
+
+
+// Any time an action has been dispatched and the Redux store has been updated, useSelector will re-run our selector function. If the selector returns a different value than last time, useSelector will make sure our component re-renders with the new value.
+// put a console.log to see if this log fires when state changes
+// Selectors will re-run whenever the Redux store is updated, and if the data they return has changed, the component will re-render
+// It's important to note that the component will re-render any time the value returned from useSelector changes to a new reference. Components should always try to select the smallest possible amount of data they need from the store, which will help ensure that it only renders when it actually needs to.
+
+
+
+
+// the naming convention 
+// const onTitleChanged = e => setTitle(e.target.value)
+// const onContentChanged = e => setContent(e.target.value)
+
 const PokemonContext = createContext(null);
 const DispatchContext = createContext(null);
 const initialState = {
@@ -68,21 +87,21 @@ const reducer = (state, action) => {
 				...state, status: 'scrolling'
 			}
 		}
-		case 'getPokemonCount' : {
-			return {
-				...state, pokemonCount: action.payload
-			}
-		}
-		case 'pokemonsLoaded' : {
-			return {
-				...state, pokemons: {...state.pokemons, ...action.payload.data}, status: 'idle', nextRequest: action.payload.nextRequest === 'unchanged' ? state.nextRequest : action.payload.nextRequest
-			}
-		}
-		case 'generationLoaded' : {
-			return {
-				...state, status:'idle', generation: {name: action.payload.name, pokesAmount: action.payload.num},
-			}
-		}
+		// case 'getPokemonCount' : {
+		// 	return {
+		// 		...state, pokemonCount: action.payload
+		// 	}
+		// }
+		// case 'pokemonsLoaded' : {
+		// 	return {
+		// 		...state, pokemons: {...state.pokemons, ...action.payload.data}, status: 'idle', nextRequest: action.payload.nextRequest === 'unchanged' ? state.nextRequest : action.payload.nextRequest
+		// 	}
+		// }
+		// case 'generationLoaded' : {
+		// 	return {
+		// 		...state, status:'idle', generation: {name: action.payload.name, pokesAmount: action.payload.num},
+		// 	}
+		// }
 		case 'pokemonSpeciesLoaded' : {
 			return {
 				...state, status: 'idle', pokemonSpecies: {...state.pokemonSpecies, ...action.payload}
@@ -114,21 +133,21 @@ const reducer = (state, action) => {
 				...state, advancedSearch: { generations: {}, types: [] }, searchParam: ''
 			}
 		}
-		case 'displayChanged' : {
-			return {
-				...state, display: action.payload, status: 'idle'
-			}
-		}
-		case 'pokemonNamesAndIdsLoaded' : {
-			return {
-				...state, status: 'idle', allPokemonNamesAndIds: action.payload
-			}
-		}
-		case 'intersectionChanged' : {
-			return {
-				...state, intersection: action.payload
-			}
-		}
+		// case 'displayChanged' : {
+		// 	return {
+		// 		...state, display: action.payload, status: 'idle'
+		// 	}
+		// }
+		// case 'pokemonNamesAndIdsLoaded' : {
+		// 	return {
+		// 		...state, status: 'idle', allPokemonNamesAndIds: action.payload
+		// 	}
+		// }
+		// case 'intersectionChanged' : {
+		// 	return {
+		// 		...state, intersection: action.payload
+		// 	}
+		// }
 		case 'nextRequestChanged' : {
 			return {
 				...state, nextRequest: action.payload

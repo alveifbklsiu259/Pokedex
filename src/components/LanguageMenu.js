@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { usePokemonData, useDispatchContenxt } from './PokemonsProvider';
 import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { getAllSpecies, getRequiredData } from '../api';
 import { getIdFromURL, getNameByLanguage } from '../util';
 import { useParams } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectPokeData } from '../features/pokemonData/pokemonDataSlice';
+import { pokemonNamesAndIdsLoaded, languageChanged } from '../features/pokemonData/pokemonDataSlice';
+
 const languageOptions = {
 	en: 'English',
 	ja: '日本語',
@@ -17,15 +20,16 @@ const languageOptions = {
 };
 
 export default function LanguageMenu() {
+	const state = useSelector(selectPokeData);
+	const dispatch = useDispatch();
 	const {pokeId} = useParams();
 	const [anchorEl, setAnchorEl] = useState(null);
 	const open = Boolean(anchorEl);
-	const state = usePokemonData();
-	const dispatch = useDispatchContenxt();
 	const language = state.language;
 	const handleClick = (event) => {
 		setAnchorEl(event.currentTarget);
 	};
+
 	const handleClose = useCallback(() => {
 		setAnchorEl(null);
 	}, [setAnchorEl])
@@ -51,8 +55,8 @@ export default function LanguageMenu() {
 			return pre;
 		}, {});
 		
-		dispatch({type: 'pokemonNamesAndIdsLoaded', payload: newNamesIds});
-		dispatch({type: 'languageChanged', payload: option});
+		dispatch(pokemonNamesAndIdsLoaded(newNamesIds));
+		dispatch(languageChanged(option));
 	};
 
 	return (

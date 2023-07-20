@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { capitalize } from "@mui/material";
-import { usePokemonData, useDispatchContenxt } from "./PokemonsProvider";
 import { transformToKeyName, getIdFromURL, getNameByLanguage } from "../util";
 import MovesTable from "./MovesTable";
+import { useSelector, useDispatch } from "react-redux";
+import { selectPokeData, movesLoaded, machineDataLoaded } from "../features/pokemonData/pokemonDataSlice";
 
 export default function Moves({speciesInfo, pokemon, chainId}) {
-	const state = usePokemonData();
-	const dispatch = useDispatchContenxt();
+	const state = useSelector(selectPokeData);
+	const dispatch = useDispatch();
 	const generations = Object.values(state.generations);
 	let pokemonData = pokemon;
 	let debutGeneration = speciesInfo.generation.name;
@@ -231,10 +232,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 				const dataResponses = await Promise.all(movesToFetch.map(move => fetch(move)));
 				const datas = dataResponses.map(response => response.json());
 				const finalData = await Promise.all(datas);
-				dispatch({type: 'movesLoaded', payload: finalData.reduce((pre, cur) => {
-					pre[transformToKeyName(cur.name)] = cur;
-					return pre;
-				}, {})});
+				dispatch(movesLoaded(finalData));
 				setIsDataReady(true);
 			};
 			getMoves();
@@ -289,7 +287,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 				}
 			});
 
-			dispatch({type: 'machineDataLoaded', payload: machineData});
+			dispatch(machineDataLoaded(machineData));
 			setIsDataReady(true);
 		};
 	};

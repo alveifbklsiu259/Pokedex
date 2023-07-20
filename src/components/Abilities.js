@@ -1,13 +1,15 @@
 import { useState, memo } from 'react';
 import Spinner from './Spinner';
-import { useDispatchContenxt, usePokemonData } from './PokemonsProvider';
 import Modal from './Modal';
 import { transformToKeyName, transformToDash, getNameByLanguage, getTextByLanguage } from '../util';
 import { getAbilitiesToDisplay, getData } from '../api';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectPokeData, abilityLoaded } from '../features/pokemonData/pokemonDataSlice';
 
-const Abilities = memo(function Abilities({pokemon, cachedAbilities}) {
-	const dispatch = useDispatchContenxt();
-	const state = usePokemonData();
+
+const Abilities = memo(function Abilities({pokemon}) {
+	const dispatch = useDispatch();
+	const state = useSelector(selectPokeData);
 	const [isModalShown, setIsModalShown] = useState(false);
 	const [isDetail, setIsDetail] = useState(false);
 	const [abilityData, setAbilityData] = useState(null);
@@ -25,12 +27,12 @@ const Abilities = memo(function Abilities({pokemon, cachedAbilities}) {
 
 		setIsModalShown(true);
 
-		if (!cachedAbilities[abilityKey]) {
+		if (!state.abilities[abilityKey]) {
 			fetchedAbility = await getData('ability', ability, 'name');
-			dispatch({type: 'abilityLoaded', payload: fetchedAbility});
+			dispatch(abilityLoaded(fetchedAbility));
 		};
 
-		setAbilityData(fetchedAbility?.[abilityKey] || cachedAbilities[abilityKey]);
+		setAbilityData(fetchedAbility?.[abilityKey] || state.abilities[abilityKey]);
 	};
 
 	const showModalDetail = () => {

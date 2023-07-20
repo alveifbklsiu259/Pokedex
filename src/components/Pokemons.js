@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useMemo } from "react";
-import { usePokemonData, useDispatchContenxt, useCachedData, useNavigateToPokemon } from "./PokemonsProvider";
+import { useNavigateToPokemon } from "./PokemonsProvider";
 import Sort from "./Sort";
 import BasicInfo from "./BasicInfo";
 import PokemonTable from "./PokemonTable";
@@ -7,19 +7,17 @@ import ScrollToTop from "./ScrollToTop";
 import Spinner from "./Spinner";
 import ViewMode from "./ViewMode";
 import { getPokemonsOnScroll } from "../api";
+import { useSelector, useDispatch } from "react-redux";
+import { selectPokeData } from "../features/pokemonData/pokemonDataSlice";
 
 export default function Pokemons() {
-	const state = usePokemonData();
-	const dispatch = useDispatchContenxt();
+	const state = useSelector(selectPokeData)
+	const dispatch = useDispatch();
 	const navigateToPokemon = useNavigateToPokemon();
-
 	// cache data
 	const cachedDispaly = useMemo(() => {
 		return state.display.map(id => Object.values(state.pokemons).find(pokemon => pokemon.id === id));
 	}, [state.display, state.pokemons]);
-	const cachedSpecies = useCachedData(state.pokemonSpecies);
-	const cachedLanguage = useCachedData(state.language);
-	const cachedTypes = useCachedData(state.types);
 
 	const handleScroll = useCallback(() => {
 		if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight && state.status === 'idle' && state.nextRequest !== null) {
@@ -51,12 +49,7 @@ export default function Pokemons() {
 						className="col-6 col-md-4 col-lg-3 card pb-3 pokemonCard"
 						onClick={() => navigateToPokemon(state, dispatch, [pokemon.id],['pokemons', 'pokemonSpecies', 'evolutionChains','abilities', 'items'])}
 					>
-						<BasicInfo
-							pokemon={pokemon}
-							cachedLanguage={cachedLanguage}
-							cachedSpecies={cachedSpecies}
-							cachedTypes={cachedTypes}
-						/>
+						<BasicInfo pokemon={pokemon} />
 					</div>
 				))}
 				<ScrollToTop />
@@ -81,7 +74,7 @@ export default function Pokemons() {
 				{
 					state.viewMode === 'module'? (
 						<>
-							<Sort status={state.status}/>
+							<Sort />
 							<div className="row g-5">
 								{moduleContent}
 							</div>

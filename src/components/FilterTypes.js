@@ -2,10 +2,14 @@ import pokeBall from '../assets/ball.svg';
 import { memo } from 'react';
 import { getNameByLanguage } from '../util';
 import { Switch, Stack, Typography, FormControlLabel } from '@mui/material';
+import { useSelector } from "react-redux";
+import { selectTypes, selectLanguage } from "../features/pokemonData/pokemonDataSlice";
 
-const FilterTypes = memo(function FilterTypes ({selectedTypes, setSelectedTypes,setMatchMethod, cachedTypes, cachedLanguage}) {
+const FilterTypes = memo(function FilterTypes ({selectedTypes, setSelectedTypes,setMatchMethod}) {
+	const types = useSelector(selectTypes)
+	const language = useSelector(selectLanguage)
 
-	const selectType = type => {
+	const onSelectType = type => {
 		setSelectedTypes(() => {
 			const update = [...selectedTypes];
 			if (update.includes(type)) {
@@ -17,7 +21,7 @@ const FilterTypes = memo(function FilterTypes ({selectedTypes, setSelectedTypes,
 		});
 	};
 
-	const changeMatchMethod = e => {
+	const onChangeMatchMethod = e => {
 		if(e.target.checked) {
 			setMatchMethod('part')
 		} else {
@@ -32,19 +36,19 @@ const FilterTypes = memo(function FilterTypes ({selectedTypes, setSelectedTypes,
 				<Stack direction="row" spacing={1} justifyContent="center" alignItems="baseLine">
 					<Typography>All</Typography>
 					<FormControlLabel
-						control={<Switch color="primary" onClick={changeMatchMethod} />}
+						control={<Switch color="primary" onClick={onChangeMatchMethod} />}
 						label="Match"
 						labelPlacement="bottom"
 					/>
 					<Typography>Part</Typography>
 				</Stack>
 			</div>
-			{Object.keys(cachedTypes).filter(type => type !== 'unknown' && type !== 'shadow').map(type => (
+			{Object.keys(types).filter(type => type !== 'unknown' && type !== 'shadow').map(type => (
 				<li 
-					onClick={() => selectType(type)} 
+					onClick={() => onSelectType(type)} 
 					key={type} 
 					className={`type type-${type} ${selectedTypes.includes(type) ? 'active' : ''}`}
-				>{getNameByLanguage(type, cachedLanguage, cachedTypes[type])}
+				>{getNameByLanguage(type, language, types[type])}
 				</li>
 			))}
 		</ul>

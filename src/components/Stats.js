@@ -1,7 +1,11 @@
 import { memo } from "react";
 import { getNameByLanguage, transformToKeyName } from "../util";
+import { useSelector } from "react-redux";
+import { selectLanguage, selectStat } from "../features/pokemonData/pokemonDataSlice";
 
-const Stats = memo(function Stats({pokemon, cachedLanguage, cachedStat}) {
+const Stats = memo(function Stats({pokemon}) {
+	const stat = useSelector(selectStat);
+	const language = useSelector(selectLanguage);
 	return (
 		<div className="col-12 mt-5 stats">
 			<h1 className="text-center" >Stats</h1>
@@ -10,7 +14,7 @@ const Stats = memo(function Stats({pokemon, cachedLanguage, cachedStat}) {
 					{pokemon.stats ? pokemon.stats.map(entry => (
 						<tr key={entry.stat.name}>
 							<td className='text-capitalize text-center' width='30%'>
-								{getNameByLanguage(entry.stat.name, cachedLanguage, cachedStat[transformToKeyName(entry.stat.name)])}
+								{getNameByLanguage(entry.stat.name, language, stat[transformToKeyName(entry.stat.name)])}
 							</td>
 							<td width='10%'>{entry.base_stat}</td>
 							<td width='255px'>

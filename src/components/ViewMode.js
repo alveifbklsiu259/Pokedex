@@ -1,12 +1,13 @@
 import {useState, useEffect} from 'react';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import { useDispatchContenxt, usePokemonData } from './PokemonsProvider';
 import { getRequiredData } from '../api';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectPokeData, viewModeChanged } from '../features/pokemonData/pokemonDataSlice';
 
 export default function ViewMode() {
-	const state = usePokemonData();
-	const dispatch = useDispatchContenxt();
+	const state = useSelector(selectPokeData);
+	const dispatch = useDispatch();
 	const [view, setView] = useState('module');
 
 	useEffect(() => {
@@ -30,7 +31,7 @@ export default function ViewMode() {
 				await getRequiredData(state, dispatch, range, ['pokemons', 'pokemonSpecies']);
 			};
 
-			dispatch({type: 'viewModeChanged', payload: nextView});
+			dispatch(viewModeChanged(nextView));
 		};
 	};
 

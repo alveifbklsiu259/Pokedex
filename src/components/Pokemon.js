@@ -9,13 +9,16 @@ import ScrollToTop from "./ScrollToTop";
 import Moves from "./Moves";
 import ErrorPage from "./ErrorPage";
 import Varieties from "./Varieties";
-import { usePokemonData, useDispatchContenxt, useCachedData, useNavigateToPokemon } from "./PokemonsProvider";
+import { useNavigateToPokemon } from "./PokemonsProvider";
 import { getAbilitiesToDisplay, getRequiredData, getItemsFromChain } from "../api";
 import { getIdFromURL, transformToKeyName } from "../util";
+import { useSelector, useDispatch } from "react-redux";
+import { selectPokeData, error } from "../features/pokemonData/pokemonDataSlice";
+
 
 export default function Pokemon() {
-	const state = usePokemonData();
-	const dispatch = useDispatchContenxt();
+	const state = useSelector(selectPokeData);
+	const dispatch = useDispatch();
 	const {pokeId} = useParams();
 
 	// enable search pokemon by names in url (english)
@@ -27,14 +30,12 @@ export default function Pokemon() {
 
 	// the reason why searching in other languages doesn't work is because even if we change lange, the get the latest data in allPokemonNamesAndIds, when we enter what we type in the url bar, the whole state gets reset, and we're back to English name id pairs. maybe the workaround would be in the PokemonProviders, if language !== 'en', we have to change name id pairs there.
 
-
 	// required data for current page
 	const pokemon = state.pokemons[urlParam];
 	const speciesInfo = state.pokemonSpecies[getIdFromURL(pokemon?.species?.url)];
 	const chainId = getIdFromURL(speciesInfo?.evolution_chain?.url);
 	const evolutionChains = state.evolutionChains?.[chainId];
 	const requiredItems = getItemsFromChain(evolutionChains);
-
 	let abilitiesToDisplay, isAbilitiesReady, isItemsReady;
 	if (state.language !== 'en') {
 		abilitiesToDisplay = getAbilitiesToDisplay(pokemon);
@@ -42,15 +43,7 @@ export default function Pokemon() {
 		isItemsReady = requiredItems ? requiredItems.every(item => state.items[transformToKeyName(item)]) : false;
 	};
 
-	// cache data for better performance, we can opt out this approach if switching to redux
-	const cachedPokemons = useCachedData(state.pokemons);
-	const cachedAbilities = useCachedData(state.abilities);
-	const cachedEvolutionChains = useCachedData(state.evolutionChains);
-	const cachedLanguage = useCachedData(state.language);
-	const cachedSpecies = useCachedData(state.pokemonSpecies);
-	const cachedTypes = useCachedData(state.types);
-	const cachedStat = useCachedData(state.stat);
-	const cachedItems = useCachedData(state.items);
+
 	const defaultRequiredData = [pokemon, speciesInfo, evolutionChains];
 	const isDataReady = state.language === 'en' ? defaultRequiredData.every(Boolean) : (defaultRequiredData.every(Boolean) && isAbilitiesReady && isItemsReady);
 	useEffect(() => {
@@ -63,7 +56,7 @@ export default function Pokemon() {
 					await getRequiredData(state, dispatch, [urlParam], ['pokemons', 'pokemonSpecies', 'evolutionChains']);
 				} catch(err) {
 					console.log(err)
-					dispatch({type: 'error'});
+					dispatch(error());
 				};
 			}
 			getIndividualPokemonData();
@@ -71,7 +64,6 @@ export default function Pokemon() {
 	}, [dispatch, isDataReady, state, urlParam]);
 
 	// on Pokemons, sort by names, change language should re-sort the order.
-	console.log(state)
 	const pokemonCount = state.pokemonCount;
 	const nationalNumber = getIdFromURL(state.pokemons[urlParam]?.species?.url);
 	const nextPokemonId = nationalNumber === pokemonCount ? 1 : nationalNumber + 1;
@@ -94,33 +86,18 @@ export default function Pokemon() {
 						<div className='basicInfoContainer row col-8 col-sm-6 justify-content-center'>
 							<BasicInfo
 								pokemon={pokemon}
-								// cachedData
-								cachedLanguage={cachedLanguage}
-								cachedSpecies={cachedSpecies}
-								cachedTypes={cachedTypes}
 							/>
 						</div>
 						<Detail
 							pokemon={pokemon}
 							speciesInfo={speciesInfo}
-							cachedAbilities={cachedAbilities}
-							cachedLanguage={cachedLanguage}
 						/>
 						<Stats
 							pokemon={pokemon}
-							cachedStat={cachedStat}
-							cachedLanguage={cachedLanguage}
 						/>
 						<EvolutionChains
-							cachedPokemons={cachedPokemons}
-							cachedEvolutionChains={cachedEvolutionChains}
 							evolutionChains={evolutionChains.chains}
 							chainId={chainId}
-							// cachedData
-							cachedLanguage={cachedLanguage}
-							cachedSpecies={cachedSpecies}
-							cachedTypes={cachedTypes}
-							cachedItems={cachedItems}
 						/>
 						<Moves 
 							pokemon={pokemon}
@@ -157,8 +134,8 @@ export default function Pokemon() {
 };
 
 export function RelatedPokemon ({pokemonId, order}) {
-	const state = usePokemonData();
-	const dispatch = useDispatchContenxt();
+	const state = useSelector(selectPokeData);
+	const dispatch = useDispatch();
 	const navigateToPokemon = useNavigateToPokemon();
 
 	return (

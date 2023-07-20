@@ -10,7 +10,8 @@ import Slide from '@mui/material/Slide';
 import LanguageMenu from './LanguageMenu';
 import Modal from './Modal';
 import Search from './Search';
-import { useDispatchContenxt } from './PokemonsProvider';
+import { useDispatch } from 'react-redux';
+import { advancedSearchReset, backToRoot } from '../features/pokemonData/pokemonDataSlice';
 
 function HideOnScroll(props) {
 	const { children, window } = props;
@@ -27,18 +28,18 @@ function HideOnScroll(props) {
 
 export default function NavBar() {
 	const [isModalShown, setIsModalShown] = useState(false);
-	const dispatch = useDispatchContenxt();
-	const showModal = () => {
+	const dispatch = useDispatch();
+	const onShowModal = () => {
 		setIsModalShown(true);
-		dispatch({type: 'advancedSearchReset'});
+		dispatch(advancedSearchReset());
 	};
 
-	const closeModal = () => {
+	const onCloseModal = () => {
 		setIsModalShown(false);
 	};
 
-	const backToRoot = () => {
-		dispatch({type: 'backToRoot'})
+	const onBackToRoot = () => {
+		dispatch(backToRoot())
 	};
 
 	return (
@@ -47,11 +48,10 @@ export default function NavBar() {
 				<HideOnScroll>
 					<AppBar sx={{bgcolor: theme => theme.palette.primary.light, position: 'fixed'}}>
 						<Toolbar sx={{justifyContent: 'space-between'}}>
-						<Typography variant="h5" component={Link} to="/" color="#fff" onClick={backToRoot}>Pokédex</Typography>
+						<Typography variant="h5" component={Link} to="/" color="#fff" onClick={onBackToRoot}>Pokédex</Typography>
 						<Box sx={{display: 'flex'}}>
-							<Button size='large' variant="contained" onClick={showModal}><i className="fa-solid fa-magnifying-glass"></i></Button>
+							<Button size='large' variant="contained" onClick={onShowModal}><i className="fa-solid fa-magnifying-glass"></i></Button>
 							<LanguageMenu />
-							{/* {isModalShown && <LanguageMenu />} */}
 							{/* see if we can disable pokedex link when loading */}
 						</Box>
 						</Toolbar>
@@ -64,7 +64,7 @@ export default function NavBar() {
 					setIsModalShown={setIsModalShown}
 					customClass='modalBody searchModal'
 				>
-					<Search closeModal={closeModal}/>
+					<Search closeModal={onCloseModal}/>
 				</Modal>
 			)}
 		</div>

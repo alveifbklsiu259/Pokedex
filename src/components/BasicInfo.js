@@ -1,13 +1,20 @@
 import { memo } from "react";
 import { getIdFromURL, getNameByLanguage } from "../util";
+import { useSelector } from "react-redux";
+import { selectLanguage, selectSpecies, selectTypes } from "../features/pokemonData/pokemonDataSlice";
 
-const BasicInfo = memo(function BasicInfo({pokemon, cachedLanguage, cachedSpecies, cachedTypes}) {
-	let pokemonName = getNameByLanguage(pokemon.name, cachedLanguage, cachedSpecies[getIdFromURL(pokemon.species.url)]);
+const BasicInfo = memo(function BasicInfo({pokemon}) {
+	const species = useSelector(selectSpecies);
+	const language = useSelector(selectLanguage);
+	const types = useSelector(selectTypes)
+
+
+	let pokemonName = getNameByLanguage(pokemon.name, language, species[getIdFromURL(pokemon.species.url)]);
 	
 	let nationalNumber = pokemon.id;
 	if (!pokemon.is_default) {
 		nationalNumber = getIdFromURL(pokemon.species.url);
-		if (cachedLanguage !== 'en') {
+		if (language !== 'en') {
 			pokemonName = pokemonName.concat(`(${pokemon.name.replace(`${pokemon.species.name}-`, '')})`);
 		};
 	};
@@ -24,7 +31,7 @@ const BasicInfo = memo(function BasicInfo({pokemon, cachedLanguage, cachedSpecie
 						key={entry.type.name} 
 						className={`type-${entry.type.name} type col-5 m-1`}
 					>
-						{getNameByLanguage(entry.type.name, cachedLanguage, cachedTypes[entry.type.name])}
+						{getNameByLanguage(entry.type.name, language, types[entry.type.name])}
 					</span>
 				))}
 			</div>

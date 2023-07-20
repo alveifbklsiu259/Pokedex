@@ -1,6 +1,5 @@
 import './App.css';
 import { createBrowserRouter,createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
-import PokemonsProvider from './components/PokemonsProvider';
 import RootRoute, { Index } from './components/RootRoute';
 import Pokemon from './components/Pokemon';
 import ErrorPage from './components/ErrorPage';
@@ -18,9 +17,7 @@ export const router = createBrowserRouter(createRoutesFromElements(
 
 function App() {
 	return (
-		<PokemonsProvider>
-			<RouterProvider router={router} />
-		</PokemonsProvider>
+		<RouterProvider router={router} />
 	)
 };
 

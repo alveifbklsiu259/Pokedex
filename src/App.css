@@ -770,7 +770,7 @@ h1 {
     align-items: center;
 }
 
-.errorPage img{
+.pageNotFoundImg{
     max-width: 250px;
     height: auto;
     width: 100%;

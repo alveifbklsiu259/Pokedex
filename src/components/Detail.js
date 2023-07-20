@@ -1,6 +1,8 @@
 import React, { memo } from "react";
 import Abilities from "./Abilities";
 import { getTextByLanguage } from "../util";
+import { useSelector } from 'react-redux';
+import { selectLanguage } from '../features/pokemonData/pokemonDataSlice';
 
 function getGender(gender_rate) {
 	switch(gender_rate) {
@@ -19,8 +21,10 @@ function getGender(gender_rate) {
 	};
 };
 
-const Detail = memo(function Detail({pokemon, speciesInfo, cachedAbilities, cachedLanguage}) {
-	const flavorText = getTextByLanguage(cachedLanguage, speciesInfo.flavor_text_entries, 'flavor_text');
+const Detail = memo(function Detail({pokemon, speciesInfo}) {
+	const language = useSelector(selectLanguage);
+
+	const flavorText = getTextByLanguage(language, speciesInfo.flavor_text_entries, 'flavor_text');
 	return (
 		<>
 			<div className="detail row text-center col-12 col-sm-6">
@@ -30,7 +34,7 @@ const Detail = memo(function Detail({pokemon, speciesInfo, cachedAbilities, cach
 					<span className="mt-4">{getGender(speciesInfo.gender_rate)}</span>
 				</p>
 				<div className="col-6 abilities p-0">Abilities <br />
-					<Abilities cachedAbilities={cachedAbilities} pokemon={pokemon} />
+					<Abilities pokemon={pokemon} />
 				</div>
 				<p className="col-12 m-3 p-2 text-start description">{flavorText}</p>
 			</div>

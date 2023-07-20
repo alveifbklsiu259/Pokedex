@@ -1,5 +1,7 @@
 import { forwardRef } from "react";
 import { flushSync } from "react-dom";
+import { useSelector } from "react-redux";
+import { selectAllIdsAndNames } from "../features/pokemonData/pokemonDataSlice";
 
 const DataList = forwardRef(({
 	matchList, 
@@ -12,9 +14,8 @@ const DataList = forwardRef(({
 	hoveredPokemon, 
 	setHoveredPokemon, 
 	activePokemon,
-	cachedAllPokemonNamesAndIds
 }, datalistRef) => {
-
+	const allPokemonNamesAndIds = useSelector(selectAllIdsAndNames);
 	const handleMouseOver = pokemon => {
 		setHoveredPokemon(pokemon);
 	};
@@ -62,7 +63,6 @@ const DataList = forwardRef(({
 			</>
 		);
 	};
-
 	return (
 		<div ref={datalistRef} id='pokemonDataList' className={showDataList && matchList.length ? 'showDatalist' : ''}>
 			{matchList.map(pokemon => (
@@ -77,7 +77,7 @@ const DataList = forwardRef(({
 					key={pokemon}
 				>
 					<span>{colorMatching(pokemon, searchParam)}</span>
-					<img width='96px' height='96px' src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${cachedAllPokemonNamesAndIds[pokemon]}.png`} alt={pokemon}/>
+					<img width='96px' height='96px' src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${allPokemonNamesAndIds[pokemon]}.png`} alt={pokemon}/>
 				</div>
 			))}
 		</div>

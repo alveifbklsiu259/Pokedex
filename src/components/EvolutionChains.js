@@ -1,20 +1,17 @@
 import React, { memo } from "react";
 import BasicInfo from "./BasicInfo";
 import EvolutionDetails from "./EvolutionDetails";
-import { useDispatchContenxt, usePokemonData, useNavigateToPokemon } from "./PokemonsProvider";
+import { useNavigateToPokemon } from "./PokemonsProvider";
+import { useSelector, useDispatch } from "react-redux";
+import { selectPokeData } from "../features/pokemonData/pokemonDataSlice";
 
 const EvolutionChains = memo(function EvolutionChains({
 	evolutionChains,
-	cachedPokemons,
 	chainId,
-	cachedEvolutionChains,
-	cachedLanguage,
-	cachedSpecies,
 	cachedTypes,
-	cachedItems
 }) {
-	const dispatch = useDispatchContenxt();
-	const state = usePokemonData();
+	const dispatch = useDispatch();
+	const state = useSelector(selectPokeData);
 	const navigateToPokemon = useNavigateToPokemon();
 	// get max depth (for layout)
 	let maxDepth = 1;
@@ -38,10 +35,8 @@ const EvolutionChains = memo(function EvolutionChains({
 						<li>
 							<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon(state, dispatch, [pokemonId], ['pokemonSpecies', 'abilities'])}} >
 								<BasicInfo
-									pokemon={cachedPokemons[pokemonId]}
+									pokemon={state.pokemons[pokemonId]}
 									// cachedData
-									cachedLanguage={cachedLanguage}
-									cachedSpecies={cachedSpecies}
 									cachedTypes={cachedTypes}
 								/>
 							</div>
@@ -51,9 +46,6 @@ const EvolutionChains = memo(function EvolutionChains({
 								<EvolutionDetails
 									chainId={chainId}
 									pokemonId={array[index + 1]}
-									cachedEvolutionChains={cachedEvolutionChains}
-									cachedItems={cachedItems}
-									cachedLanguage={cachedLanguage}
 								/>
 							</li>
 						)}
@@ -75,10 +67,7 @@ const EvolutionChains = memo(function EvolutionChains({
 											<li className="multiplePath">
 												<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon(state, dispatch, [pokemonId], ['pokemonSpecies', 'abilities'])}} >
 													<BasicInfo 
-														pokemon={cachedPokemons[pokemonId]}
-														// cachedData
-														cachedLanguage={cachedLanguage}
-														cachedSpecies={cachedSpecies}
+														pokemon={state.pokemons[pokemonId]}
 														cachedTypes={cachedTypes}
 													/>
 												</div>
@@ -88,9 +77,6 @@ const EvolutionChains = memo(function EvolutionChains({
 													<EvolutionDetails 
 													chainId={chainId} 
 													pokemonId={array[index + 1]}
-													cachedEvolutionChains={cachedEvolutionChains} 
-													cachedItems={cachedItems}
-													cachedLanguage={cachedLanguage}
 												/>
 												</li>
 											)}

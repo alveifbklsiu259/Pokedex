@@ -3,25 +3,24 @@ import { useNavigateNoUpdates } from './RouterUtils';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
 import pokeBall from '../assets/pokeBall.png';
-import { usePokemonData, useDispatchContenxt, useCachedData } from './PokemonsProvider';
-import { getDataToFetch, getPokemons } from '../api';
+import { getPokemons } from '../api';
 import { getIdFromURL } from '../util';
+import { useSelector, useDispatch } from 'react-redux';
+// this is tedious... any other workaround?
+import { selectPokeData, selectAllIdsAndNames, selectStatus, selectTypes, intersectionChanged, searchParamChanged, advancedSearchChanged } from '../features/pokemonData/pokemonDataSlice';
 
 export default function Search({closeModal}) {
-	const state = usePokemonData();
-	const dispatch = useDispatchContenxt();
+	const state = useSelector(selectPokeData);
+	const dispatch = useDispatch();
 	const [searchParam, setSearchParam] = useState('');
 	const [selectedGenerations, setSelectedGenerations] = useState({});
 	const [selectedTypes, setSelectedTypes] = useState([]);
 	const [matchMethod, setMatchMethod] = useState('all');
 	const navigateNoUpdates = useNavigateNoUpdates();
 	// cached data
-	const cachedAllPokemonNamesAndIds = useCachedData(state.allPokemonNamesAndIds);
-	const pokemonNames = Object.keys(cachedAllPokemonNamesAndIds);
-	const cachedTypes = useCachedData(state.types);
-	const cachedLanguage = useCachedData(state.language);
-	const cachedGenerations = useCachedData(state.generations);
-	const cachedStatus = useCachedData(state.status);
+	const pokemonNames = Object.keys(useSelector(selectAllIdsAndNames))
+	const status = useSelector(selectStatus);
+	const types = useSelector(selectTypes)
 
 	let pokemonRange = [];
 
@@ -79,7 +78,7 @@ export default function Search({closeModal}) {
 		if (selectedTypes.length) {
 			if (matchMethod === 'all') {
 				const typeMatchingArray = selectedTypes.reduce((pre, cur) => {
-					pre.push(cachedTypes[cur].pokemon.map(entry => getIdFromURL(entry.pokemon.url)));
+					pre.push(types[cur].pokemon.map(entry => getIdFromURL(entry.pokemon.url)));
 					return pre;
 				}, []);
 				for (let i = 0; i < typeMatchingArray.length; i ++) {
@@ -87,7 +86,7 @@ export default function Search({closeModal}) {
 				};
 			} else if (matchMethod === 'part') {
 				const typeMatchingPokemonIds = selectedTypes.reduce((pre, cur) => {
-					cachedTypes[cur].pokemon.forEach(entry => pre.push(getIdFromURL(entry.pokemon.url)));
+					types[cur].pokemon.forEach(entry => pre.push(getIdFromURL(entry.pokemon.url)));
 					return pre;
 				}, []);
 				intersection = rangeIds.filter(id => typeMatchingPokemonIds.includes(id));
@@ -97,10 +96,10 @@ export default function Search({closeModal}) {
 		// only dispatch when necessary
 		if (JSON.stringify(state.intersection) !== JSON.stringify(intersection)) {
 			await getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, intersection, state.sortBy, state.status);
-			dispatch({type: 'intersectionChanged', payload: intersection});
-			dispatch({type: 'searchParamChanged', payload: searchParam});
-			dispatch({type: 'advancedSearchChanged', payload: {field: 'generations', data: selectedGenerations}});
-			dispatch({type: 'advancedSearchChanged', payload: {field: 'types', data: selectedTypes}});
+			dispatch(intersectionChanged(intersection));
+			dispatch(searchParamChanged(searchParam));
+			dispatch(advancedSearchChanged({field: 'generations', data: selectedGenerations}));
+			dispatch(advancedSearchChanged({field: 'types', data: selectedTypes}));
 		};
 		// for search modal
 		if (closeModal) {
@@ -130,8 +129,6 @@ export default function Search({closeModal}) {
 				<Input
 					searchParam={searchParam} 
 					setSearchParam={setSearchParam}
-					status={cachedStatus}
-					cachedAllPokemonNamesAndIds={cachedAllPokemonNamesAndIds}
 				/>
 				<AdvancedSearch
 					searchParam={searchParam}
@@ -141,13 +138,9 @@ export default function Search({closeModal}) {
 					selectedGenerations={selectedGenerations} 
 					setSelectedGenerations={setSelectedGenerations}
 					setMatchMethod={setMatchMethod}
-					// use cached data, then no need to use usePokemon below the tree.
-					cachedTypes={cachedTypes}
-					cachedLanguage={cachedLanguage}
-					cachedGenerations={cachedGenerations}
 				/>
 				<button 
-					disabled={cachedStatus === 'loading' ? true : false} 
+					disabled={status === 'loading' ? true : false} 
 					className="btn btn-primary btn-lg btn-block w-100 my-3" 
 					type="submit"
 				>

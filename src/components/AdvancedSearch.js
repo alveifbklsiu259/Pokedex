@@ -1,7 +1,8 @@
 import { useRef, memo, useId } from "react"
-import { useDispatchContenxt } from "./PokemonsProvider";
 import FilterGeneration from "./FilterGeneration";
 import FilterTypes from "./FilterTypes";
+import { advancedSearchReset } from "../features/pokemonData/pokemonDataSlice";
+import { useDispatch } from "react-redux";
 
 const AdvancedSearch = memo(function AdvancedSearch({
 	searchParam,
@@ -11,13 +12,11 @@ const AdvancedSearch = memo(function AdvancedSearch({
 	selectedGenerations,
 	setSelectedGenerations,
 	setMatchMethod,
-	cachedTypes,
-	cachedLanguage,
-	cachedGenerations
 }) {
+
 	const ref = useRef(null);
 	const collapseId = useId();
-	const dispatch = useDispatchContenxt();
+	const dispatch = useDispatch();
 	const changeIcon = () => {
 		if (ref.current.closest('button').getAttribute('aria-expanded') === 'true') {
 			ref.current.classList.remove('fa-caret-down');
@@ -39,7 +38,7 @@ const AdvancedSearch = memo(function AdvancedSearch({
 			setSearchParam('');
 		};
 		if (selectedTypes.length || Object.keys(selectedGenerations).length || searchParam !== '') {
-			dispatch({type: 'advancedSearchReset'});
+			dispatch(advancedSearchReset());
 		};
 	};
 	return (
@@ -52,14 +51,11 @@ const AdvancedSearch = memo(function AdvancedSearch({
 					<FilterGeneration 
 						selectedGenerations={selectedGenerations} 
 						setSelectedGenerations={setSelectedGenerations}
-						cachedGenerations={cachedGenerations}
 					/>
 					<FilterTypes 
 						selectedTypes={selectedTypes} 
 						setSelectedTypes={setSelectedTypes}
 						setMatchMethod={setMatchMethod}
-						cachedTypes={cachedTypes}
-						cachedLanguage={cachedLanguage}
 					/>
 					<button 
 						onClick={reset} 

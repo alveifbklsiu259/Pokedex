@@ -1,7 +1,12 @@
 import { useRef, useState, memo } from "react"
 import DataList from './DataList';
+import { useSelector } from "react-redux";
+import { selectAllIdsAndNames, selectStatus } from "../features/pokemonData/pokemonDataSlice";
 
-const Input = memo(function Input({cachedAllPokemonNamesAndIds, searchParam, setSearchParam, status}) {
+const Input = memo(function Input({searchParam, setSearchParam}) {
+	const status = useSelector(selectStatus);
+	const allPokemonNamesAndIds = useSelector(selectAllIdsAndNames);
+
 	const [showDataList, setShowDataList] = useState(false);
 	const [hoveredPokemon, setHoveredPokemon] = useState('');
 	const [currentFocus, setCurrentFocus] = useState(-1);
@@ -103,7 +108,7 @@ const Input = memo(function Input({cachedAllPokemonNamesAndIds, searchParam, set
 		setHoveredPokemon('');
 		inputRef.current.focus();
 	};
-	const match = Object.keys(cachedAllPokemonNamesAndIds).filter(name => name.toLowerCase().includes(searchParam.toLowerCase()));
+	const match = Object.keys(allPokemonNamesAndIds).filter(name => name.toLowerCase().includes(searchParam.toLowerCase()));
 	const sortedByStart = match.filter(name => name.startsWith(searchParam)).sort((a,b) => a.localeCompare(b));
 	const remainderMatches = match.filter(name => !sortedByStart.includes(name)).sort((a,b) => a.localeCompare(b));
 
@@ -142,7 +147,6 @@ const Input = memo(function Input({cachedAllPokemonNamesAndIds, searchParam, set
 				setHoveredPokemon={setHoveredPokemon}
 				activePokemon={activePokemon}
 				resetFocus={resetFocus}
-				cachedAllPokemonNamesAndIds={cachedAllPokemonNamesAndIds}
 			/>
 		</div>
 	)

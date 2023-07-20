@@ -1,9 +1,12 @@
 import pokeBall from '../assets/ball.svg';
 import { memo } from 'react';
+import { useSelector } from "react-redux";
+import { selectGenerations } from "../features/pokemonData/pokemonDataSlice";
 
-const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, setSelectedGenerations, cachedGenerations}) {
+const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, setSelectedGenerations}) {
+	const generations = useSelector(selectGenerations)
 
-	const handleClick = generation => {
+	const onSelectGeneration = generation => {
 		setSelectedGenerations(() => {
 			const update = {...selectedGenerations};
 			if (update[generation.name]) {
@@ -20,9 +23,9 @@ const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, s
 			<div>
 				<h3 ><img className="pokeBall" src={pokeBall} alt="pokeBall" /> Generations</h3>
 			</div>
-			{Object.values(cachedGenerations).map(generation => (
+			{Object.values(generations).map(generation => (
 				<li
-					onClick={() => handleClick(generation)} 
+					onClick={() => onSelectGeneration(generation)} 
 					key={generation.name} 
 					className={`d-flex justify-content-center align-items-center ${Object.keys(selectedGenerations).includes(generation.name) ? 'active' : ''}`}
 				>

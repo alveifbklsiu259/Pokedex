@@ -1,13 +1,15 @@
 import { useMemo } from "react";
 import DataTable from "react-data-table-component"
-import { usePokemonData, useDispatchContenxt, useNavigateToPokemon } from "./PokemonsProvider"
+import { useNavigateToPokemon } from "./PokemonsProvider"
 import Spinner from "./Spinner";
 import { getNameByLanguage, transformToKeyName } from "../util";
 import { capitalize } from "@mui/material";
+import { useSelector, useDispatch } from "react-redux";
+import { selectPokeData } from "../features/pokemonData/pokemonDataSlice";
 
 export default function PokemonTable() {
-	const state = usePokemonData();
-	const dispatch = useDispatchContenxt();
+	const state = useSelector(selectPokeData);
+	const dispatch = useDispatch();
 	const navigateToPokemon = useNavigateToPokemon();
 
 	const pokemonTableData = useMemo(() => [...state.intersection].sort((a,b)=> a - b).map(id => {

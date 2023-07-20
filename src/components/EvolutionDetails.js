@@ -1,6 +1,8 @@
 import { useState, memo } from "react";
 import Modal from "./Modal";
 import { transformToKeyName, getNameByLanguage } from "../util";
+import { useSelector } from "react-redux";
+import { selectItems, selectEvolutionChains, selectLanguage } from "../features/pokemonData/pokemonDataSlice";
 
 const textsForOtherRequirements = {
 	gender: 'Gender',
@@ -22,10 +24,15 @@ const textsForOtherRequirements = {
 	turn_upside_down: 'Hold game system upside-down'
 };
 
-const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cachedEvolutionChains, cachedItems, cachedLanguage}) {
+const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId}) {
+	const language = useSelector(selectLanguage);
+	const evolutionChains = useSelector(selectEvolutionChains);
+	const items = useSelector(selectItems);
+
+
 	const [isModalShown, setIsModalShown] = useState(false);
 	// some evolution detail data is missing from the API, e.g. 489, 490...
-	const chainDetails = cachedEvolutionChains[chainId].details?.[pokemonId];
+	const chainDetails = evolutionChains[chainId].details?.[pokemonId];
 	let selectedDetail = chainDetails?.[0];
 
 	if (chainDetails && chainDetails.length > 1 && chainDetails.find(chainDetail => chainDetail.trigger.name === 'use-item')) {
@@ -60,7 +67,7 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cac
 				if (requirements["item"]) {
 					mainText = (
 						<>
-							<span>{`Use ${getNameByLanguage(requirements["item"], cachedLanguage, cachedItems[transformToKeyName(requirements["item"])])}`}</span>
+							<span>{`Use ${getNameByLanguage(requirements["item"], language, items[transformToKeyName(requirements["item"])])}`}</span>
 							<img className="item" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${requirements["item"]}.png`} alt={`${requirements["item"]}`} />
 						</>
 					)
@@ -114,7 +121,7 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId, cac
 			case 'held_item' : 
 				value = (
 					<>
-						{getNameByLanguage(value, cachedLanguage, cachedItems[transformToKeyName(value)])}
+						{getNameByLanguage(value, language, items[transformToKeyName(value)])}
 						<img className="item" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${value}.png`} alt={`${value}`} />
 					</>
 				)

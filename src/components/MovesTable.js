@@ -1,12 +1,12 @@
 import DataTable from "react-data-table-component"
 import { Switch, Stack, Typography, capitalize } from "@mui/material"
 import Spinner from "./Spinner";
-import { usePokemonData } from "./PokemonsProvider";
 import { getTextByLanguage } from "../util";
+import { useSelector } from "react-redux";
+import { selectLanguage } from "../features/pokemonData/pokemonDataSlice";
 
 const MoveEffect = ({data, selectedVersion}) => {
-	const state = usePokemonData();
-	const language = state.language;
+	const language = useSelector(selectLanguage);
 	const effect = getTextByLanguage(language, data.effect, 'effect', selectedVersion);
 	const flavorText = getTextByLanguage(language, data.flavorText, 'flavor_text', selectedVersion);
 	return (

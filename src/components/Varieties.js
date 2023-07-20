@@ -1,10 +1,14 @@
 import React, { memo } from 'react';
 import { getIdFromURL, getNameByLanguage } from '../util';
-import { useDispatchContenxt, useNavigateToPokemon, usePokemonData } from './PokemonsProvider';
+import { useNavigateToPokemon } from './PokemonsProvider';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectPokeData } from '../features/pokemonData/pokemonDataSlice';
+
+
 
 const Varieties = memo(function Varieties({speciesInfo, pokemon}) {
-	const dispatch = useDispatchContenxt();
-	const state = usePokemonData();
+	const dispatch = useDispatch();
+	const state = useSelector(selectPokeData);
 	const navigateToPokemon = useNavigateToPokemon();
 
 	const handleClick = async variety => {
