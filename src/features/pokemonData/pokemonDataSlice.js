@@ -3,34 +3,35 @@ import { transformToKeyName } from "../../util";
 import { getEndpointData, getPokemons, getData } from "../../api";
 import { getIdFromURL } from "../../util";
 const initialState = {
-	viewMode: 'module',
-	language: 'en',
+	// pokemon
 	pokemons: {},
 	pokemonCount: null,
-	nextRequest: [],
 	pokemonSpecies: {},
 	abilities: {},
-	// loading | idle | scrolling | error 
-	status: null,
+	types: {},
+	moves: {},
+	machines: {},
+	stat: {},
+	move_damage_class: {},
+	version: {},
+	generations: {},
 	evolutionChains: {},
+	items: {},
+	allPokemonNamesAndIds: {},
+	// search
 	searchParam: '',
-	sortBy: 'numberAsc',
 	advancedSearch: {
 		generations: {},
 		types: [],
 	},
+	// display
 	display: [],
-	allPokemonNamesAndIds: {},
 	intersection: [],
-	generations: {},
-	types: {},
-	moves: {},
-	machines: {},
-	// belowe are data that currently only required when language !== 'en'
-	items: {},
-	version: {},
-	move_damage_class: {},
-	stat: {}
+	viewMode: 'module',
+	language: 'en',
+	nextRequest: [],
+	sortBy: 'numberAsc',
+	status: null,
 };
 
 
@@ -161,10 +162,10 @@ const pokemonDataSlice = createSlice({
 	extraReducers: builder => {
 		builder
 			.addCase(getInitialData.pending, (state, action) => {
-				console.log(current(state))
+				// console.log(current(state))
 			})
 			.addCase(getInitialData.fulfilled, (state, action) => {
-				console.log(current(state))
+				// console.log(current(state))
 			})
 	}
 })
@@ -188,9 +189,12 @@ export const {dataLoading, pokemonCountLoaded, pokemonNamesAndIdsLoaded, interse
 // 1. it automatically generates pending/fulfilled/rejected states for you to dispatch at different life time of a request
 // 2. you can also use addMatcher/addDefaultCase
 
-export const getInitialData = createAsyncThunk('pokeData/getInitialData', async(_, {dispatch, getState}) => {
+export const getInitialData = createAsyncThunk('pokeData/getInitialData', async(undefined, {dispatch, getState}) => {
 	let generationData, typeData, pokemonsNamesAndId = {}, intersection = [];
-	// dispatch(dataLoading());
+	console.log('loading')
+	// the Seach component reads state, so if state changes, Search will re-render
+	// cause a re-render in Search.js
+	dispatch(dataLoading());
 	// check if status === loading
 	// get pokemons count, all names and ids
 	const speciesResponse = await getEndpointData('pokemon-species')
@@ -211,13 +215,30 @@ export const getInitialData = createAsyncThunk('pokeData/getInitialData', async(
 	const typeResponse = await getEndpointData('type');
 	typeData = await getData('type', typeResponse.results.map(entry => entry.name), 'name');
 
+	// try to batch dispatch, should only result in one re-render in Search.
+	// the reason why re-renders happen after 'batch ends' log is because
+	// React waits until all code in the event handlers (also other functions) has run before processing your state updates (re-render).
+	// as for why there's a re-render (Search's state log ) before 'batch starts' is because there's await between them.
+	// reference https://react.dev/learn/queueing-a-series-of-state-updates#:~:text=React%20waits%20until-,all%20code,-in%20the%20event
+	console.log('batch starts')
+
 	// batch dispatches
 	await getPokemons(dispatch, {}, pokemonsNamesAndId, intersection, 'numberAsc', 'loading');
+
 	dispatch(pokemonCountLoaded(speciesResponse.count));
 	dispatch(pokemonNamesAndIdsLoaded(pokemonsNamesAndId));
 	dispatch(intersectionChanged(intersection));
 	dispatch(generationsLoaded(generationData));
 	dispatch(typesLoaded(typeData));
+	// dispatch(error());
+
+	// these dispatches will being queued after all the code executed.
+	
+
+	// maybe: getPokemons(and other function in api can return value instead of doinf dispatch inside, if you're gonna fetch data (which cause status === loading), you can have a function to check if fetch is necessary, the dispatch when calling getPokemons)
+
+
+	console.log('batch ends')
 	// or you can return all those data and change them all at once in the extraReducer?
 
 	// if we do getInitialData.pending + getInitialData.fulfilled, does it cause multiple re-renders?
@@ -240,6 +261,9 @@ export const getInitialData = createAsyncThunk('pokeData/getInitialData', async(
 
 
 // We know that useSelector will re-run every time an action(including action from other components) is dispatched, and that it forces the component to re-render if we return a new reference value.
+// say if we intentionally batch dispatchs, if a component reads the whole state vlaue, and each dispatch changes the state, say we try to batch 5 dispatches, does each dispatch cause that component to re-render once (so, 5 in total) or those re-renders will be batched to only one re-render?
+
+
 
 //We could also customize the comparison function that useSelector runs to check the results, like useSelector(selectPostIds, shallowEqual)
 

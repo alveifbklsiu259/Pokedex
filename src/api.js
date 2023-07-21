@@ -206,8 +206,9 @@ export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndId
 		};
 	};
 	const sortedRequest = sortPokemons(allPokemons);
-	pokemonsToDisplay = sortedRequest.splice(0, 24);
-	nextRequest = sortedRequest.length ? sortedRequest : null;
+	const copiedRequest = [...sortedRequest]
+	pokemonsToDisplay = copiedRequest.splice(0, 24);
+	nextRequest = copiedRequest.length ? copiedRequest : null;
 
 	// get uncached pokemons for name / id sort options
 	if (pokemonsToFetch === undefined) {
