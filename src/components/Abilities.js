@@ -4,17 +4,17 @@ import Modal from './Modal';
 import { transformToKeyName, transformToDash, getNameByLanguage, getTextByLanguage } from '../util';
 import { getAbilitiesToDisplay, getData } from '../api';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectPokeData, abilityLoaded } from '../features/pokemonData/pokemonDataSlice';
+import { selectAbilities, selectLanguage, abilityLoaded } from '../features/pokemonData/pokemonDataSlice';
 
 
 const Abilities = memo(function Abilities({pokemon}) {
 	const dispatch = useDispatch();
-	const state = useSelector(selectPokeData);
+	const abilities = useSelector(selectAbilities);
+	const language = useSelector(selectLanguage);
 	const [isModalShown, setIsModalShown] = useState(false);
 	const [isDetail, setIsDetail] = useState(false);
 	const [abilityData, setAbilityData] = useState(null);
-	const language = state.language;
-	const abilities = getAbilitiesToDisplay(pokemon).map(ability => transformToDash(ability));
+	const abilitiesToDisplay = getAbilitiesToDisplay(pokemon).map(ability => transformToDash(ability));
 
 	const showModal = async ability => {
 		const abilityKey = transformToKeyName(ability);
@@ -27,12 +27,12 @@ const Abilities = memo(function Abilities({pokemon}) {
 
 		setIsModalShown(true);
 
-		if (!state.abilities[abilityKey]) {
+		if (!abilities[abilityKey]) {
 			fetchedAbility = await getData('ability', ability, 'name');
 			dispatch(abilityLoaded(fetchedAbility));
 		};
 
-		setAbilityData(fetchedAbility?.[abilityKey] || state.abilities[abilityKey]);
+		setAbilityData(fetchedAbility?.[abilityKey] || abilities[abilityKey]);
 	};
 
 	const showModalDetail = () => {
@@ -49,9 +49,9 @@ const Abilities = memo(function Abilities({pokemon}) {
 
 	return (
 		<>
-			{abilities.map(ability => (
+			{abilitiesToDisplay.map(ability => (
 			<div key={ability}>
-				<span className='me-2'>{getNameByLanguage(ability, language, state.abilities[transformToKeyName(ability)])}</span>
+				<span className='me-2'>{getNameByLanguage(ability, language, abilities[transformToKeyName(ability)])}</span>
 				<i onClick={() => {showModal(ability)}} className="fa-solid fa-circle-question"></i>
 				<br />
 			</div>

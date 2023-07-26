@@ -3,12 +3,20 @@ import { capitalize } from "@mui/material";
 import { transformToKeyName, getIdFromURL, getNameByLanguage } from "../util";
 import MovesTable from "./MovesTable";
 import { useSelector, useDispatch } from "react-redux";
-import { selectPokeData, movesLoaded, machineDataLoaded } from "../features/pokemonData/pokemonDataSlice";
+import { selectGenerations, selectPokemons, selectLanguage, selectTypes, selectVersions, selectEvolutionChains, selectMoves, selectMoveDamageClass, selectMachines, movesLoaded, machineDataLoaded } from "../features/pokemonData/pokemonDataSlice";
 
 export default function Moves({speciesInfo, pokemon, chainId}) {
-	const state = useSelector(selectPokeData);
+	const cachedGenerations = useSelector(selectGenerations);
+	const pokemons = useSelector(selectPokemons);
+	const language = useSelector(selectLanguage);
+	const types = useSelector(selectTypes);
+	const cachedVersions = useSelector(selectVersions);
+	const evolutionChains = useSelector(selectEvolutionChains);
+	const cachedMoves = useSelector(selectMoves);
+	const movesDamageClass = useSelector(selectMoveDamageClass);
+	const machines = useSelector(selectMachines);
 	const dispatch = useDispatch();
-	const generations = Object.values(state.generations);
+	const generations = Object.values(cachedGenerations);
 	let pokemonData = pokemon;
 	let debutGeneration = speciesInfo.generation.name;
 	if (!pokemon.is_default) {
@@ -16,7 +24,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 			debutGeneration = generations.find(generation => generation.version_groups.some(version => version.name === pokemon.formData.version_group.name)).name;
 		} else {
 			// should use the default form's data.
-			pokemonData = state.pokemons[getIdFromURL(pokemon.species.url)];
+			pokemonData = pokemons[getIdFromURL(pokemon.species.url)];
 		};
 	};
 	
@@ -24,16 +32,16 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	const generationOptions = generationNames.slice(generationNames.indexOf(debutGeneration));
 	const [selectedGeneration, setSelectedGeneration] = useState(debutGeneration);
 
-	const versions = state.generations[transformToKeyName(selectedGeneration)].version_groups;
+	const versions = cachedGenerations[transformToKeyName(selectedGeneration)].version_groups;
 	const [selectedVersion, setSelectedVersion] = useState(versions[0].name);
 	const [filteredMethod, setFilteredMethod] = useState('level-up');
 
 	const getVersionText = version => {
-		if (state.language !== 'en') {
-			const matchedVersions =  Object.values(state.version).filter(entry => entry.version_group.name === version);
+		if (language !== 'en') {
+			const matchedVersions =  Object.values(cachedVersions).filter(entry => entry.version_group.name === version);
 			let versionName = '';
 			matchedVersions.forEach((entry, index, array) => {
-				versionName += getNameByLanguage(entry.name, state.language, state.version[transformToKeyName(entry.name)]);
+				versionName += getNameByLanguage(entry.name, language, cachedVersions[transformToKeyName(entry.name)]);
 				if (index < array.length - 1) {
 					versionName += '/';
 				};
@@ -47,7 +55,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	// for pokemon that learns move(s) on evolution.
 	let maxEvoLevel;
 	if (speciesInfo.evolves_from_species !== null) {
-		const chainData = state.evolutionChains[chainId];
+		const chainData = evolutionChains[chainId];
 		maxEvoLevel = 0;
 
 		// find range
@@ -101,9 +109,9 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	const filteredMoves = filterMoves(filteredMethod, selectedVersion);
 
 	const movesToFetch = useMemo(() => {
-		return pokemonData.moves.filter(entry => !state.moves[transformToKeyName(entry.move.name)])
+		return pokemonData.moves.filter(entry => !cachedMoves[transformToKeyName(entry.move.name)])
 		.map(entry => entry.move.url);
-	}, [pokemonData, state.moves]);
+	}, [pokemonData, cachedMoves]);
 
 	const [isDataReady, setIsDataReady] = useState(!movesToFetch.length);
 
@@ -112,12 +120,12 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 		const isFilteredByLevel = filteredMethod === 'level-up';
 		const data = moves.map(entry => {
 			const lookupName = transformToKeyName(entry.move.name);
-			const cachedMove = state.moves[lookupName];
+			const cachedMove = cachedMoves[lookupName];
 			const versionDetails = entry.version_group_details;
 
 			// type
 			const type = cachedMove.type.name;
-			const typeData = <span value={type} data-tag="allowRowEvents" className={`type type-${type}`}>{getNameByLanguage(type, state.language, state.types[type]).toUpperCase()}</span>;
+			const typeData = <span value={type} data-tag="allowRowEvents" className={`type type-${type}`}>{getNameByLanguage(type, language, types[type]).toUpperCase()}</span>;
 
 			// level-up; value attribute is used for sorting, if maxEvoLevel is 0, put it after level 1.
 			const learnOnEvolution = <span data-tag="allowRowEvents" value={maxEvoLevel === 0 ? 2 : maxEvoLevel} title="Learned when Evolution" className="learnUponEvolution">Evo.</span>;
@@ -129,10 +137,10 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 			const levelData = versionDetails.length === 1 ? checkLearnOnEvo(versionDetails[0].level_learned_at) : versionDetails.map(detail => checkLearnOnEvo(detail.level_learned_at));
 
 			// category
-			const categoryText = getNameByLanguage(cachedMove.damage_class.name, state.language, state.move_damage_class[cachedMove.damage_class.name]);
+			const categoryText = getNameByLanguage(cachedMove.damage_class.name, language, movesDamageClass[cachedMove.damage_class.name]);
 
 			// machine
-			const machine = state.machines?.[lookupName]?.version_groups?.[selectedVersion];
+			const machine = machines?.[lookupName]?.version_groups?.[selectedVersion];
 
 			const machineData = (
 				// value is for sorting
@@ -146,7 +154,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 
 			return {
 				[isFilteredByLevel ? 'level' : 'machine']: dispalyData,
-				move: capitalize(getNameByLanguage(entry.move.name, state.language, state.moves[transformToKeyName(entry.move.name)])),
+				move: capitalize(getNameByLanguage(entry.move.name, language, cachedMoves[transformToKeyName(entry.move.name)])),
 				type: typeData,
 				cat: categoryText,
 				power: cachedMove.power !== null ? cachedMove.power : '—',
@@ -242,12 +250,12 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	const getMachineData = async () => {
 		// fetch all machines for current pokemon
 		const allVersions = generationOptions.reduce((pre, cur) => {
-			pre.push(...state.generations[transformToKeyName(cur)].version_groups.map(version => version.name));
+			pre.push(...cachedGenerations[transformToKeyName(cur)].version_groups.map(version => version.name));
 			return pre;
 		}, []);
 
 		const nextFilteredMoves = filterMoves('machine', allVersions);
-		const isMachineDataReady = nextFilteredMoves.every(entry => entry.version_group_details.every(detail => Boolean(state.machines?.[transformToKeyName(entry.move.name)]?.version_groups?.[detail.version_group.name])));
+		const isMachineDataReady = nextFilteredMoves.every(entry => entry.version_group_details.every(detail => Boolean(machines?.[transformToKeyName(entry.move.name)]?.version_groups?.[detail.version_group.name])));
 
 		if (!isMachineDataReady) {
 			setIsDataReady(false);
@@ -256,7 +264,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 			const machinesToFetch = [];
 
 			nextFilteredMoves.forEach(entry => entry.version_group_details.forEach(detail => {
-				const match = state.moves[transformToKeyName(entry.move.name)].machines.find(machine => machine.version_group.name === detail.version_group.name);
+				const match = cachedMoves[transformToKeyName(entry.move.name)].machines.find(machine => machine.version_group.name === detail.version_group.name);
 				if (match) {
 					machinesToFetch.push(match.machine.url);
 				} else {
@@ -293,7 +301,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 	};
 
 	const changeGeneration = generation => {
-		const nextVersion = state.generations[transformToKeyName(generation)].version_groups[0].name;
+		const nextVersion = cachedGenerations[transformToKeyName(generation)].version_groups[0].name;
 		setSelectedGeneration(generation);
 		setSelectedVersion(nextVersion);
 	};

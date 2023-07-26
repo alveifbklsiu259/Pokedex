@@ -4,18 +4,23 @@ import { useNavigateToPokemon } from "./PokemonsProvider"
 import Spinner from "./Spinner";
 import { getNameByLanguage, transformToKeyName } from "../util";
 import { capitalize } from "@mui/material";
-import { useSelector, useDispatch } from "react-redux";
-import { selectPokeData } from "../features/pokemonData/pokemonDataSlice";
+import { useSelector } from "react-redux";
+import { selectIntersection, selectPokemons, selectSpecies, selectLanguage, selectTypes, selectStatus, selectStat } from "../features/pokemonData/pokemonDataSlice";
 
 export default function PokemonTable() {
-	const state = useSelector(selectPokeData);
-	const dispatch = useDispatch();
+	const intersection = useSelector(selectIntersection);
+	const pokemons = useSelector(selectPokemons);
+	const species = useSelector(selectSpecies);
+	const language = useSelector(selectLanguage);
+	const types = useSelector(selectTypes );
+	const status = useSelector(selectStatus);
+	const stats = useSelector(selectStat);
 	const navigateToPokemon = useNavigateToPokemon();
 
-	const pokemonTableData = useMemo(() => [...state.intersection].sort((a,b)=> a - b).map(id => {
-		const species = state.pokemonSpecies[id];
-		const pokemon = state.pokemons[id];
-		const pokemonName = getNameByLanguage(species.name, state.language, species);
+	const pokemonTableData = useMemo(() => [...intersection].sort((a,b)=> a - b).map(id => {
+		const speciesData = species[id];
+		const pokemon = pokemons[id];
+		const pokemonName = getNameByLanguage(speciesData.name, language, species);
 
 		const idData = (
 			// value is for sorting
@@ -33,7 +38,7 @@ export default function PokemonTable() {
 						key={entry.type.name} 
 						className={`type-${entry.type.name} type`}
 					>
-						{getNameByLanguage(entry.type.name, state.language, state.types[entry.type.name])}
+						{getNameByLanguage(entry.type.name, language, types[entry.type.name])}
 					</span>
 				))
 			}</div>
@@ -56,11 +61,11 @@ export default function PokemonTable() {
 			total: totalData
 		};
 		return {...basicInfo, ...stats}
-	}), [state.intersection, state.language, state.pokemonSpecies, state.pokemons, state.types]);
+	}), [intersection, language, species, pokemons, types]);
 
 	const columnData = useMemo(() => Object.keys(pokemonTableData[0]).map(data => {
 		const formatTableHeader = data => {
-			const columnHeader = getNameByLanguage(data, state.language, state.stat[transformToKeyName(data)]);
+			const columnHeader = getNameByLanguage(data, language, stats[transformToKeyName(data)]);
 			switch (columnHeader) {
 				case 'hp' : 
 					return 'HP'
@@ -93,7 +98,7 @@ export default function PokemonTable() {
 			center: true,
 			sortFunction: data === 'number' || data === 'total' ? sortElement(data) : null,
 		};
-	}), [pokemonTableData, state.language, state.stat]);
+	}), [pokemonTableData, language, stats]);
 
 
 // 	setTimeout(() =>document.querySelector('.idData-546').scrollIntoView({
@@ -111,10 +116,10 @@ export default function PokemonTable() {
 			columns={columnData}
 			data={pokemonTableData}
 			highlightOnHover
-			progressPending={state.status === 'loading'}
+			progressPending={status === 'loading'}
 			progressComponent={<Spinner />}
 			pointerOnHover
-			onRowClicked={row => navigateToPokemon(state, dispatch, [row.number.props.value], [ 'evolutionChains', 'abilities', 'items'])}
+			onRowClicked={row => navigateToPokemon([row.number.props.value], [ 'evolutionChains', 'abilities', 'items'])}
 			pagination
 			// when sorting there seems to be no way to memoize each row(there's no memo wrapped around rdt_TableRow) or each cell(there's memo, but the prop "rowIndex" will change), so I think the only thing I can do is limit the number of rows shown per page.
 			paginationPerPage={10}

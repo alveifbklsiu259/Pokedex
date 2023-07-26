@@ -1,36 +1,41 @@
 import {useState, useEffect} from 'react';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import { getRequiredData } from '../api';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectPokeData, viewModeChanged } from '../features/pokemonData/pokemonDataSlice';
+import { selectStatus, selectViewMode, selectSpecies, selectPokemonCount, selectPokemons, viewModeChanged, getRequiredDataThunk } from '../features/pokemonData/pokemonDataSlice';
 
 export default function ViewMode() {
-	const state = useSelector(selectPokeData);
+	const status = useSelector(selectStatus);
+	const viewMode = useSelector(selectViewMode);
+	const species = useSelector(selectSpecies);
+	const pokemonCount = useSelector(selectPokemonCount);
+	const pokemons = useSelector(selectPokemons);
+
+
 	const dispatch = useDispatch();
 	const [view, setView] = useState('module');
 
 	useEffect(() => {
-		if (view !== state.viewMode) {
-			setView(state.viewMode);
+		if (view !== viewMode) {
+			setView(viewMode);
 		}
-	}, [view, setView, state.viewMode])
+	}, [view, setView, viewMode])
 
 	const handleChange = async(event, nextView) => {
 		if (nextView !== null) {
 			setView(nextView);
 			
 			const range = [];
-			for (let i = 1; i <= state.pokemonCount; i ++) {
+			for (let i = 1; i <= pokemonCount; i ++) {
 				range.push(i);
 			};
-			const isSpeciesReady = Object.keys(state.pokemonSpecies).length === state.pokemonCount;
-			const isPokemonsReady = Object.keys(state.pokemons).length < state.pokemonCount ? false : range.every(id => state.pokemons[id]);
+			const isSpeciesReady = Object.keys(species).length === pokemonCount;
+			const isPokemonsReady = Object.keys(pokemons).length < pokemonCount ? false : range.every(id => pokemons[id]);
 
 			if (nextView === 'list' && (!isSpeciesReady || !isPokemonsReady)) {
-				await getRequiredData(state, dispatch, range, ['pokemons', 'pokemonSpecies']);
+				await dispatch(getRequiredDataThunk({requestPokemonIds: range, requests: ['pokemons', 'pokemonSpecies']}))
 			};
-
+			// should I use await here, or should change the table dispay when status === loading in Pokemons? I think I'll decide based on the execution order of these two dispatches here.
 			dispatch(viewModeChanged(nextView));
 		};
 	};
@@ -41,7 +46,7 @@ export default function ViewMode() {
 				value={view}
 				exclusive
 				onChange={handleChange}
-				disabled={state.status === 'loading'}
+				disabled={status === 'loading'}
 			>
 				<ToggleButton value="list" aria-label="list" >
 					<i className="fa-solid fa-list"></i>

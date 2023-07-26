@@ -10,14 +10,23 @@ import Moves from "./Moves";
 import ErrorPage from "./ErrorPage";
 import Varieties from "./Varieties";
 import { useNavigateToPokemon } from "./PokemonsProvider";
-import { getAbilitiesToDisplay, getRequiredData, getItemsFromChain } from "../api";
+import { getAbilitiesToDisplay, getItemsFromChain } from "../api";
 import { getIdFromURL, transformToKeyName } from "../util";
 import { useSelector, useDispatch } from "react-redux";
-import { selectPokeData, error } from "../features/pokemonData/pokemonDataSlice";
-
+import { selectPokemons, selectSpecies, selectLanguage, selectStatus, selectAllIdsAndNames, selectEvolutionChains, selectAbilities, selectItems, selectPokemonCount, error, getRequiredDataThunk } from "../features/pokemonData/pokemonDataSlice";
 
 export default function Pokemon() {
-	const state = useSelector(selectPokeData);
+
+	// we can have a select single pokemon selector here, but I don't think we need to, because when state.pokemons changes, it's when we navigate to otehr route, so whether reading all pokemons or a single pokemon it's the same(one re-render).
+	const pokemons = useSelector(selectPokemons);
+	const species = useSelector(selectSpecies);
+	const language = useSelector(selectLanguage);
+	const status = useSelector(selectStatus);
+	const namesAndIds = useSelector(selectAllIdsAndNames);
+	const evolutionChains = useSelector(selectEvolutionChains);
+	const abilities = useSelector(selectAbilities);
+	const items = useSelector(selectItems);
+	const pokemonCount = useSelector(selectPokemonCount,);
 	const dispatch = useDispatch();
 	const {pokeId} = useParams();
 
@@ -25,35 +34,37 @@ export default function Pokemon() {
 	let urlParam = pokeId;
 	if (isNaN(Number(pokeId))) {
 		// if we can't find the corresponding id, use what it is, router will handle error.
-		urlParam = state.allPokemonNamesAndIds[pokeId.toLowerCase()] || pokeId;
+		urlParam = namesAndIds[pokeId.toLowerCase()] || pokeId;
 	};
 
 	// the reason why searching in other languages doesn't work is because even if we change lange, the get the latest data in allPokemonNamesAndIds, when we enter what we type in the url bar, the whole state gets reset, and we're back to English name id pairs. maybe the workaround would be in the PokemonProviders, if language !== 'en', we have to change name id pairs there.
 
 	// required data for current page
-	const pokemon = state.pokemons[urlParam];
-	const speciesInfo = state.pokemonSpecies[getIdFromURL(pokemon?.species?.url)];
+	const pokemon = pokemons[urlParam];
+	const speciesInfo = species[getIdFromURL(pokemon?.species?.url)];
 	const chainId = getIdFromURL(speciesInfo?.evolution_chain?.url);
-	const evolutionChains = state.evolutionChains?.[chainId];
-	const requiredItems = getItemsFromChain(evolutionChains);
+	const chainData = evolutionChains?.[chainId];
+	const requiredItems = getItemsFromChain(chainData);
 	let abilitiesToDisplay, isAbilitiesReady, isItemsReady;
-	if (state.language !== 'en') {
+	if (language !== 'en') {
 		abilitiesToDisplay = getAbilitiesToDisplay(pokemon);
-		isAbilitiesReady = abilitiesToDisplay ? abilitiesToDisplay.every(ability => state.abilities[ability]) : false;
-		isItemsReady = requiredItems ? requiredItems.every(item => state.items[transformToKeyName(item)]) : false;
+		isAbilitiesReady = abilitiesToDisplay ? abilitiesToDisplay.every(ability => abilities[ability]) : false;
+		isItemsReady = requiredItems ? requiredItems.every(item => items[transformToKeyName(item)]) : false;
 	};
 
 
-	const defaultRequiredData = [pokemon, speciesInfo, evolutionChains];
-	const isDataReady = state.language === 'en' ? defaultRequiredData.every(Boolean) : (defaultRequiredData.every(Boolean) && isAbilitiesReady && isItemsReady);
+	const defaultRequiredData = [pokemon, speciesInfo, chainData];
+	const isDataReady = language === 'en' ? defaultRequiredData.every(Boolean) : (defaultRequiredData.every(Boolean) && isAbilitiesReady && isItemsReady);
 	useEffect(() => {
 		// PokemonProvider also fetches data when it mounts, to avoid race condition, only fetch data when PokemonProvider's request is done. (since the dispatches in PokemonProvider are batched intentionally, status will only become "idle" when all requests in it are done.)
 		// To reduce unnecessary re-renders of this component, I think it would be great if we could find a way to batch dispatched between this Effect and the Effect from PokemonProvider, but since the re-renders are mainly caused by Context API, and I decided to migrate to Redux later, I'll just leave it as it is.
-		if (!isDataReady && state.status === 'idle') {
+		if (!isDataReady && status === 'idle') {
 			const getIndividualPokemonData = async () => {
-				
 				try {
-					await getRequiredData(state, dispatch, [urlParam], ['pokemons', 'pokemonSpecies', 'evolutionChains']);
+					await dispatch(getRequiredDataThunk({
+						requestPokemonIds: [urlParam],
+						requests: ['pokemons', 'pokemonSpecies', 'evolutionChains']
+					})).unwrap();
 				} catch(err) {
 					console.log(err)
 					dispatch(error());
@@ -61,16 +72,15 @@ export default function Pokemon() {
 			}
 			getIndividualPokemonData();
 		};
-	}, [dispatch, isDataReady, state, urlParam]);
+	}, [dispatch, isDataReady, urlParam, status]);
 
 	// on Pokemons, sort by names, change language should re-sort the order.
-	const pokemonCount = state.pokemonCount;
-	const nationalNumber = getIdFromURL(state.pokemons[urlParam]?.species?.url);
+	const nationalNumber = getIdFromURL(pokemons[urlParam]?.species?.url);
 	const nextPokemonId = nationalNumber === pokemonCount ? 1 : nationalNumber + 1;
 	const previousPokemonId = nationalNumber === 1 ? pokemonCount : nationalNumber - 1;
 
 	let content;
-	if (state.status === 'idle' && isDataReady) {
+	if (status === 'idle' && isDataReady) {
 		content = (
 			<>
 				<RelatedPokemon pokemonId={previousPokemonId} order='previous'/>
@@ -96,7 +106,7 @@ export default function Pokemon() {
 							pokemon={pokemon}
 						/>
 						<EvolutionChains
-							evolutionChains={evolutionChains.chains}
+							evolutionChains={chainData.chains}
 							chainId={chainId}
 						/>
 						<Moves 
@@ -113,13 +123,13 @@ export default function Pokemon() {
 				<ScrollToTop />
 			</>
 		)
-	} else if (state.status === 'loading') {
+	} else if (status === 'loading') {
 		content = (
 			<div style={{position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)'}}>
 				<Spinner />
 			</div>
 		)
-	} else if (state.status === 'error') {
+	} else if (status === 'error') {
 		content = (
 			<ErrorPage />
 		)
@@ -134,12 +144,10 @@ export default function Pokemon() {
 };
 
 export function RelatedPokemon ({pokemonId, order}) {
-	const state = useSelector(selectPokeData);
-	const dispatch = useDispatch();
 	const navigateToPokemon = useNavigateToPokemon();
 
 	return (
-		<div className={`navigation ${order} `} onClick={() => {navigateToPokemon(state, dispatch, [pokemonId], ['pokemons', 'pokemonSpecies', 'evolutionChains', 'abilities', 'items'])}}>
+		<div className={`navigation ${order} `} onClick={() => {navigateToPokemon([pokemonId], ['pokemons', 'pokemonSpecies', 'evolutionChains', 'abilities', 'items'])}}>
 			<span>{String(pokemonId).padStart(4, 0)}</span>
 			<img src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`} alt={pokemonId} />
 		</div>

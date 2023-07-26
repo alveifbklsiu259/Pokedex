@@ -11,7 +11,7 @@ export default function RootRoute () {
 				const paths = ["/"];
 				return !paths.includes(location.pathname) || location.state === 'resetPosition' ? location.key : location.pathname;
 			}}/>
-			{/* <NavBar /> */}
+			<NavBar />
 			<Outlet />
 		</RouterUtils>
 	)
@@ -22,7 +22,7 @@ export function Index() {
 		<>
 			<div className="container mb-5">
 				<Search />
-				{/* <Pokemons /> */}
+				<Pokemons />
 			</div>
 		</>
 	)

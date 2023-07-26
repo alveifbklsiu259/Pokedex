@@ -1,14 +1,11 @@
 import React, { memo } from 'react';
 import { getIdFromURL, getNameByLanguage } from '../util';
 import { useNavigateToPokemon } from './PokemonsProvider';
-import { useSelector, useDispatch } from 'react-redux';
-import { selectPokeData } from '../features/pokemonData/pokemonDataSlice';
-
-
+import { useSelector } from 'react-redux';
+import { selectLanguage } from '../features/pokemonData/pokemonDataSlice';
 
 const Varieties = memo(function Varieties({speciesInfo, pokemon}) {
-	const dispatch = useDispatch();
-	const state = useSelector(selectPokeData);
+	const language = useSelector(selectLanguage);
 	const navigateToPokemon = useNavigateToPokemon();
 
 	const handleClick = async variety => {
@@ -16,14 +13,14 @@ const Varieties = memo(function Varieties({speciesInfo, pokemon}) {
 		const formIds = speciesInfo.varieties.map(entry => getIdFromURL(entry.pokemon.url));
 		formIds.splice(formIds.indexOf(targetPokemonId), 1);
 		const requestPokemonIds = [targetPokemonId, ...formIds];
-		navigateToPokemon(state, dispatch, requestPokemonIds, ['pokemons', 'abilities']);
+		navigateToPokemon(requestPokemonIds, ['pokemons', 'abilities']);
 	};
 	
 	const getVarietyName = ({pokemon, is_default}) => {
-		if (state.language === 'en') {
+		if (language === 'en') {
 			return pokemon.name;
 		} else {
-			const defaultName = getNameByLanguage(pokemon.name, state.language, speciesInfo);
+			const defaultName = getNameByLanguage(pokemon.name, language, speciesInfo);
 			if (!is_default) {
 				return defaultName.concat(`(${pokemon.name.replace(`${speciesInfo.name}-`, '')})`);
 			} else {

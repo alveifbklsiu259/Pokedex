@@ -131,108 +131,102 @@ const batchDispatch = async (dispatch, pokemonsToFetch, nextRequest, displayedPo
 	dispatch(displayChanged([...displayedPokemons, ...pokemonsToDisplay]));
 };
 
-export const getPokemons = async (dispatch, cachedPokemons, allPokemonNamesAndIds, request, sortOption, status) => {
-	// preload data for weight/height sort options
-	const preloadData = async pokemonsToFetch => {
-		if (status !== 'loading') {
-			dispatch(dataLoading());
+
+
+// get pokemons
+
+const preloadData = async (pokemonsToFetch, cachedPokemons) => {
+	const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
+	const allPokemons = {...cachedPokemons, ...fetchedPokemons};
+	return [fetchedPokemons, allPokemons];
+};
+
+const sortPokemons = (allPokemons, sortOption, allPokemonNamesAndIds, request) => {
+	const sortPokemonsByName = () => {
+		let sortedNames;
+		let sort = sortOption.includes('Asc') ? 'asc' : 'desc';
+		if (sort === 'asc') {
+			sortedNames = Object.keys(allPokemonNamesAndIds).sort((a, b) => a.localeCompare(b));
+		} else if(sort === 'desc') {
+			sortedNames = Object.keys(allPokemonNamesAndIds).sort((a, b) => b.localeCompare(a));
 		};
-		const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
-		const allPokemons = {...cachedPokemons, ...fetchedPokemons};
-		return [fetchedPokemons, allPokemons];
-	};
-	
-	// sort request
-	const sortPokemons = allPokemons => {
-		const sortPokemonsByName = () => {
-			let sortedNames;
-			let sort = sortOption.includes('Asc') ? 'asc' : 'desc';
-			if (sort === 'asc') {
-				sortedNames = Object.keys(allPokemonNamesAndIds).sort((a, b) => a.localeCompare(b));
-			} else if(sort === 'desc') {
-				sortedNames = Object.keys(allPokemonNamesAndIds).sort((a, b) => b.localeCompare(a));
-			};
-			const sortedPokemons = sortedNames.reduce((prev, cur) => {
-				prev[cur] = allPokemonNamesAndIds[cur];
-				return prev;
-			}, {});
-			return Object.values(sortedPokemons).filter(id => request.includes(id));
-		};
-	
-		const sortPokemonsByWeightOrHeight = sortBy => {
-			let sortedPokemons;
-			let sort = sortOption.includes('Asc') ? 'asc' : 'desc';
-			if (sort === 'asc') {
-				sortedPokemons = Object.values(allPokemons).sort((a, b) => a[sortBy] - b[sortBy]);
-			} else if (sort === 'desc') {
-				sortedPokemons = Object.values(allPokemons).sort((a, b) => b[sortBy] - a[sortBy]);
-			};
-			const sortedPokemonIds = sortedPokemons.map(pokemon => pokemon.id)
-			return sortedPokemonIds.filter(id => request.includes(id));
-		};
-	
-		switch(sortOption) {
-			case 'numberDesc' : {
-				return [...request].sort((a, b) => b - a);
-			}
-			case 'nameAsc' : 
-			case 'nameDesc' : {
-				return sortPokemonsByName();
-			}
-			case 'heightAsc' : 
-			case 'heightDesc' : {
-				return sortPokemonsByWeightOrHeight('height');
-			}
-			case 'weightAsc' :
-			case 'weightDesc' : {
-				return sortPokemonsByWeightOrHeight('weight');
-			}
-			default : {
-				// 'numberAsc'
-				return [...request].sort((a, b) => a - b);
-			}
-		};
+		const sortedPokemons = sortedNames.reduce((prev, cur) => {
+			prev[cur] = allPokemonNamesAndIds[cur];
+			return prev;
+		}, {});
+		return Object.values(sortedPokemons).filter(id => request.includes(id));
 	};
 
+	const sortPokemonsByWeightOrHeight = sortBy => {
+		let sortedPokemons;
+		let sort = sortOption.includes('Asc') ? 'asc' : 'desc';
+		if (sort === 'asc') {
+			sortedPokemons = Object.values(allPokemons).sort((a, b) => a[sortBy] - b[sortBy]);
+		} else if (sort === 'desc') {
+			sortedPokemons = Object.values(allPokemons).sort((a, b) => b[sortBy] - a[sortBy]);
+		};
+		const sortedPokemonIds = sortedPokemons.map(pokemon => pokemon.id)
+		return sortedPokemonIds.filter(id => request.includes(id));
+	};
+
+	switch(sortOption) {
+		case 'numberDesc' : {
+			return [...request].sort((a, b) => b - a);
+		}
+		case 'nameAsc' : 
+		case 'nameDesc' : {
+			return sortPokemonsByName();
+		}
+		case 'heightAsc' : 
+		case 'heightDesc' : {
+			return sortPokemonsByWeightOrHeight('height');
+		}
+		case 'weightAsc' :
+		case 'weightDesc' : {
+			return sortPokemonsByWeightOrHeight('weight');
+		}
+		default : {
+			// 'numberAsc'
+			return [...request].sort((a, b) => a - b);
+		}
+	};
+};
+
+
+
+
+export const getPokemons = async (cachedPokemons, allPokemonNamesAndIds, request, sortOption) => {
 	let pokemonsToFetch, nextRequest, pokemonsToDisplay, fetchedPokemons, allPokemons
 
-	// for weight / height sort options, fetch all pokemons for sorting
 	if (sortOption.includes('weight') || sortOption.includes('height')) {
 		pokemonsToFetch = getDataToFetch(cachedPokemons, request);
 		if (pokemonsToFetch.length) {
-			[fetchedPokemons, allPokemons] = await preloadData(pokemonsToFetch);
+			// preload data for weight/height sort options
+			[fetchedPokemons, allPokemons] = await preloadData(pokemonsToFetch, cachedPokemons);
 		} else {
 			allPokemons = {...cachedPokemons};
 		};
-	};
-	const sortedRequest = sortPokemons(allPokemons);
+		
+	} 
+	const sortedRequest = sortPokemons(allPokemons, sortOption, allPokemonNamesAndIds, request);
 	const copiedRequest = [...sortedRequest]
 	pokemonsToDisplay = copiedRequest.splice(0, 24);
 	nextRequest = copiedRequest.length ? copiedRequest : null;
 
-	// get uncached pokemons for name / id sort options
-	if (pokemonsToFetch === undefined) {
+	if (!(sortOption.includes('weight') || sortOption.includes('height'))) {
 		pokemonsToFetch = getDataToFetch(cachedPokemons, pokemonsToDisplay);
-	};
-
-	// for options other than heigh/weight
-	if (pokemonsToFetch.length && fetchedPokemons === undefined) {
-		if (status !== 'loading') {
-			dispatch(dataLoading());
+		if (pokemonsToFetch.length) {
+			fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
 		};
+	}
+
+	return {
+		fetchedPokemons,
+		nextRequest,
+		pokemonsToDisplay
 	};
-	await batchDispatch(dispatch, pokemonsToFetch, nextRequest, [], pokemonsToDisplay);
 };
 
-// request has already been sorted based on sort options
-export const getPokemonsOnScroll = async (dispatch, request, cachedPokemons, displayedPokemons) => {
-	dispatch(scrolling());
-	const copiedRequest = [...request];
-	const pokemonsToDisplay = copiedRequest.splice(0, 24);
-	const nextRequest = copiedRequest.length ? copiedRequest : null;
-	const pokemonsToFetch = getDataToFetch(cachedPokemons, pokemonsToDisplay);
-	await batchDispatch(dispatch, pokemonsToFetch, nextRequest, displayedPokemons, pokemonsToDisplay);
-};
 
 export const getChainData = async(chainUrl, cachedPokemons, fetchedPokemon) => {
 	let chainData, pokemonsFromChain;
@@ -320,30 +314,25 @@ export const getItemsFromChain = chainData => {
 	}
 };
 
-export const getAllSpecies = async state => {
-	const dispatchType = pokemonSpeciesLoaded;
-	let fetchedSpecies;
-	const hasAllSpecies = Object.keys(state.pokemonSpecies).length === state.pokemonCount;
-	if (!hasAllSpecies) {
-		const range = [];
-		for (let i = 1; i <= state.pokemonCount; i ++) {
-			range.push(i);
-		};
-		const speciesDataToFetch = getDataToFetch(state.pokemonSpecies, range);
-		fetchedSpecies = await getData('pokemon-species', speciesDataToFetch, 'id');
+export const getAllSpecies = async (cachedSpecies, pokemonCount) => {
+	const range = [];
+	for (let i = 1; i <= pokemonCount; i ++) {
+		range.push(i);
 	};
-	return [dispatchType, fetchedSpecies];
+	const speciesDataToFetch = getDataToFetch(cachedSpecies, range);
+	const fetchedSpecies = await getData('pokemon-species', speciesDataToFetch, 'id');
+	return fetchedSpecies;
 };
 
-export const getRequiredData = async(state, dispatch, requestPokemonIds, requests, lang, callback) => {
+export const getRequiredData = async(pokeData, requestPokemonIds, requests, lang, callback) => {
 	// lang is an optional parameter (used when language change);
 	// callback is an optional function, it may be useful if we have other data to fetch/dispatch, the benefit is that no extra re-render.
-	let callbackResult;
-	const language = lang ? lang : state.language;
+	// let callbackResult;
+	const language = lang ? lang : pokeData.language;
 	const cachedData = {}, fetchedData = {};
 	const getCachedData = (dataType, ids) => {
 		// cachedData[dataType] may contain undefined element.
-		return fetchedData[dataType] ? [...cachedData[dataType], ...Object.values(fetchedData[dataType])].filter(data => data) : cachedData[dataType]?.every(Boolean) ? [...cachedData[dataType]] : ids.map(id => state[dataType][id]);
+		return fetchedData[dataType] ? [...cachedData[dataType], ...Object.values(fetchedData[dataType])].filter(data => data) : cachedData[dataType]?.every(Boolean) ? [...cachedData[dataType]] : ids.map(id => pokeData[dataType][id]);
 	};
 
 	const getCachedSpeciesData = () => {
@@ -356,7 +345,7 @@ export const getRequiredData = async(state, dispatch, requestPokemonIds, request
 
 	// in our use cases, all requestPokemons will have the same evolution chain, so we can just randomly grab one.
 	const randomSpecies = initialSpeciesData.find(data => data);
-	const chainData = randomSpecies ? state['evolutionChains'][getIdFromURL(randomSpecies.evolution_chain.url)] : undefined;
+	const chainData = randomSpecies ? pokeData['evolutionChains'][getIdFromURL(randomSpecies.evolution_chain.url)] : undefined;
 
 	// some data relies on other data, so if one of the following data is present in the requests, they have to be fetched before other data.
 	// pokemons, pokemonSpecies, evolutionChains
@@ -384,18 +373,18 @@ export const getRequiredData = async(state, dispatch, requestPokemonIds, request
 				break;
 			case 'items' : {
 				const requiredItems = !chainData ? [undefined] : getItemsFromChain(chainData);
-				cachedData[req] = requiredItems.map(item => state[req][transformToKeyName(item)]);
+				cachedData[req] = requiredItems.map(item => pokeData[req][transformToKeyName(item)]);
 				break;
 			}
 			case 'abilities' : {
 				const pokemonData = getCachedData('pokemons', requestPokemonIds);
 				const abilitiesToDisplay = getAbilitiesToDisplay(pokemonData);
-				cachedData[req] = abilitiesToDisplay ? abilitiesToDisplay.map(ability => state[req][ability]) : [undefined];
+				cachedData[req] = abilitiesToDisplay ? abilitiesToDisplay.map(ability => pokeData[req][ability]) : [undefined];
 				break;
 			};
 			default :
 				// stat, version, move_damage_class, the structure of their cached data doesn't really matter, only fetch them once when language change.
-				cachedData[req] = Object.keys(state[transformToKeyName(req)]).length ? Object.values(state[transformToKeyName(req)]) : [undefined];
+				cachedData[req] = Object.keys(pokeData[transformToKeyName(req)]).length ? Object.values(pokeData[transformToKeyName(req)]) : [undefined];
 		};
 	});
 	// some data is only required when language is not 'en';
@@ -414,12 +403,12 @@ export const getRequiredData = async(state, dispatch, requestPokemonIds, request
 		return pre;
 	}, {});
 
-	for (let req of sortedRequests) {
-		if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
-			dispatch(dataLoading());
-			break;
-		};
-	};
+	// for (let req of sortedRequests) {
+	// 	if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
+	// 		dispatch(dataLoading());
+	// 		break;
+	// 	};
+	// };
 
 	// fetchedData will be:
 	// pokemons/pokemonSpecies/abilities: object/undefined
@@ -428,7 +417,7 @@ export const getRequiredData = async(state, dispatch, requestPokemonIds, request
 		if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
 			switch(req) {
 				case 'pokemons' : {
-					const pokemonsToFetch = getDataToFetch(state[req], requestPokemonIds);
+					const pokemonsToFetch = getDataToFetch(pokeData[req], requestPokemonIds);
 					if (pokemonsToFetch.length) {
 						const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
 						// also get formData (for Move.js)
@@ -449,7 +438,7 @@ export const getRequiredData = async(state, dispatch, requestPokemonIds, request
 				case 'pokemonSpecies' : {
 					const pokemonData = getCachedData('pokemons', requestPokemonIds);
 					const speciesIds = Object.values(pokemonData).map(data => getIdFromURL(data.species.url));
-					const dataToFetch = getDataToFetch(state[req], speciesIds);
+					const dataToFetch = getDataToFetch(pokeData[req], speciesIds);
 					if (dataToFetch.length) {
 						fetchedData[req] = await getData('pokemon-species', dataToFetch, 'id');
 					};
@@ -457,23 +446,23 @@ export const getRequiredData = async(state, dispatch, requestPokemonIds, request
 				};
 				case 'abilities' : {
 					const pokemonData = getCachedData('pokemons', requestPokemonIds);
-					fetchedData[req] = await getAbilities(pokemonData, state[req]);
+					fetchedData[req] = await getAbilities(pokemonData, pokeData[req]);
 					break;
 				};
 				case 'evolutionChains' : {
 					const speciesData = getCachedSpeciesData();
-					const chainToFetch = getDataToFetch(state[req], [getIdFromURL(speciesData[0].evolution_chain.url)]);
+					const chainToFetch = getDataToFetch(pokeData[req], [getIdFromURL(speciesData[0].evolution_chain.url)]);
 					if (chainToFetch.length) {
-						const [{sortedChains: chains, evolutionDetails: details} ,fetchedPokemons] = await getChainData(chainToFetch[0], state.pokemons, cachedData['pokemons']);
+						const [{sortedChains: chains, evolutionDetails: details} ,fetchedPokemons] = await getChainData(chainToFetch[0], pokeData.pokemons, cachedData['pokemons']);
 						fetchedData[req] = [{[chainToFetch[0]]: {chains, details}}, fetchedPokemons];
 					};
 					break;
 				};
 				case 'items' : {
 					const speciesData = getCachedSpeciesData();
-					const chainData = state.evolutionChains[getIdFromURL(speciesData[0].evolution_chain.url)] || fetchedData['evolutionChains'][0][getIdFromURL(speciesData[0].evolution_chain.url)];
+					const chainData = pokeData.evolutionChains[getIdFromURL(speciesData[0].evolution_chain.url)] || fetchedData['evolutionChains'][0][getIdFromURL(speciesData[0].evolution_chain.url)];
 					const requiredItems = getItemsFromChain(chainData);
-					const itemToFetch = getDataToFetch(state[req], requiredItems.map(item => transformToKeyName(item)));
+					const itemToFetch = getDataToFetch(pokeData[req], requiredItems.map(item => transformToKeyName(item)));
 					if (itemToFetch.length) {
 						fetchedData[req] = await getData('item', requiredItems, 'name');
 					};
@@ -489,50 +478,59 @@ export const getRequiredData = async(state, dispatch, requestPokemonIds, request
 		};
 	};
 
-	if (callback) {
-		const [dispatchType, data] = await callback(state);
-		if (data) {
-			dispatch(dispatchType(data));
-		};
-		callbackResult = data;
-	};
+	// if (callback) {
+	// 	const [dispatchType, data] = await callback(state);
+	// 	if (data) {
+	// 		dispatch(dispatchType(data));
+	// 	};
+	// 	callbackResult = data;
+	// };
 
-	// batch dispatches intentionally
-	const dispatchType = {
-		'pokemonSpecies': 'pokemonSpeciesLoaded',
-		'abilities': 'abilityLoaded',
-		'items': 'itemLoaded',
-		'version': 'versionLoaded',
-		'move-damage-class': 'moveDamageClassLoaded',
-		'stat': 'statLoaded'
-	};
+	return fetchedData;
 
-	sortedRequests.forEach(req => {
-		const data = fetchedData[req];
-		if (data) {
-			switch(req) {
-				case 'pokemons' : {
-					dispatch(pokemonsLoaded({data: data, nextRequest: 'unchanged'}));
-					break;
-				}
-				case 'evolutionChains' : {
-					const [chainData, fetchedPokemons] = data;
-					dispatch(evolutionChainsLoaded(chainData));
 
-					if (Object.keys(fetchedPokemons)) {
-						dispatch(pokemonsLoaded({data: fetchedPokemons, nextRequest: 'unchanged'}));
-					};
-					break;
-				}
-				default : 
-					if (dispatchType[req]) {
-						dispatch({type: `pokeData/${dispatchType[req]}`, payload: data});
-					};
-			};
-		};
-	});
 
-	return callbackResult;
+
+
+
+	// // batch dispatches intentionally
+	// const dispatchType = {
+	// 	'pokemonSpecies': 'pokemonSpeciesLoaded',
+	// 	'abilities': 'abilityLoaded',
+	// 	'items': 'itemLoaded',
+	// 	'version': 'versionLoaded',
+	// 	'move-damage-class': 'moveDamageClassLoaded',
+	// 	'stat': 'statLoaded'
+	// };
+
+	// sortedRequests.forEach(req => {
+	// 	const data = fetchedData[req];
+	// 	if (data) {
+	// 		switch(req) {
+	// 			case 'pokemons' : {
+	// 				console.log(123)
+	// 				dispatch(pokemonsLoaded({data: data, nextRequest: 'unchanged'}));
+	// 				break;
+	// 			}
+	// 			case 'evolutionChains' : {
+	// 				const [chainData, fetchedPokemons] = data;
+	// 				dispatch(evolutionChainsLoaded(chainData));
+
+	// 				if (Object.keys(fetchedPokemons)) {
+	// 					console.log(fetchedPokemons)
+	// 					dispatch(pokemonsLoaded({data: fetchedPokemons, nextRequest: 'unchanged'}));
+	// 				};
+	// 				break;
+	// 			}
+	// 			default : 
+	// 				if (dispatchType[req]) {
+	// 					dispatch({type: `pokeData/${dispatchType[req]}`, payload: data});
+	// 				};
+	// 		};
+	// 	};
+	// });
+
+	// return callbackResult;
 };
 
 

@@ -1,6 +1,6 @@
-import { getPokemons } from "../api";
+import { memo } from 'react'
 import { useSelector, useDispatch } from "react-redux";
-import { selectPokemons, selectAllIdsAndNames, selectSortBy, selectIntersection , selectStatus } from "../features/pokemonData/pokemonDataSlice";
+import { selectSortBy, selectStatus, sortByChanged, getPokemonsThunk } from "../features/pokemonData/pokemonDataSlice";
 
 const dropdownOptions = [
 	{text:'Number(low - high)', value: 'numberAsc'},
@@ -13,18 +13,15 @@ const dropdownOptions = [
 	{text:'Weight(heavy - light)', value: 'weightDesc'}
 ];
 
-export default function Sort() {
-	const pokemons = useSelector(selectPokemons)
-	const allPokemonNamesAndIds = useSelector(selectAllIdsAndNames)
+const Sort = memo(function Sort() {
 	const sortBy = useSelector(selectSortBy)
-	const intersection = useSelector(selectIntersection)
 	const status = useSelector(selectStatus)
 	const dispatch = useDispatch();
 
 	const handleClick = async sortOption => {
 		if (sortOption !== sortBy) {
-			dispatch({type: 'sortByChanged', payload: sortOption});
-			getPokemons(dispatch, pokemons, allPokemonNamesAndIds, intersection, sortOption, status);
+			dispatch(sortByChanged(sortOption));
+			dispatch(getPokemonsThunk(sortOption));
 		};
 	};
 	return (
@@ -47,4 +44,6 @@ export default function Sort() {
 			</div>
 		</>
 	)
-}
+});
+
+export default Sort;

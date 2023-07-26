@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { selectGenerations } from "../features/pokemonData/pokemonDataSlice";
 
 const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, setSelectedGenerations}) {
-	const generations = useSelector(selectGenerations)
+	const generations = useSelector(selectGenerations);
 
 	const onSelectGeneration = generation => {
 		setSelectedGenerations(() => {

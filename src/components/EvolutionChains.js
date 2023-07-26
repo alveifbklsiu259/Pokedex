@@ -2,16 +2,14 @@ import React, { memo } from "react";
 import BasicInfo from "./BasicInfo";
 import EvolutionDetails from "./EvolutionDetails";
 import { useNavigateToPokemon } from "./PokemonsProvider";
-import { useSelector, useDispatch } from "react-redux";
-import { selectPokeData } from "../features/pokemonData/pokemonDataSlice";
+import { useSelector } from "react-redux";
+import { selectPokemons } from "../features/pokemonData/pokemonDataSlice";
 
 const EvolutionChains = memo(function EvolutionChains({
 	evolutionChains,
 	chainId,
-	cachedTypes,
 }) {
-	const dispatch = useDispatch();
-	const state = useSelector(selectPokeData);
+	const pokemons = useSelector(selectPokemons);
 	const navigateToPokemon = useNavigateToPokemon();
 	// get max depth (for layout)
 	let maxDepth = 1;
@@ -33,11 +31,9 @@ const EvolutionChains = memo(function EvolutionChains({
 				{evolutionChains[0].map((pokemonId, index, array) => (
 					<React.Fragment key={pokemonId}>
 						<li>
-							<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon(state, dispatch, [pokemonId], ['pokemonSpecies', 'abilities'])}} >
+							<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon([pokemonId], ['pokemonSpecies', 'abilities'])}} >
 								<BasicInfo
-									pokemon={state.pokemons[pokemonId]}
-									// cachedData
-									cachedTypes={cachedTypes}
+									pokemon={pokemons[pokemonId]}
 								/>
 							</div>
 						</li>
@@ -65,10 +61,9 @@ const EvolutionChains = memo(function EvolutionChains({
 									chain.map((pokemonId, index, array) => (
 										<React.Fragment key={pokemonId}>
 											<li className="multiplePath">
-												<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon(state, dispatch, [pokemonId], ['pokemonSpecies', 'abilities'])}} >
+												<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon([pokemonId], ['pokemonSpecies', 'abilities'])}} >
 													<BasicInfo 
-														pokemon={state.pokemons[pokemonId]}
-														cachedTypes={cachedTypes}
+														pokemon={pokemons[pokemonId]}
 													/>
 												</div>
 											</li>

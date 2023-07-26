@@ -1,29 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigateNoUpdates } from './RouterUtils';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
 import pokeBall from '../assets/pokeBall.png';
 import Spinner from './Spinner';
-import { getPokemons } from '../api';
 import { getIdFromURL } from '../util';
 import { useSelector, useDispatch } from 'react-redux';
 // this is tedious... any other workaround?
-import { selectPokeData, selectAllIdsAndNames, selectStatus, selectTypes, intersectionChanged, searchParamChanged, advancedSearchChanged } from '../features/pokemonData/pokemonDataSlice';
+import { selectAllIdsAndNames, selectStatus, selectTypes, selectAdvancedSearch, selectSearchParam, searchPokemon } from '../features/pokemonData/pokemonDataSlice';
 
 export default function Search({closeModal}) {
-	const state = useSelector(selectPokeData);
+	const allNamesAndIds = useSelector(selectAllIdsAndNames);
+	const pokemonNames = useMemo(() => Object.keys(allNamesAndIds), [allNamesAndIds]);
+	const status = useSelector(selectStatus);
+	const types = useSelector(selectTypes);
+	const advancedSearch = useSelector(selectAdvancedSearch);
+	const cachedSearchParam = useSelector(selectSearchParam);
 	const dispatch = useDispatch();
+
 	const [searchParam, setSearchParam] = useState('');
 	const [selectedGenerations, setSelectedGenerations] = useState({});
 	const [selectedTypes, setSelectedTypes] = useState([]);
 	const [matchMethod, setMatchMethod] = useState('all');
 	const navigateNoUpdates = useNavigateNoUpdates();
-	// cached data
-	const pokemonNames = Object.keys(useSelector(selectAllIdsAndNames))
-	const status = useSelector(selectStatus);
-	const types = useSelector(state => {
-		selectTypes(state)
-	})
 
 	let pokemonRange = [];
 
@@ -34,7 +33,7 @@ export default function Search({closeModal}) {
 			for (let i = 0; i < pokemonNames.length; i ++) {
 				let obj = {};
 				obj.name = pokemonNames[i];
-				obj.url = `https://pokeapi.co/api/v2/pokemon-species/${state.allPokemonNamesAndIds[pokemonNames[i]]}/`
+				obj.url = `https://pokeapi.co/api/v2/pokemon-species/${allNamesAndIds[pokemonNames[i]]}/`
 				pokemonRange.push(obj);
 			};
 			break;
@@ -42,23 +41,23 @@ export default function Search({closeModal}) {
 		default : 
 			pokemonRange = Object.values(selectedGenerations).flat();
 	};
-	console.log(state)
-	// useEffect(() => {
-	// 	console.log('Search Effect run')
-	// 	// synchronizing state
-	// 	// setSearchParam(state.searchParam);
-	// 	// setSelectedGenerations(state.advancedSearch.generations);
-	// 	// setSelectedTypes(state.advancedSearch.types);
 
-	// 	/* Note: At first, I though the code below would be better than just setting state to state value, but no, since they point to the same references(when we dispatch, state.serchParam && searchParam, state.advancedSearch.generations && selectedTypes, state.advancedSearch.types && selectedGenerations, each pair point to the same reference).
-	// 	Since the value is identical, React will throw away this render pass(if you log anything in Search component, you'll see three logs after search button is clicked, but if you check profiler, there're only two related re-renders.(which is expected, one setting status to loading, one setting status to idle plus getting data))
-	// 	reference: https://github.com/facebook/react/issues/20817#issuecomment-778672150
-	// 	) */
-	// 	// updata: I just realize that on the initial render, state.advancedSearch.generations/types is not of the same reference as selectedGenerations/selectedTypes, so the below code snippet would work better than the above one I guess.
+	// should i put synchronizing logic in useLayoutEffect or useEffect?
+	useEffect(() => {
+		// synchronizing state
+		setSearchParam(cachedSearchParam);
+		// setSelectedGenerations(state.advancedSearch.generations);
+		// setSelectedTypes(state.advancedSearch.types);
 
-	// 	// setSelectedGenerations(sg => JSON.stringify(state.advancedSearch.generations) !== JSON.stringify(sg) ? state.advancedSearch.generations : sg);
-	// 	// setSelectedTypes(st => JSON.stringify(state.advancedSearch.types) !== JSON.stringify(st) ? state.advancedSearch.types : st);
-	// }, [state.searchParam, state.advancedSearch]);
+		// 	/* Note: At first, I though the code below would be better than just setting state to state value, but no, since they point to the same references(when we dispatch, state.serchParam && searchParam, state.advancedSearch.generations && selectedTypes, state.advancedSearch.types && selectedGenerations, each pair point to the same reference).
+		// 	Since the value is identical, React will throw away this render pass(if you log anything in Search component, you'll see three logs after search button is clicked, but if you check profiler, there're only two related re-renders.(which is expected, one setting status to loading, one setting status to idle plus getting data))
+		// 	reference: https://github.com/facebook/react/issues/20817#issuecomment-778672150
+		// 	) */
+		// 	// updata: I just realize that on the initial render, state.advancedSearch.generations/types is not of the same reference as selectedGenerations/selectedTypes, so the below code snippet would work better than the above one I guess.
+
+		setSelectedGenerations(sg => JSON.stringify(advancedSearch.generations) !== JSON.stringify(sg) ? advancedSearch.generations : sg);
+		setSelectedTypes(st => JSON.stringify(advancedSearch.types) !== JSON.stringify(st) ? advancedSearch.types : st);
+	}, [cachedSearchParam, advancedSearch]);
 
 	const handleSubmit = async e => {
 		e.preventDefault();
@@ -118,52 +117,76 @@ export default function Search({closeModal}) {
 				intersection = rangeIds.filter(id => typeMatchingPokemonIds.includes(id));
 			};
 		};
-		// only dispatch when necessary
-		if (JSON.stringify(state.intersection) !== JSON.stringify(intersection)) {
-			await getPokemons(dispatch, state.pokemons, state.allPokemonNamesAndIds, intersection, state.sortBy, state.status);
-			dispatch(intersectionChanged(intersection));
-			dispatch(searchParamChanged(searchParam));
-			dispatch(advancedSearchChanged({field: 'generations', data: selectedGenerations}));
-			dispatch(advancedSearchChanged({field: 'types', data: selectedTypes}));
-		};
+
+		dispatch(searchPokemon({intersection, searchParam, selectedGenerations, selectedTypes}));
 	};
 	let content;
-	if (state.status === 'idle') {
-		content = (
-			<div className="card-body mb-4 p-4">
-				<h1 className="display-4 text-center">
-					<img className='pokeBall' src={pokeBall} alt="pokeBall" width='46px' height='46px' /> Search For Pokémons
-				</h1>
-				<p className="lead text-center">By Name or the National Pokédex number</p>
-				<form onSubmit={handleSubmit}>
-					<Input
-						searchParam={searchParam} 
-						setSearchParam={setSearchParam}
-					/>
-					<AdvancedSearch
-						searchParam={searchParam}
-						setSearchParam={setSearchParam} 
-						selectedTypes={selectedTypes} 
-						setSelectedTypes={setSelectedTypes} 
-						selectedGenerations={selectedGenerations} 
-						setSelectedGenerations={setSelectedGenerations}
-						setMatchMethod={setMatchMethod}
-					/>
-					<button 
-						disabled={status === 'loading' ? true : false} 
-						className="btn btn-primary btn-lg btn-block w-100 my-3" 
-						type="submit"
-					>
-						Search
-					</button>
-				</form>
-			</div>
-		)
-	} else if (state.status === 'loading' || state.status === null) {
-		content = <Spinner />
-	};
+	// if (state.status === 'idle') {
+	// 	content = (
+	// 		<div className="card-body mb-4 p-4">
+	// 			<h1 className="display-4 text-center">
+	// 				<img className='pokeBall' src={pokeBall} alt="pokeBall" width='46px' height='46px' /> Search For Pokémons
+	// 			</h1>
+	// 			<p className="lead text-center">By Name or the National Pokédex number</p>
+	// 			<form onSubmit={handleSubmit}>
+	// 				<Input
+	// 					searchParam={searchParam} 
+	// 					setSearchParam={setSearchParam}
+	// 				/>
+	// 				<AdvancedSearch
+	// 					searchParam={searchParam}
+	// 					setSearchParam={setSearchParam} 
+	// 					selectedTypes={selectedTypes} 
+	// 					setSelectedTypes={setSelectedTypes} 
+	// 					selectedGenerations={selectedGenerations} 
+	// 					setSelectedGenerations={setSelectedGenerations}
+	// 					setMatchMethod={setMatchMethod}
+	// 				/>
+	// 				<button 
+	// 					disabled={status === 'loading' ? true : false} 
+	// 					className="btn btn-primary btn-lg btn-block w-100 my-3" 
+	// 					type="submit"
+	// 				>
+	// 					Search
+	// 				</button>
+	// 			</form>
+	// 		</div>
+	// 	)
+	// } else if (state.status === 'loading' || state.status === null) {
+	// 	content = <Spinner />
+	// };
 
-
+	content = (
+		<div className="card-body mb-4 p-4">
+			<h1 className="display-4 text-center">
+				<img className='pokeBall' src={pokeBall} alt="pokeBall" width='46px' height='46px' /> Search For Pokémons
+			</h1>
+			<p className="lead text-center">By Name or the National Pokédex number</p>
+			<form onSubmit={handleSubmit}>
+				<Input
+					searchParam={searchParam} 
+					setSearchParam={setSearchParam}
+				/>
+				<AdvancedSearch
+					searchParam={searchParam}
+					setSearchParam={setSearchParam} 
+					selectedTypes={selectedTypes} 
+					setSelectedTypes={setSelectedTypes} 
+					selectedGenerations={selectedGenerations} 
+					setSelectedGenerations={setSelectedGenerations}
+					setMatchMethod={setMatchMethod}
+				/>
+				<button 
+					// is there other way to disable click event without reading status? I don't want to cause this component to re-render when status changes.
+					disabled={status === 'loading' ? true : false} 
+					className="btn btn-primary btn-lg btn-block w-100 my-3" 
+					type="submit"
+				>
+					Search
+				</button>
+			</form>
+		</div>
+	)
 
 	return (
 		<>

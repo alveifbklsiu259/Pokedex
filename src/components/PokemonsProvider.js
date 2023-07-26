@@ -2,6 +2,8 @@ import { useReducer, createContext, useContext, useEffect, useMemo } from 'react
 import { getData, getPokemons, getEndpointData, getRequiredData } from '../api';
 import { getIdFromURL } from '../util';
 import { useNavigateNoUpdates } from './RouterUtils';
+import { getRequiredDataThunk } from '../features/pokemonData/pokemonDataSlice';
+import { useDispatch } from 'react-redux';
 
 
 //https://redux.js.org/tutorials/essentials/part-2-app-structure#writing-async-logic-with-thunks:~:text=and%20Redux.-,Writing,-Async%20Logic%20with
@@ -327,10 +329,11 @@ export function useCachedData(data) {
 
 export function useNavigateToPokemon() {
 	const navigate = useNavigateNoUpdates();
+	const dispatch = useDispatch();
 	
-	const navigateToPokemon = (state, dispatch, requestPokemonIds, requests, lang, callback) => {
+	const navigateToPokemon = (requestPokemonIds, requests, lang, callback) => {
 		navigate(`/pokemons/${requestPokemonIds[0]}`);
-		getRequiredData(state, dispatch, requestPokemonIds, requests, lang, callback);
+		dispatch(getRequiredDataThunk({requestPokemonIds, requests, lang, callback}));
 	};
 	return navigateToPokemon;
 }
