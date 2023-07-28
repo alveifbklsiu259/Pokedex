@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import BasicInfo from "./BasicInfo";
 import EvolutionDetails from "./EvolutionDetails";
-import { useNavigateToPokemon } from "./PokemonsProvider";
+import { useNavigateToPokemon } from "../api";
 import { useSelector } from "react-redux";
 import { selectPokemons } from "../features/pokemonData/pokemonDataSlice";
 

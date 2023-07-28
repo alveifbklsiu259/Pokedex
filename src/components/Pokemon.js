@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, memo, useMemo } from "react";
+import { useParams } from "react-router-dom";
 import BasicInfo from "./BasicInfo";
 import Detail from "./Detail";
 import Stats from "./Stats";
@@ -9,9 +9,10 @@ import ScrollToTop from "./ScrollToTop";
 import Moves from "./Moves";
 import ErrorPage from "./ErrorPage";
 import Varieties from "./Varieties";
-import { useNavigateToPokemon } from "./PokemonsProvider";
+import { useNavigateToPokemon } from "../api";
 import { getAbilitiesToDisplay, getItemsFromChain } from "../api";
 import { getIdFromURL, transformToKeyName } from "../util";
+import { useNavigateNoUpdates } from "./RouterUtils";
 import { useSelector, useDispatch } from "react-redux";
 import { selectPokemons, selectSpecies, selectLanguage, selectStatus, selectAllIdsAndNames, selectEvolutionChains, selectAbilities, selectItems, selectPokemonCount, error, getRequiredDataThunk } from "../features/pokemonData/pokemonDataSlice";
 
@@ -29,6 +30,7 @@ export default function Pokemon() {
 	const pokemonCount = useSelector(selectPokemonCount,);
 	const dispatch = useDispatch();
 	const {pokeId} = useParams();
+	const navigateNoUpdates = useNavigateNoUpdates();
 
 	// enable search pokemon by names in url (english)
 	let urlParam = pokeId;
@@ -79,6 +81,7 @@ export default function Pokemon() {
 	const nextPokemonId = nationalNumber === pokemonCount ? 1 : nationalNumber + 1;
 	const previousPokemonId = nationalNumber === 1 ? pokemonCount : nationalNumber - 1;
 
+	const rootLink = useMemo(() => <div onClick={() => navigateNoUpdates('/')} className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</div>, []);
 	let content;
 	if (status === 'idle' && isDataReady) {
 		content = (
@@ -109,14 +112,14 @@ export default function Pokemon() {
 							evolutionChains={chainData.chains}
 							chainId={chainId}
 						/>
-						<Moves 
+						{/* <Moves 
 							pokemon={pokemon}
 							chainId={chainId}
 							speciesInfo={speciesInfo}
 							key={pokemon.id}
-						/>
+						/> */}
 						<div className="row justify-content-center">
-							<Link to='/' className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</Link>
+							{rootLink}
 						</div>
 					</div>
 				</div>
@@ -143,13 +146,13 @@ export default function Pokemon() {
 	)
 };
 
-export function RelatedPokemon ({pokemonId, order}) {
+const RelatedPokemon = memo(function RelatedPokemon ({pokemonId, order}) {
 	const navigateToPokemon = useNavigateToPokemon();
 
 	return (
 		<div className={`navigation ${order} `} onClick={() => {navigateToPokemon([pokemonId], ['pokemons', 'pokemonSpecies', 'evolutionChains', 'abilities', 'items'])}}>
 			<span>{String(pokemonId).padStart(4, 0)}</span>
-			<img src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`} alt={pokemonId} />
+			<img width='475' height='475' src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`} alt={pokemonId} />
 		</div>
 	)
-}
+});

@@ -1,18 +1,13 @@
 import { useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch } from "react-redux";
 import Input from "./Input";
-import { selectAllIdsAndNames, selectStatus, selectPokemons, selectSortBy } from "../features/pokemonData/pokemonDataSlice";
 import { router } from "../App";
-import { getPokemons } from "../api";
-import { backToRoot, searchParamChanged, intersectionChanged, advancedSearchReset } from "../features/pokemonData/pokemonDataSlice";
+import { backToRoot, searchPokemon } from "../features/pokemonData/pokemonDataSlice";
 
 export default function ErrorPage() {
 	const [searchParam, setSearchParam] = useState('');
 	const dispatch = useDispatch();
-	const allPokemonNamesAndIds = useSelector(selectAllIdsAndNames);
-	const status = useSelector(selectStatus);
-	const sortBy = useSelector(selectSortBy);
-	const pokemons = useSelector(selectPokemons);
+
 
 	const onBackToRoot = () => {
 		dispatch(backToRoot());
@@ -21,26 +16,7 @@ export default function ErrorPage() {
 	
 	const handleSubmit = e => {
 		e.preventDefault();
-
-		// handle search param
-		const trimmedText = searchParam.trim();
-		let intersection = [];
-		if (trimmedText === '') {
-			// no input or only contains white space(s)
-			intersection = Object.values(allPokemonNamesAndIds);
-		} else if (isNaN(Number(trimmedText))) {
-			// sort by name
-			const matchNames = Object.keys(allPokemonNamesAndIds).filter(name => name.toLowerCase().includes(trimmedText.toLowerCase()));
-			intersection = matchNames.map(name => allPokemonNamesAndIds[name]);
-		} else {
-			// sort by id
-			intersection = Object.values(allPokemonNamesAndIds).filter(id => String(id).padStart(4 ,'0').includes(String(trimmedText)));
-		};
-
-		dispatch(advancedSearchReset());
-		dispatch(intersectionChanged(intersection));
-		dispatch(searchParamChanged(searchParam));
-		getPokemons(dispatch, pokemons, allPokemonNamesAndIds, intersection, sortBy, status);
+		dispatch(searchPokemon({searchParam}))
 		router.navigate('/');
 	};
 

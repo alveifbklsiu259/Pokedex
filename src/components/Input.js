@@ -1,12 +1,10 @@
 import { useRef, useState, memo } from "react"
-import DataList from './DataList';
 import { useSelector } from "react-redux";
-import { selectAllIdsAndNames, selectStatus } from "../features/pokemonData/pokemonDataSlice";
+import { selectAllIdsAndNames } from "../features/pokemonData/pokemonDataSlice";
+import DataList from './DataList';
 
 const Input = memo(function Input({searchParam, setSearchParam}) {
-	const status = useSelector(selectStatus);
 	const allPokemonNamesAndIds = useSelector(selectAllIdsAndNames);
-
 	const [showDataList, setShowDataList] = useState(false);
 	const [hoveredPokemon, setHoveredPokemon] = useState('');
 	const [currentFocus, setCurrentFocus] = useState(-1);
@@ -46,7 +44,7 @@ const Input = memo(function Input({searchParam, setSearchParam}) {
 		const datalist = datalistRef.current;
 		const focusName = (datalist, nextFocus) => {
 			setCurrentFocus(nextFocus);
-			//auto focus on screen
+			// auto focus on screen
 			datalist.scrollTop = datalist.children[nextFocus].offsetTop - datalist.offsetTop;
 		};
 		
@@ -101,7 +99,7 @@ const Input = memo(function Input({searchParam, setSearchParam}) {
 		};
 	};
 
-	const clearInput = () => {
+	const handleClearInput = () => {
 		setSearchParam('');
 		resetFocus(datalistRef.current);
 		// for mobile
@@ -115,13 +113,12 @@ const Input = memo(function Input({searchParam, setSearchParam}) {
 	if (searchParam !== '') {
 		matchList = sortedByStart.concat(remainderMatches);
 	};
-	let activePokemon = matchList[currentFocus];
+	const activePokemon = matchList[currentFocus];
 
 	return (
 		<div className="form-group position-relative searchInput">
 			<div className="position-relative">
 				<input
-					disabled={status === 'loading' ? true : false}
 					ref={inputRef}
 					autoComplete='off'
 					id="searchInput"
@@ -133,7 +130,7 @@ const Input = memo(function Input({searchParam, setSearchParam}) {
 					onInput={handleInput}
 					onKeyDown={handleKeyDown}
 				/>
-				<i className={`fa-solid fa-xmark xmark ${!searchParam ? 'd-none' : ''}`} onClick={clearInput}></i>
+				<i className={`fa-solid fa-xmark xmark ${!searchParam ? 'd-none' : ''}`} onClick={handleClearInput}></i>
 			</div>
 			<DataList
 				matchList={matchList}

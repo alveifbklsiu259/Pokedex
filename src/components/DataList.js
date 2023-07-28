@@ -3,18 +3,18 @@ import { flushSync } from "react-dom";
 import { useSelector } from "react-redux";
 import { selectAllIdsAndNames } from "../features/pokemonData/pokemonDataSlice";
 
-const DataList = forwardRef(({
-	matchList, 
-	inputRef, 
-	searchParam, 
-	setSearchParam, 
-	resetFocus, 
-	setShowDataList, 
-	showDataList, 
-	hoveredPokemon, 
-	setHoveredPokemon, 
+const DataList = forwardRef(function DataList({
+	matchList,
+	inputRef,
+	searchParam,
+	setSearchParam,
+	resetFocus,
+	setShowDataList,
+	showDataList,
+	hoveredPokemon,
+	setHoveredPokemon,
 	activePokemon,
-}, datalistRef) => {
+}, datalistRef) {
 	const allPokemonNamesAndIds = useSelector(selectAllIdsAndNames);
 	const handleMouseOver = pokemon => {
 		setHoveredPokemon(pokemon);
@@ -27,16 +27,16 @@ const DataList = forwardRef(({
 	const handleClick = pokemon => {
 		const input = inputRef.current;
 		setHoveredPokemon('');
-		setShowDataList(false);
 		resetFocus(datalistRef.current);
-		// handleFocus needs the latest matchList, since matchList is calculated by searchParam, use flushSync
+		// handleFocus needs the latest matchList, since matchList is calculated by searchParam, use flushSync.
 		flushSync(() => {
 			setSearchParam(pokemon);
 		});
 		input.focus();
+		setShowDataList(false);
 	};
 
-	// because on mobile device, there's no "hover", hover detection happens when tapping on something (without let go), so at each touch end (hover detection on mobile) we reset the hovered pokemon; when the mobile user click each item list (which will not trigger hover event) we trigger click event.
+	// because on mobile device, there's no "hover", hover detection happens when tapping on something (without let go), so at each touch end (hover detection on mobile) we reset the hovered pokemon; when the mobile user click any item (which will not trigger hover event) we trigger click event.
 	const handleTouchEnd = (e, pokemon) => {
 		if (!hoveredPokemon) {
 			// prevent click firing twice
@@ -83,5 +83,4 @@ const DataList = forwardRef(({
 		</div>
 	)
 });
-
-export default DataList
+export default DataList;

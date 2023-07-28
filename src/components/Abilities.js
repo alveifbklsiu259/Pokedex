@@ -6,7 +6,6 @@ import { getAbilitiesToDisplay, getData } from '../api';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectAbilities, selectLanguage, abilityLoaded } from '../features/pokemonData/pokemonDataSlice';
 
-
 const Abilities = memo(function Abilities({pokemon}) {
 	const dispatch = useDispatch();
 	const abilities = useSelector(selectAbilities);

@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { useSelector, useDispatch } from "react-redux";
-import { selectSortBy, selectStatus, sortByChanged, getPokemonsThunk } from "../features/pokemonData/pokemonDataSlice";
+import { selectSortBy, selectStatus, sortPokemons } from "../features/pokemonData/pokemonDataSlice";
 
 const dropdownOptions = [
 	{text:'Number(low - high)', value: 'numberAsc'},
@@ -14,14 +14,13 @@ const dropdownOptions = [
 ];
 
 const Sort = memo(function Sort() {
-	const sortBy = useSelector(selectSortBy)
-	const status = useSelector(selectStatus)
+	const sortBy = useSelector(selectSortBy);
+	const status = useSelector(selectStatus);
 	const dispatch = useDispatch();
 
 	const handleClick = async sortOption => {
 		if (sortOption !== sortBy) {
-			dispatch(sortByChanged(sortOption));
-			dispatch(getPokemonsThunk(sortOption));
+			dispatch(sortPokemons(sortOption));
 		};
 	};
 	return (

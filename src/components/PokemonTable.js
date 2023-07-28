@@ -1,11 +1,13 @@
 import { useMemo } from "react";
 import DataTable from "react-data-table-component"
-import { useNavigateToPokemon } from "./PokemonsProvider"
+import { useNavigateToPokemon } from "../api"
 import Spinner from "./Spinner";
 import { getNameByLanguage, transformToKeyName } from "../util";
 import { capitalize } from "@mui/material";
 import { useSelector } from "react-redux";
 import { selectIntersection, selectPokemons, selectSpecies, selectLanguage, selectTypes, selectStatus, selectStat } from "../features/pokemonData/pokemonDataSlice";
+
+// synchronize sortBy and the initial table sorting method
 
 export default function PokemonTable() {
 	const intersection = useSelector(selectIntersection);
@@ -20,7 +22,7 @@ export default function PokemonTable() {
 	const pokemonTableData = useMemo(() => [...intersection].sort((a,b)=> a - b).map(id => {
 		const speciesData = species[id];
 		const pokemon = pokemons[id];
-		const pokemonName = getNameByLanguage(speciesData.name, language, species);
+		const pokemonName = getNameByLanguage(speciesData.name, language, speciesData);
 
 		const idData = (
 			// value is for sorting

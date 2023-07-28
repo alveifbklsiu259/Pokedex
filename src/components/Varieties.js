@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { getIdFromURL, getNameByLanguage } from '../util';
-import { useNavigateToPokemon } from './PokemonsProvider';
+import { useNavigateToPokemon } from '../api';
 import { useSelector } from 'react-redux';
 import { selectLanguage } from '../features/pokemonData/pokemonDataSlice';
 
