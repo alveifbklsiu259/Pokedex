@@ -14,6 +14,7 @@ const AdvancedSearch = memo(function AdvancedSearch({
 	setMatchMethod,
 	collapseId
 }) {
+	console.log(123)
 	const dispatch = useDispatch();
 	const handleReset = () => {
 		if (selectedTypes.length) {

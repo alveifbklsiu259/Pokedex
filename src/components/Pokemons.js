@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { selectPokemons, selectDisplay, selectNextRequest, selectStatus, selectViewMode, selectIntersection, getPokemonsOnScroll } from "../features/pokemonData/pokemonDataSlice";
+import { selectPokeData, selectPokemons, selectDisplay, selectNextRequest, selectStatus, selectViewMode, selectIntersection, getPokemonsOnScroll } from "../features/pokemonData/pokemonDataSlice";
 import { useNavigateToPokemon } from "../api";
 import Sort from "./Sort";
 import BasicInfo from "./BasicInfo";
@@ -18,7 +18,7 @@ export default function Pokemons() {
 	const status = useSelector(selectStatus);
 	const viewMode = useSelector(selectViewMode);
 	const intersection = useSelector(selectIntersection);
-
+	
 	const cachedDispaly = useMemo(() => {
 		return display.map(id => Object.values(pokemons).find(pokemon => pokemon.id === id));
 	}, [display, pokemons]);
@@ -63,7 +63,9 @@ export default function Pokemons() {
 		)
 	};
 
-	if (intersection.length) {
+	if (status === 'loading') {
+		tableContent = <Spinner />
+	} else if (intersection.length) {
 		// when search result changes, pokemonTable's page will stay the same(which is not desired, we want to reset to the first page), provide a key to cause re-render.
 		tableContent = <PokemonTable key={JSON.stringify(intersection)}/>;
 	} else {

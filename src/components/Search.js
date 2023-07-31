@@ -75,18 +75,16 @@ export default function Search({closeModal}) {
 						<button type="button" data-bs-toggle="collapse" data-bs-target={`#${collapseId}`} aria-expanded='false' aria-controls={collapseId} onClick={handleIconChange}>
 							Show Advanced Search <i ref={collapseBtnRef} className="fa-solid fa-caret-down"></i>
 						</button>
-						{status !== 'loading' && (
-							<AdvancedSearch
-								searchParam={searchParam}
-								setSearchParam={setSearchParam} 
-								selectedTypes={selectedTypes} 
-								setSelectedTypes={setSelectedTypes} 
-								selectedGenerations={selectedGenerations} 
-								setSelectedGenerations={setSelectedGenerations}
-								setMatchMethod={setMatchMethod}
-								collapseId={collapseId}
-							/>
-						)}
+						<AdvancedSearch
+							searchParam={searchParam}
+							setSearchParam={setSearchParam} 
+							selectedTypes={selectedTypes} 
+							setSelectedTypes={setSelectedTypes} 
+							selectedGenerations={selectedGenerations} 
+							setSelectedGenerations={setSelectedGenerations}
+							setMatchMethod={setMatchMethod}
+							collapseId={collapseId}
+						/>
 					</div>
 				<button
 					disabled={status === 'loading' ? true : false} 

@@ -373,11 +373,17 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 		if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
 			disaptch(dataLoading());
 			break;
-		} else {
-			// if there's no need to fetch, just end this function.
-			return {};
 		};
 	};
+
+	// check the last one.. and return {}
+	
+	// for (let req of sortedRequests) {
+	// 	if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
+	// 		disaptch(dataLoading());
+	// 		break;
+	// 	};
+	// };
 
 	// fetchedData will be:
 	// pokemons/pokemonSpecies/abilities: object/undefined

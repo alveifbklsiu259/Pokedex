@@ -44,5 +44,7 @@ const Sort = memo(function Sort() {
 		</>
 	)
 });
-
 export default Sort;
+
+// pokemons' navigate is not working.
+// change to sort by height/weight --> change viewMode will cause an error.

@@ -70,7 +70,7 @@ const pokemonDataSlice = createSlice({
 			state.display = action.payload;
 		},
 		advancedSearchReset: state => {
-			state.advancedSearch = { generations: {}, types: [] };
+			state.advancedSearch = {generations: {}, types: []};
 			state.searchParam = '';
 		},
 		backToRoot: state => {
@@ -143,7 +143,10 @@ const pokemonDataSlice = createSlice({
 			state.machines = {...state.machines, ...newEntities};
 		},
 		viewModeChanged: (state, action) => {
-			state.viewMode = action.payload;
+			// not doing anything if there's data being fetched(since we didn't disable the button in the component(we don't want the component to re-render when scrolling))
+			if (state.status !== 'loading') {
+				state.viewMode = action.payload;
+			};
 		}
 	},
 	extraReducers: builder => {
@@ -188,22 +191,20 @@ const pokemonDataSlice = createSlice({
 				state.allPokemonNamesAndIds = newNamesIds;
 				state.language = language;
 			})
-			.addCase(sortPokemons.fulfilled, (state, action) => {
-				const {sortBy} = action.payload;
+			.addCase(sortPokemons.pending, (state, action) => {
+				// change UI before data is fetched.
+				// we don't have to prevent it from doing anything like changeViewMode's pending reducer function, because we did disable the button when status === 'loading'(hence Sort is a fairly small component, I think that let it register to the status value wounldn't hurt performance that much.)
+				const sortBy = action.meta.arg;
 				state.sortBy = sortBy;
 			})
-			// .addCase(changeViewMode.pending, (state, action) => {
-			// 	state.abilities = Math.random()
-			// })
-			// .addCase(changeViewMode.fulfilled, (state, action) => {
-			// 	const {viewMode} = action.payload;
-			// 	state.viewMode = viewMode;
-			// })
-
-
-
-			//changeViewMode.fulfilled
-			.addMatcher(isAnyOf(getRequiredDataThunk.fulfilled, changeLanguageThunk.fulfilled), (state, action) => {
+			.addCase(changeViewMode.pending, (state, action) => {
+				// change UI before data is fetched and prevent from doing anything when data is loading.
+				if (state.status !== 'loading') {
+					const {viewMode} = action.meta.arg;
+					state.viewMode = viewMode;
+				};
+			})
+			.addMatcher(isAnyOf(getRequiredDataThunk.fulfilled, changeViewMode.fulfilled, changeLanguageThunk.fulfilled), (state, action) => {
 				const {fetchedData} = action.payload;
 				const keys = Object.keys(fetchedData);
 				if (keys.length) {
@@ -221,8 +222,9 @@ const pokemonDataSlice = createSlice({
 								state[transformToKeyName(key)] = {...state[transformToKeyName(key)], ...fetchedData[key]};
 						};
 					});
+					// check if this cause err...
+					state.status = 'idle';
 				};
-				state.status = 'idle';
 			})
 			.addMatcher(isAnyOf(sortPokemons.fulfilled, searchPokemon.fulfilled, getPokemonsOnScroll.fulfilled), (state, action) => {
 				const {fetchedPokemons,	nextRequest, pokemonsToDisplay } = action.payload;
@@ -239,6 +241,8 @@ const pokemonDataSlice = createSlice({
 // 2. separate slices.
 // 3. use shallowEqual, createSelector, createEntityAdapter, RTKQ.
 // 4. see if it's possible to rewrite selectors.
+
+// check if we can move more state updates into pending case(if the component only cares about state that's been updated in either pending/thunk body or fulfilled, then this pattern will not cause extra re-render)
 
 export default pokemonDataSlice.reducer;
 
@@ -273,8 +277,8 @@ export const getInitialData = createAsyncThunk('pokeData/getInitialData', async(
 
 export const sortPokemons = createAsyncThunk('pokeData/sortPokemons', async(sortOption, {dispatch, getState}) => {
 	const pokeData = getState().pokeData;
-	const res = await getPokemons(pokeData, dispatch, pokeData.intersection, sortOption)
-	return {sortBy: sortOption, ...res};
+	const res = await getPokemons(pokeData, dispatch, pokeData.intersection, sortOption);
+	return res;
 });
 
 export const searchPokemon = createAsyncThunk('pokeData/searchPokemon', async ({searchParam, selectedGenerations, selectedTypes, matchMethod}, {dispatch, getState}) => {
@@ -347,23 +351,24 @@ export const getPokemonsOnScroll = createAsyncThunk('pokeData/getPokemonsOnScrol
 	return {fetchedPokemons, nextRequest, pokemonsToDisplay: [...displayedPokemons, ...pokemonsToDisplay]};
 });
 
+// change this name to navigateToPokemon or something?
 export const getRequiredDataThunk = createAsyncThunk('pokeData/getRequiredData', async({requestPokemonIds, requests, lang}, {dispatch, getState}) => {
 	const fetchedData = await getRequiredData(getState().pokeData, dispatch, requestPokemonIds, requests, lang);
 	return {fetchedData};
 });
 
-export const changeViewMode = createAsyncThunk('pokeData/changeViewMode', async({requestPokemonIds, requests, lang, viewMode}, {dispatch, getState}) => {
+export const changeViewMode = createAsyncThunk('pokeData/changeViewMode', async({requestPokemonIds, requests, viewMode}, {dispatch, getState}) => {
 	const pokeData = getState().pokeData;
 	let fetchedData = {};
-	const isAllSpeciesCached = Object.keys(pokeData.pokemonSpecies).length === pokeData.pokemonCount;
-	const isAllPokemonsCached = isAllSpeciesCached ? Object.keys(pokeData.pokemonSpecies).every(id => pokeData.pokemons[id]) : false;
-
-	if (!(isAllSpeciesCached && isAllPokemonsCached)) {
-		fetchedData = await getRequiredData(getState().pokeData, dispatch, requestPokemonIds, requests, lang);
+	if (pokeData.status === 'idle') {
+		// prevent multiple fetches, I don't want to listen for status in the ViewMode component, else when scrolling, ViewMode will re-render.
+		const isAllSpeciesCached = Object.keys(pokeData.pokemonSpecies).length === pokeData.pokemonCount;
+		const isAllPokemonsCached = isAllSpeciesCached ? Object.keys(pokeData.pokemonSpecies).every(id => pokeData.pokemons[id]) : false;
+		if (!isAllSpeciesCached || !isAllPokemonsCached) {
+			fetchedData = await getRequiredData(getState().pokeData, dispatch, requestPokemonIds, requests);
+		};
 	};
-	// what I want is no dataLoading being dispatched if no data need to be fetched, but if we follow the original pattern(dispatched dataLoading in the pending reducer function --> fetched data in the thunk body --> set new data in the fulfilled reducer function) this will cause two re-renders even when there's no data need to be fetched(the first one is setView(in ViewMode.js), then the state updates in the thunk's fulfilled reducer function), in order to achieve what I want, I decided to dispatch state updates in the thunk body, and remove the fulfilled reducer function.
-	dispatch(viewModeChanged(viewMode));
-	dispatch(getRequiredDataThunk.fulfilled({fetchedData}));
+	return {fetchedData, viewMode};
 });
 
 export const changeLanguageThunk = createAsyncThunk('pokeData/changeLanguage', async({option: language, pokeId}, {dispatch, getState}) => {
