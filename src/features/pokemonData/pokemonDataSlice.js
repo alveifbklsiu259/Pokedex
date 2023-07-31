@@ -355,11 +355,13 @@ export const getRequiredDataThunk = createAsyncThunk('pokeData/getRequiredData',
 export const changeViewMode = createAsyncThunk('pokeData/changeViewMode', async({requestPokemonIds, requests, lang, viewMode}, {dispatch, getState}) => {
 	const pokeData = getState().pokeData;
 	let fetchedData = {};
+	const isAllSpeciesCached = Object.keys(pokeData.pokemonSpecies).length === pokeData.pokemonCount;
+	const isAllPokemonsCached = isAllSpeciesCached ? Object.keys(pokeData.pokemonSpecies).every(id => pokeData.pokemons[id]) : false;
 
-	// should be more precisely checking if data readiness
-	if (!(Object.keys(pokeData.pokemons).length >= pokeData.pokemonCount && Object.keys(pokeData.pokemonSpecies).length === pokeData.pokemonCount)) {
+	if (!(isAllSpeciesCached && isAllPokemonsCached)) {
 		fetchedData = await getRequiredData(getState().pokeData, dispatch, requestPokemonIds, requests, lang);
 	};
+	// what I want is no dataLoading being dispatched if no data need to be fetched, but if we follow the original pattern(dispatched dataLoading in the pending reducer function --> fetched data in the thunk body --> set new data in the fulfilled reducer function) this will cause two re-renders even when there's no data need to be fetched(the first one is setView(in ViewMode.js), then the state updates in the thunk's fulfilled reducer function), in order to achieve what I want, I decided to dispatch state updates in the thunk body, and remove the fulfilled reducer function.
 	dispatch(viewModeChanged(viewMode));
 	dispatch(getRequiredDataThunk.fulfilled({fetchedData}));
 });
