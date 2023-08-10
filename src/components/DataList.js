@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, memo } from "react";
 import { flushSync } from "react-dom";
 import { useSelector } from "react-redux";
 import { selectAllIdsAndNames } from "../features/pokemonData/pokemonDataSlice";
@@ -6,16 +6,53 @@ import { selectAllIdsAndNames } from "../features/pokemonData/pokemonDataSlice";
 const DataList = forwardRef(function DataList({
 	matchList,
 	inputRef,
+	isDataListShown,
+	setIsDataListShown,
 	searchParam,
 	setSearchParam,
-	resetFocus,
-	setShowDataList,
-	showDataList,
 	hoveredPokemon,
 	setHoveredPokemon,
 	activePokemon,
+	resetFocus
 }, datalistRef) {
+
+	return (
+		<div ref={datalistRef} id='pokemonDataList' className={isDataListShown && matchList.length ? 'showDatalist' : ''}>
+			{matchList.map(pokemon => (
+				<ListItem
+					datalistRef={datalistRef}
+					inputRef={inputRef}
+					setIsDataListShown={setIsDataListShown}
+					searchParam={searchParam}
+					setSearchParam={setSearchParam}
+					// passing hoveredPokemon/activePokemon will break memoization when hovering/focusing list item.
+					isHovered={hoveredPokemon === pokemon}
+					isActive={activePokemon === pokemon}
+					setHoveredPokemon={setHoveredPokemon}
+					resetFocus={resetFocus}
+					pokemon={pokemon}
+					key={pokemon}
+				/>
+			))}
+		</div>
+	)
+});
+export default DataList;
+
+const ListItem = memo(function ListItem({
+	datalistRef,
+	inputRef,
+	setIsDataListShown,
+	searchParam,
+	setSearchParam,
+	isHovered,
+	setHoveredPokemon,
+	isActive,
+	resetFocus,
+	pokemon
+}) {
 	const allPokemonNamesAndIds = useSelector(selectAllIdsAndNames);
+
 	const handleMouseOver = pokemon => {
 		setHoveredPokemon(pokemon);
 	};
@@ -33,12 +70,12 @@ const DataList = forwardRef(function DataList({
 			setSearchParam(pokemon);
 		});
 		input.focus();
-		setShowDataList(false);
+		setIsDataListShown(false);
 	};
 
 	// because on mobile device, there's no "hover", hover detection happens when tapping on something (without let go), so at each touch end (hover detection on mobile) we reset the hovered pokemon; when the mobile user click any item (which will not trigger hover event) we trigger click event.
 	const handleTouchEnd = (e, pokemon) => {
-		if (!hoveredPokemon) {
+		if (!isHovered) {
 			// prevent click firing twice
 			e.preventDefault();
 			handleClick(pokemon);
@@ -63,24 +100,20 @@ const DataList = forwardRef(function DataList({
 			</>
 		);
 	};
+
 	return (
-		<div ref={datalistRef} id='pokemonDataList' className={showDataList && matchList.length ? 'showDatalist' : ''}>
-			{matchList.map(pokemon => (
-				<div
-					className={`${hoveredPokemon === pokemon ? 'datalist_hover' : ''} ${activePokemon === pokemon ? 'datalist_active' : ''}`}
-					onMouseOver={() => {handleMouseOver(pokemon)}}
-					onMouseLeave={handleMouseLeave}
-					onClick={() => {handleClick(pokemon)}}
-					// for mobile device
-					onTouchMove={() => {handleMouseOver(pokemon)}}
-					onTouchEnd={(e) => handleTouchEnd(e, pokemon)}
-					key={pokemon}
-				>
-					<span>{colorMatching(pokemon, searchParam)}</span>
-					<img width='96px' height='96px' src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${allPokemonNamesAndIds[pokemon]}.png`} alt={pokemon}/>
-				</div>
-			))}
+		<div
+			className={`${isHovered ? 'datalist_hover' : ''} ${isActive ? 'datalist_active' : ''}`}
+			onMouseOver={() => {handleMouseOver(pokemon)}}
+			onMouseLeave={handleMouseLeave}
+			onClick={() => {handleClick(pokemon)}}
+			// for mobile device
+			onTouchMove={() => {handleMouseOver(pokemon)}}
+			onTouchEnd={(e) => handleTouchEnd(e, pokemon)}
+			key={pokemon}
+		>
+			<span>{colorMatching(pokemon, searchParam)}</span>
+			<img width='96px' height='96px' src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${allPokemonNamesAndIds[pokemon]}.png`} alt={pokemon}/>
 		</div>
 	)
 });
-export default DataList;

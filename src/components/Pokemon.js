@@ -1,5 +1,7 @@
 import { useEffect, memo, useMemo } from "react";
 import { useParams } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { selectPokemonById, selectSpeciesById, selectChainDataByChainId, selectLanguage, selectStatus, selectAllIdsAndNames, selectAbilities, selectItems, selectPokemonCount, error, getRequiredDataThunk } from "../features/pokemonData/pokemonDataSlice";
 import BasicInfo from "./BasicInfo";
 import Detail from "./Detail";
 import Stats from "./Stats";
@@ -9,63 +11,49 @@ import ScrollToTop from "./ScrollToTop";
 import Moves from "./Moves";
 import ErrorPage from "./ErrorPage";
 import Varieties from "./Varieties";
-import { useNavigateToPokemon } from "../api";
-import { getAbilitiesToDisplay, getItemsFromChain } from "../api";
+import { getAbilitiesToDisplay, getItemsFromChain, useNavigateToPokemon } from "../api";
 import { getIdFromURL, transformToKeyName } from "../util";
 import { useNavigateNoUpdates } from "./RouterUtils";
-import { useSelector, useDispatch } from "react-redux";
-import { selectPokemons, selectSpecies, selectLanguage, selectStatus, selectAllIdsAndNames, selectEvolutionChains, selectAbilities, selectItems, selectPokemonCount, error, getRequiredDataThunk } from "../features/pokemonData/pokemonDataSlice";
 
 export default function Pokemon() {
-
-	// we can have a select single pokemon selector here, but I don't think we need to, because when state.pokemons changes, it's when we navigate to otehr route, so whether reading all pokemons or a single pokemon it's the same(one re-render).
-	const pokemons = useSelector(selectPokemons);
-	const species = useSelector(selectSpecies);
-	const language = useSelector(selectLanguage);
-	const status = useSelector(selectStatus);
-	const namesAndIds = useSelector(selectAllIdsAndNames);
-	const evolutionChains = useSelector(selectEvolutionChains);
-	const abilities = useSelector(selectAbilities);
-	const items = useSelector(selectItems);
-	const pokemonCount = useSelector(selectPokemonCount,);
 	const dispatch = useDispatch();
 	const {pokeId} = useParams();
 	const navigateNoUpdates = useNavigateNoUpdates();
+	const language = useSelector(selectLanguage);
+	const status = useSelector(selectStatus);
+	const namesAndIds = useSelector(selectAllIdsAndNames);
+	const abilities = useSelector(selectAbilities);
+	const items = useSelector(selectItems);
+	const pokemonCount = useSelector(selectPokemonCount);
 
-	// enable search pokemon by names in url (english)
+	// enable searching pokemon name in url bar in English.
 	let urlParam = pokeId;
 	if (isNaN(Number(pokeId))) {
-		// if we can't find the corresponding id, use what it is, router will handle error.
+		// if we can't find the corresponding id, use what it is.
 		urlParam = namesAndIds[pokeId.toLowerCase()] || pokeId;
 	};
+	const pokemon = useSelector(state => selectPokemonById(state, urlParam));
+	const speciesData = useSelector(state => selectSpeciesById(state, urlParam));
+	const chainId = getIdFromURL(speciesData?.evolution_chain?.url);
+	const chainData = useSelector(state => selectChainDataByChainId(state, chainId));
 
-	// the reason why searching in other languages doesn't work is because even if we change lange, the get the latest data in allPokemonNamesAndIds, when we enter what we type in the url bar, the whole state gets reset, and we're back to English name id pairs. maybe the workaround would be in the PokemonProviders, if language !== 'en', we have to change name id pairs there.
-
-	// required data for current page
-	const pokemon = pokemons[urlParam];
-	const speciesInfo = species[getIdFromURL(pokemon?.species?.url)];
-	const chainId = getIdFromURL(speciesInfo?.evolution_chain?.url);
-	const chainData = evolutionChains?.[chainId];
 	const requiredItems = getItemsFromChain(chainData);
 	let abilitiesToDisplay, isAbilitiesReady, isItemsReady;
 	if (language !== 'en') {
 		abilitiesToDisplay = getAbilitiesToDisplay(pokemon);
-		isAbilitiesReady = abilitiesToDisplay ? abilitiesToDisplay.every(ability => abilities[ability]) : false;
-		isItemsReady = requiredItems ? requiredItems.every(item => items[transformToKeyName(item)]) : false;
+		isAbilitiesReady = abilitiesToDisplay?.length ? abilitiesToDisplay.every(ability => abilities[ability]) : true;
+		isItemsReady = requiredItems?.length ? requiredItems.every(item => items[transformToKeyName(item)]) : true;
 	};
 
-
-	const defaultRequiredData = [pokemon, speciesInfo, chainData];
+	const defaultRequiredData = [pokemon, speciesData, chainData];
 	const isDataReady = language === 'en' ? defaultRequiredData.every(Boolean) : (defaultRequiredData.every(Boolean) && isAbilitiesReady && isItemsReady);
 	useEffect(() => {
-		// PokemonProvider also fetches data when it mounts, to avoid race condition, only fetch data when PokemonProvider's request is done. (since the dispatches in PokemonProvider are batched intentionally, status will only become "idle" when all requests in it are done.)
-		// To reduce unnecessary re-renders of this component, I think it would be great if we could find a way to batch dispatched between this Effect and the Effect from PokemonProvider, but since the re-renders are mainly caused by Context API, and I decided to migrate to Redux later, I'll just leave it as it is.
 		if (!isDataReady && status === 'idle') {
 			const getIndividualPokemonData = async () => {
 				try {
 					await dispatch(getRequiredDataThunk({
 						requestPokemonIds: [urlParam],
-						requests: ['pokemons', 'pokemonSpecies', 'evolutionChains']
+						requests: ['pokemons', 'pokemonSpecies', 'evolutionChains', 'abilities', 'items']
 					})).unwrap();
 				} catch(err) {
 					console.log(err)
@@ -76,8 +64,7 @@ export default function Pokemon() {
 		};
 	}, [dispatch, isDataReady, urlParam, status]);
 
-	// on Pokemons, sort by names, change language should re-sort the order.
-	const nationalNumber = getIdFromURL(pokemons[urlParam]?.species?.url);
+	const nationalNumber = getIdFromURL(pokemon?.species?.url);
 	const nextPokemonId = nationalNumber === pokemonCount ? 1 : nationalNumber + 1;
 	const previousPokemonId = nationalNumber === 1 ? pokemonCount : nationalNumber - 1;
 
@@ -88,36 +75,23 @@ export default function Pokemon() {
 			<>
 				<RelatedPokemon pokemonId={previousPokemonId} order='previous'/>
 				<RelatedPokemon pokemonId={nextPokemonId} order='next'/>
-				<div className={`container p-0 ${speciesInfo.varieties.length > 1 ? "marginWithVarieties" : 'marginWithoutVarieties'} `}>
+				<div className={`container p-0 ${speciesData.varieties.length > 1 ? "marginWithVarieties" : 'marginWithoutVarieties'} `}>
 					<div className="row justify-content-center">
-						{speciesInfo.varieties.length > 1 && (
-							<Varieties 
-								speciesInfo={speciesInfo}
-								pokemon={pokemon}
-							/>
+						{speciesData.varieties.length > 1 && (
+							<Varieties pokeId={urlParam} />
 						)}
 						<div className='basicInfoContainer row col-8 col-sm-6 justify-content-center'>
-							<BasicInfo
-								pokemon={pokemon}
-							/>
+							<BasicInfo pokeId={urlParam} />
 						</div>
-						<Detail
-							pokemon={pokemon}
-							speciesInfo={speciesInfo}
-						/>
-						<Stats
-							pokemon={pokemon}
-						/>
-						<EvolutionChains
-							evolutionChains={chainData.chains}
+						<Detail pokeId={urlParam} />
+						<Stats pokeId={urlParam} />
+						<EvolutionChains chainId={chainId} />
+						<Moves
+							pokeId={urlParam}
 							chainId={chainId}
-						/>
-						{/* <Moves 
-							pokemon={pokemon}
-							chainId={chainId}
-							speciesInfo={speciesInfo}
+							// is it necessary?
 							key={pokemon.id}
-						/> */}
+						/>
 						<div className="row justify-content-center">
 							{rootLink}
 						</div>
@@ -156,3 +130,5 @@ const RelatedPokemon = memo(function RelatedPokemon ({pokemonId, order}) {
 		</div>
 	)
 });
+
+// try prefetch when hover or come into sight

@@ -41,6 +41,13 @@ export default App;
 3. left navbar ( pokemons, berries )
 ----
 
+// change generation to region, but have to fetch region data first.
+
+// add show non-default-form checkbox,
+// show mythical pokemons,
+// show legendary pokemons
+// check if there's function to cache in other components.
+// for some reason React Data Table will have one extra re-render when mounts even though all the props passed to it are cached.
 // east egg route
 // theme using styled component
 // map info

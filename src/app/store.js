@@ -11,8 +11,11 @@ const store = configureStore({
 		actionSanitizer: action => {
 			return action.type === 'pokeData/pokemonsLoaded' || action.type === 'pokeData/pokemonSpeciesLoaded' ? { ...action, payload: '<<LONG_BLOB>>' } : action
 		},
-		stateSanitizer: state => state.pokeData ? { ...state, pokeData: '<<LONG_BLOB>>' } : state
-	}
+		// stateSanitizer: state => state.pokeData ? { ...state, pokeData: '<<LONG_BLOB>>' } : state
+		// stateSanitizer: state => state.pokeData?.pokemonSpecies ? { ...state, pokeData: {...state.pokeData, pokemonSpecies: '<<LONG_BLOB>>'} } : state
+		stateSanitizer: state => ({...state, pokeData: {...state.pokeData, pokemons: '<<LONG_BLOB>>', pokemonSpecies: '<<LONG_BLOB>>'}}),
+		trace: true
+	},
 });
 
 export default store;

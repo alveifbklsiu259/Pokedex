@@ -1,8 +1,8 @@
 import { useState, memo } from "react";
+import { useSelector } from "react-redux";
+import { selectItems, selectChainDataByChainId, selectLanguage } from "../features/pokemonData/pokemonDataSlice";
 import Modal from "./Modal";
 import { transformToKeyName, getNameByLanguage } from "../util";
-import { useSelector } from "react-redux";
-import { selectItems, selectEvolutionChains, selectLanguage } from "../features/pokemonData/pokemonDataSlice";
 
 const textsForOtherRequirements = {
 	gender: 'Gender',
@@ -26,15 +26,11 @@ const textsForOtherRequirements = {
 
 const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId}) {
 	const language = useSelector(selectLanguage);
-	const evolutionChains = useSelector(selectEvolutionChains);
 	const items = useSelector(selectItems);
-
-
 	const [isModalShown, setIsModalShown] = useState(false);
 	// some evolution detail data is missing from the API, e.g. 489, 490...
-	const chainDetails = evolutionChains[chainId].details?.[pokemonId];
+	const chainDetails = useSelector(state => selectChainDataByChainId(state, chainId))?.details?.[pokemonId];
 	let selectedDetail = chainDetails?.[0];
-
 	if (chainDetails && chainDetails.length > 1 && chainDetails.find(chainDetail => chainDetail.trigger.name === 'use-item')) {
 		selectedDetail = chainDetails.find(chainDetail => chainDetail.trigger.name === 'use-item');
 	};
@@ -67,7 +63,9 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId}) {
 				if (requirements["item"]) {
 					mainText = (
 						<>
-							<span>{`Use ${getNameByLanguage(requirements["item"], language, items[transformToKeyName(requirements["item"])])}`}</span>
+							<span>
+								{`Use ${getNameByLanguage(requirements["item"], language, items[transformToKeyName(requirements["item"])])}`}
+							</span>
 							<img className="item" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${requirements["item"]}.png`} alt={`${requirements["item"]}`} />
 						</>
 					)
@@ -152,19 +150,15 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId}) {
 		);
 	}
 
-	const showModal = () => {
-		setIsModalShown(true);
-	};
-
 	return (
 		chainDetails && (
 			<>
 				<div className="evolutionDetails">
 					<div className="mainText">{mainText}</div>
-					{Object.keys(requirements).length ? <i className="fa-solid fa-circle-info" onClick={showModal}></i> : ''}
+					{Object.keys(requirements).length ? <i className="fa-solid fa-circle-info" onClick={() => setIsModalShown(true)}></i> : ''}
 				</div>
 				{
-					Object.keys(requirements).length > 0 && (
+					Object.keys(requirements).length > 0 && isModalShown && (
 						<Modal
 							customClass='modalBody evolutionDetailsModal'
 							isModalShown={isModalShown} 

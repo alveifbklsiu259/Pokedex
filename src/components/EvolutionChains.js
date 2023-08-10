@@ -3,14 +3,11 @@ import BasicInfo from "./BasicInfo";
 import EvolutionDetails from "./EvolutionDetails";
 import { useNavigateToPokemon } from "../api";
 import { useSelector } from "react-redux";
-import { selectPokemons } from "../features/pokemonData/pokemonDataSlice";
+import { selectChainDataByChainId } from "../features/pokemonData/pokemonDataSlice";
 
-const EvolutionChains = memo(function EvolutionChains({
-	evolutionChains,
-	chainId,
-}) {
-	const pokemons = useSelector(selectPokemons);
+const EvolutionChains = memo(function EvolutionChains({chainId}) {
 	const navigateToPokemon = useNavigateToPokemon();
+	const evolutionChains = useSelector(state => selectChainDataByChainId(state, chainId)).chains;
 	// get max depth (for layout)
 	let maxDepth = 1;
 	evolutionChains.forEach(chain => {
@@ -32,9 +29,7 @@ const EvolutionChains = memo(function EvolutionChains({
 					<React.Fragment key={pokemonId}>
 						<li>
 							<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon([pokemonId], ['pokemonSpecies', 'abilities'])}} >
-								<BasicInfo
-									pokemon={pokemons[pokemonId]}
-								/>
+								<BasicInfo pokeId={pokemonId} />
 							</div>
 						</li>
 						{index < array.length - 1 && (
@@ -62,9 +57,7 @@ const EvolutionChains = memo(function EvolutionChains({
 										<React.Fragment key={pokemonId}>
 											<li className="multiplePath">
 												<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon([pokemonId], ['pokemonSpecies', 'abilities'])}} >
-													<BasicInfo 
-														pokemon={pokemons[pokemonId]}
-													/>
+													<BasicInfo pokeId={pokemonId} />
 												</div>
 											</li>
 											{index < array.length - 1 && (

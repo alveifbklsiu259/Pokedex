@@ -76,18 +76,17 @@ export default function Search({closeModal}) {
 							Show Advanced Search <i ref={collapseBtnRef} className="fa-solid fa-caret-down"></i>
 						</button>
 						<AdvancedSearch
-							searchParam={searchParam}
-							setSearchParam={setSearchParam} 
-							selectedTypes={selectedTypes} 
-							setSelectedTypes={setSelectedTypes} 
-							selectedGenerations={selectedGenerations} 
+							setSearchParam={setSearchParam}
+							selectedTypes={selectedTypes}
+							setSelectedTypes={setSelectedTypes}
+							selectedGenerations={selectedGenerations}
 							setSelectedGenerations={setSelectedGenerations}
 							setMatchMethod={setMatchMethod}
 							collapseId={collapseId}
 						/>
 					</div>
 				<button
-					disabled={status === 'loading' ? true : false} 
+					disabled={status === 'loading' ? true : false}
 					className="btn btn-primary btn-lg btn-block w-100 my-3" 
 					type="submit"
 				>

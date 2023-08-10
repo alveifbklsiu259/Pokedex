@@ -1,6 +1,6 @@
-import { useEffect, useCallback, useMemo } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { selectPokeData, selectPokemons, selectDisplay, selectNextRequest, selectStatus, selectViewMode, selectIntersection, getPokemonsOnScroll } from "../features/pokemonData/pokemonDataSlice";
+import { useEffect, useCallback, useMemo, useRef } from "react";
+import { useSelector, useDispatch, shallowEqual } from "react-redux";
+import { selectPokemons, selectDisplay, selectNextRequest, selectStatus, selectViewMode, selectIntersection, getPokemonsOnScroll } from "../features/pokemonData/pokemonDataSlice";
 import { useNavigateToPokemon } from "../api";
 import Sort from "./Sort";
 import BasicInfo from "./BasicInfo";
@@ -13,11 +13,12 @@ export default function Pokemons() {
 	const dispatch = useDispatch();
 	const navigateToPokemon = useNavigateToPokemon();
 	const pokemons = useSelector(selectPokemons);
-	const display = useSelector(selectDisplay);
-	const nextRequest = useSelector(selectNextRequest);
+	const display = useSelector(selectDisplay, shallowEqual);
+	const nextRequest = useSelector(selectNextRequest, shallowEqual);
 	const status = useSelector(selectStatus);
 	const viewMode = useSelector(selectViewMode);
-	const intersection = useSelector(selectIntersection);
+	const tableInfoRef = useRef({});
+	const intersection = useSelector(selectIntersection, shallowEqual);
 	
 	const cachedDispaly = useMemo(() => {
 		return display.map(id => Object.values(pokemons).find(pokemon => pokemon.id === id));
@@ -37,10 +38,9 @@ export default function Pokemons() {
 	}, [handleScroll, viewMode]);
 
 	const noMatchContent = useMemo(() => <p className="text-center">No Matched Pokémons</p>, []);
-
 	let moduleContent, tableContent;
 	if (status === 'loading') {
-		moduleContent = <Spinner />
+		moduleContent = <Spinner />;
 	} else if (status === 'idle' && cachedDispaly.length === 0) {
 		moduleContent = noMatchContent;
 	} else if (status === 'idle' || status === 'scrolling') {
@@ -53,7 +53,7 @@ export default function Pokemons() {
 							className="col-6 col-md-4 col-lg-3 card pb-3 pokemonCard"
 							onClick={() => navigateToPokemon([pokemon.id],['pokemons', 'pokemonSpecies', 'evolutionChains','abilities', 'items'])}
 						>
-							<BasicInfo pokemon={pokemon} />
+							<BasicInfo pokeId={pokemon.id} />
 						</div>
 					))
 				}
@@ -64,20 +64,17 @@ export default function Pokemons() {
 	};
 
 	if (status === 'loading') {
-		tableContent = <Spinner />
-	} else if (intersection.length) {
-		// when search result changes, pokemonTable's page will stay the same(which is not desired, we want to reset to the first page), provide a key to cause re-render.
-		tableContent = <PokemonTable key={JSON.stringify(intersection)}/>;
+		tableContent = <Spinner />;
 	} else {
-		tableContent = noMatchContent;
+		tableContent = <PokemonTable key={JSON.stringify(intersection)} tableInfoRef={tableInfoRef}/>;
 	};
 
 	return (
 		<>
 			<div className="container">
-			<ViewMode />
+			<ViewMode tableInfoRef={tableInfoRef} />
 				{
-					viewMode === 'module'? (
+					viewMode === 'module' ? (
 						<>
 							<Sort />
 							<div className="row g-5">
@@ -90,6 +87,3 @@ export default function Pokemons() {
 		</>
 	)
 };
-	// cache viewMode, sort component.
-	// html title...
-	// is it possible to batch thunk dispatch with regular action dispatch? (seems not possible, more experiments are needed.)

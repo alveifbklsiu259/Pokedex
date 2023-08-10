@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { useSelector } from "react-redux";
 import { selectGenerations } from "../features/pokemonData/pokemonDataSlice";
 import pokeBall from '../assets/ball.svg';
@@ -6,9 +6,9 @@ import pokeBall from '../assets/ball.svg';
 const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, setSelectedGenerations}) {
 	const generations = useSelector(selectGenerations);
 
-	const handleSelectGeneration = generation => {
-		setSelectedGenerations(() => {
-			const update = {...selectedGenerations};
+	const handleSelectGeneration = useCallback(generation => {
+		setSelectedGenerations(sg => {
+			const update = {...sg};
 			if (update[generation.name]) {
 				delete update[generation.name];
 			} else {
@@ -16,7 +16,7 @@ const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, s
 			};
 			return update;
 		});
-	};
+	}, [setSelectedGenerations]);
 
 	return (
 		<ul className="generation col-12 col-sm-6 row justify-content-center gap-2">
@@ -24,15 +24,25 @@ const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, s
 				<h3 ><img width='150' height='150' className="pokeBall" src={pokeBall} alt="pokeBall" /> Generations</h3>
 			</div>
 			{Object.values(generations).map(generation => (
-				<li
-					onClick={() => handleSelectGeneration(generation)} 
-					key={generation.name} 
-					className={`d-flex justify-content-center align-items-center ${Object.keys(selectedGenerations).includes(generation.name) ? 'active' : ''}`}
-				>
-					{(generation.name.replace('generation-', '')).toUpperCase()}
-				</li>
+				<Generation
+					key={generation.name}
+					generation={generation}
+					onSelectGeneration={handleSelectGeneration}
+					isGenerationSelected={Object.keys(selectedGenerations).includes(generation.name)}
+				/>
 			))}
 		</ul>
+	)
+});
+
+const Generation = memo(function Generation({generation, onSelectGeneration, isGenerationSelected}) {
+	return (
+		<li
+			onClick={() => onSelectGeneration(generation)} 
+			className={`d-flex justify-content-center align-items-center ${isGenerationSelected ? 'active' : ''}`}
+		>
+			{(generation.name.replace('generation-', '')).toUpperCase()}
+		</li>
 	)
 });
 

@@ -1,44 +1,88 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, memo, useCallback } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { capitalize } from "@mui/material";
+import { selectGenerations, selectPokemons, selectLanguage, selectTypes, selectVersions, selectMoves, selectMoveDamageClass, selectMachines, movesLoaded, machineDataLoaded, selectSpeciesById, selectChainDataByChainId } from "../features/pokemonData/pokemonDataSlice";
 import { transformToKeyName, getIdFromURL, getNameByLanguage } from "../util";
 import MovesTable from "./MovesTable";
-import { useSelector, useDispatch } from "react-redux";
-import { selectGenerations, selectPokemons, selectLanguage, selectTypes, selectVersions, selectEvolutionChains, selectMoves, selectMoveDamageClass, selectMachines, movesLoaded, machineDataLoaded } from "../features/pokemonData/pokemonDataSlice";
 
-export default function Moves({speciesInfo, pokemon, chainId}) {
-	const cachedGenerations = useSelector(selectGenerations);
-	const pokemons = useSelector(selectPokemons);
+const columnDataCreator = filteredMethod => {
+	const formatTableHeader = data => {
+		switch (data) {
+			case 'pp' : 
+				return 'PP'
+			case 'acc' :
+			case 'cat' :
+				return capitalize(data).concat('.');
+			default : 
+				return capitalize(data)
+		};
+	};
+
+	const sortNumsWithNull = data => (rowA, rowB) => {
+		const a = rowA[data] === '—' ? 0 : rowA[data];
+		const b = rowB[data] === '—' ? 0 : rowB[data];
+		return a - b;
+	};
+
+	// when switching filter method, this function will run again if data is sorted, to avoid error, use optional chaining.
+	const sortElement = data => (rowA, rowB) => {
+		const a = rowA[data]?.props?.value || rowA[data];
+		const b = rowB[data]?.props?.value || rowB[data];
+		return String(a)?.localeCompare(String(b), undefined, {numeric: true});
+	};
+
+	const column = [(filteredMethod === 'level-up' ? 'level' : 'machine'), 'move', 'type', 'cat', 'power', 'acc', 'pp'];
+
+	return column.reduce((pre, cur) => {
+		pre.push({
+			id: cur,
+			name: formatTableHeader(cur),
+			selector: row => row[cur],
+			sortable: true,
+			center: true,
+			sortFunction: cur === 'type' || cur === 'machine' || cur === 'level' ? sortElement(cur) : cur === 'power' ? sortNumsWithNull(cur) : null
+		});
+		return pre;
+	}, []);
+};
+
+const Moves = memo(function Moves({pokeId, chainId}) {
+	const dispatch = useDispatch();
 	const language = useSelector(selectLanguage);
 	const types = useSelector(selectTypes);
 	const cachedVersions = useSelector(selectVersions);
-	const evolutionChains = useSelector(selectEvolutionChains);
+	const chainData = useSelector(state => selectChainDataByChainId(state, chainId));
 	const cachedMoves = useSelector(selectMoves);
 	const movesDamageClass = useSelector(selectMoveDamageClass);
 	const machines = useSelector(selectMachines);
-	const dispatch = useDispatch();
-	const generations = Object.values(cachedGenerations);
-	let pokemonData = pokemon;
-	let debutGeneration = speciesInfo.generation.name;
+	const cachedGenerations = useSelector(selectGenerations);
+	const generations = useMemo(() => Object.values(cachedGenerations), [cachedGenerations]);
+	const speciesData = useSelector(state => selectSpeciesById(state, pokeId));
+	const pokemons = useSelector(selectPokemons);
+	let pokemon = pokemons[pokeId];
+	let debutGeneration = speciesData.generation.name;
 	if (!pokemon.is_default) {
 		if (!pokemon.formData?.is_battle_only) {
 			debutGeneration = generations.find(generation => generation.version_groups.some(version => version.name === pokemon.formData.version_group.name)).name;
 		} else {
-			// should use the default form's data.
-			pokemonData = pokemons[getIdFromURL(pokemon.species.url)];
+			// use the default form's pokemon data.
+			pokemon = pokemons[getIdFromURL(pokemon.species.url)];
 		};
 	};
-	
-	const generationNames = generations.map(generation => generation.name);
-	const generationOptions = generationNames.slice(generationNames.indexOf(debutGeneration));
+	const generationNames = useMemo(() => generations.map(generation => generation.name), [generations]);
+	const generationOptions = useMemo(() => generationNames.slice(generationNames.indexOf(debutGeneration)), [generationNames, debutGeneration]) ;
 	const [selectedGeneration, setSelectedGeneration] = useState(debutGeneration);
-
 	const versions = cachedGenerations[transformToKeyName(selectedGeneration)].version_groups;
+	const versionOptions = useMemo(() => generationOptions.reduce((pre, cur) => {
+		pre.push(...cachedGenerations[transformToKeyName(cur)].version_groups.map(version => version.name));
+		return pre;
+	}, []), [generationOptions, cachedGenerations]);
 	const [selectedVersion, setSelectedVersion] = useState(versions[0].name);
 	const [filteredMethod, setFilteredMethod] = useState('level-up');
 
-	const getVersionText = version => {
+	const getVersionName = useCallback(version => {
 		if (language !== 'en') {
-			const matchedVersions =  Object.values(cachedVersions).filter(entry => entry.version_group.name === version);
+			const matchedVersions = Object.values(cachedVersions).filter(entry => entry.version_group.name === version);
 			let versionName = '';
 			matchedVersions.forEach((entry, index, array) => {
 				versionName += getNameByLanguage(entry.name, language, cachedVersions[transformToKeyName(entry.name)]);
@@ -50,35 +94,34 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 		} else {
 			return version;
 		};
-	};
+	}, [cachedVersions, language]);
 	
 	// for pokemon that learns move(s) on evolution.
 	let maxEvoLevel;
-	if (speciesInfo.evolves_from_species !== null) {
-		const chainData = evolutionChains[chainId];
+	if (speciesData.evolves_from_species !== null) {
 		maxEvoLevel = 0;
 
-		// find range
-		const matchChains = chainData.chains.filter(chain => chain.includes(pokemonData.id));
+		// find range.
+		const matchChains = chainData.chains.filter(chain => chain.includes(speciesData.id));
 		const rangeIds = new Set();
 
 		matchChains.forEach(chain => {
 			chain.forEach((id, index) => {
-				// the first pokemon in the chain doesn't contain evolution detail
-				if (index !== 0 && index <= chain.indexOf(pokemonData.id)) {
+				// the first pokemon in the chain doesn't contain evolution detail.
+				if (index !== 0 && index <= chain.indexOf(speciesData.id)) {
 					rangeIds.add(id);
 				};
 			});
 		});
-		// find max evolution level in the range
+		// find max evolution level in the range.
 		const chainDetails = [...rangeIds].map(id => chainData.details[id]);
 		const findHeighestEvoLevel = chainDetails => {
 			chainDetails.forEach(entry => {
 				if (entry instanceof Array) {
-					findHeighestEvoLevel(entry)
+					findHeighestEvoLevel(entry);
 				} else {
 					if (entry.min_level !== null && entry.min_level > maxEvoLevel) {
-						maxEvoLevel = entry.min_level
+						maxEvoLevel = entry.min_level;
 					};
 				};
 			});
@@ -86,8 +129,8 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 		findHeighestEvoLevel(chainDetails);
 	};
 
-	const filterMoves = (method, version) => {
-		// version can be string or array
+	const filterMoves = useCallback((method, version) => {
+		// version can be string or array.
 		const conditions = {
 			move_learn_method: method,
 			version_group: version
@@ -101,27 +144,29 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 			};
 		});
 
-		const matches = pokemonData.moves.filter(move => move.version_group_details.some(test));
+		const matches = pokemon.moves.filter(move => move.version_group_details.some(test));
 		const results = matches.map(move => ({...move, version_group_details: move.version_group_details.filter(test)}));
 		return results;
-	};
-	
+	}, [pokemon]);
 	const filteredMoves = filterMoves(filteredMethod, selectedVersion);
+	const movesLearnedByMachine = useMemo(() => filterMoves('machine', versionOptions), [filterMoves, versionOptions]);
 
+	// all moves for current pokemon.
 	const movesToFetch = useMemo(() => {
-		return pokemonData.moves.filter(entry => !cachedMoves[transformToKeyName(entry.move.name)])
+		return pokemon.moves.filter(entry => !cachedMoves[transformToKeyName(entry.move.name)])
 		.map(entry => entry.move.url);
-	}, [pokemonData, cachedMoves]);
+	}, [pokemon, cachedMoves]);
+	
+	const isMachineDataReady = movesLearnedByMachine.every(entry => entry.version_group_details.every(detail => Boolean(machines?.[transformToKeyName(entry.move.name)]?.version_groups?.[detail.version_group.name])));
 
-	const [isDataReady, setIsDataReady] = useState(!movesToFetch.length);
-
-	let movesData, columnData;
 	const movesDataCreator = moves => {
 		const isFilteredByLevel = filteredMethod === 'level-up';
 		const data = moves.map(entry => {
 			const lookupName = transformToKeyName(entry.move.name);
 			const cachedMove = cachedMoves[lookupName];
 			const versionDetails = entry.version_group_details;
+
+			const moveName = capitalize(getNameByLanguage(entry.move.name, language, cachedMoves[transformToKeyName(entry.move.name)]));
 
 			// type
 			const type = cachedMove.type.name;
@@ -151,10 +196,11 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 			);
 			const dispalyData = isFilteredByLevel ? levelData : machineData;
 
-
 			return {
+				// id is used as an key for React Data Table.
+				id: moveName,
 				[isFilteredByLevel ? 'level' : 'machine']: dispalyData,
-				move: capitalize(getNameByLanguage(entry.move.name, language, cachedMoves[transformToKeyName(entry.move.name)])),
+				move: moveName,
 				type: typeData,
 				cat: categoryText,
 				power: cachedMove.power !== null ? cachedMove.power : '—',
@@ -169,7 +215,7 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 			// moves that learned at differetn levels
 			if (move.level instanceof Array) {
 				move.level.forEach(level => {
-					data.push({...move, level: level})
+					data.push({...move, level: level, id: move.move.concat(`-${level}`)})
 				})
 				delete data[index];
 			};
@@ -184,55 +230,8 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 		});
 	};
 
-	const columnDataCreator = movesData => {
-		const formatTableHeader = data => {
-			switch (data) {
-				case 'pp' : {
-					return 'PP'
-				}
-				case 'acc' :
-				case 'cat' :
-					return capitalize(data).concat('.');
-				default : 
-					return capitalize(data)
-			};
-		};
-
-		const sortNumsWithNull = data => (rowA, rowB) => {
-			const a = rowA[data] === '—' ? 0 : rowA[data];
-			const b = rowB[data] === '—' ? 0 : rowB[data];
-			return a - b;
-		};
-
-		// when switching filter method, this function will run again if we sorted data, to avoid error, use optional chaining.
-		const sortElement = data => (rowA, rowB) => {
-			const a = rowA[data]?.props?.value;
-			const b = rowB[data]?.props?.value;
-			return a?.localeCompare(b);
-		};
-
-		// use movesData[0] as a template.
-		return Object.keys(movesData[0]).reduce((pre, cur) => {
-			if (cur !== 'flavorText' && cur !== 'effect') {
-				pre.push({
-					id: cur,
-					name: formatTableHeader(cur),
-					selector: row => row[cur],
-					sortable: true,
-					center: true,
-					sortFunction: cur === 'type' || cur === 'machine' ? sortElement(cur) : cur === 'power' ? sortNumsWithNull(cur) : null
-				});
-			};
-			return pre;
-		}, []);
-	};
-
-	if (!movesToFetch.length) {
-		movesData = movesDataCreator(filteredMoves);
-		if (movesData.length) {
-			columnData = columnDataCreator(movesData);
-		};
-	};
+	const columnData = useMemo(() => columnDataCreator(filteredMethod), [filteredMethod]);
+	const movesData = !movesToFetch.length ? movesDataCreator(filteredMoves) : undefined;
 
 	useEffect(() => {
 		if (movesToFetch.length) {
@@ -241,29 +240,29 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 				const datas = dataResponses.map(response => response.json());
 				const finalData = await Promise.all(datas);
 				dispatch(movesLoaded(finalData));
-				setIsDataReady(true);
 			};
 			getMoves();
 		};
 	}, [dispatch, movesToFetch]);
 
-	const getMachineData = async () => {
-		// fetch all machines for current pokemon
-		const allVersions = generationOptions.reduce((pre, cur) => {
-			pre.push(...cachedGenerations[transformToKeyName(cur)].version_groups.map(version => version.name));
-			return pre;
-		}, []);
+	const changeGeneration = generation => {
+		const nextVersion = cachedGenerations[transformToKeyName(generation)].version_groups[0].name;
+		setSelectedGeneration(generation);
+		setSelectedVersion(nextVersion);
+	};
 
-		const nextFilteredMoves = filterMoves('machine', allVersions);
-		const isMachineDataReady = nextFilteredMoves.every(entry => entry.version_group_details.every(detail => Boolean(machines?.[transformToKeyName(entry.move.name)]?.version_groups?.[detail.version_group.name])));
+	const changeVersion = version => {
+		setSelectedVersion(version);
+	};
 
-		if (!isMachineDataReady) {
-			setIsDataReady(false);
+	const changefilteredMethod = useCallback(async e => {
+		setFilteredMethod(e.target.checked ? 'machine' : 'level-up');
+		if (e.target.checked && !isMachineDataReady) {
 			// the latest generation may not contain machine data.
 			const movesLackData = [];
 			const machinesToFetch = [];
 
-			nextFilteredMoves.forEach(entry => entry.version_group_details.forEach(detail => {
+			movesLearnedByMachine.forEach(entry => entry.version_group_details.forEach(detail => {
 				const match = cachedMoves[transformToKeyName(entry.move.name)].machines.find(machine => machine.version_group.name === detail.version_group.name);
 				if (match) {
 					machinesToFetch.push(match.machine.url);
@@ -294,28 +293,11 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 					...machineData[transformToKeyName(Object.keys(entry)[0])]?.version_groups, [Object.values(entry)[0]]: 'no data'
 				}
 			});
-
 			dispatch(machineDataLoaded(machineData));
-			setIsDataReady(true);
 		};
-	};
+	}, [cachedMoves, dispatch, isMachineDataReady, movesLearnedByMachine]);
 
-	const changeGeneration = generation => {
-		const nextVersion = cachedGenerations[transformToKeyName(generation)].version_groups[0].name;
-		setSelectedGeneration(generation);
-		setSelectedVersion(nextVersion);
-	};
-
-	const changeVersion = version => {
-		setSelectedVersion(version);
-	};
-
-	const changefilteredMethod = e => {
-		setFilteredMethod(e.target.checked ? 'machine' : 'level-up');
-		if (e.target.checked) {
-			getMachineData();
-		};
-	};
+	const isDataReady = filteredMethod === 'level-up' ? !!movesData : !!movesData && isMachineDataReady;
 
 	return (
 		<>
@@ -336,21 +318,25 @@ export default function Moves({speciesInfo, pokemon, chainId}) {
 						{versions.map(version => (
 							<React.Fragment key={version.name}>
 								<li className={version.name === selectedVersion ? 'active' : ''}>
-									<button disabled={!isDataReady} className='text-capitalize' onClick={() => changeVersion(version.name)}>{getVersionText(version.name)}</button>
+									<button disabled={!isDataReady} className='text-capitalize' onClick={() => changeVersion(version.name)}>{getVersionName(version.name)}</button>
 								</li>
 							</React.Fragment>
 						))}
 					</ul>
 				</div>
-				<MovesTable 
-					changefilteredMethod={changefilteredMethod} 
-					filteredMethod={filteredMethod} 
-					selectedVersion={selectedVersion}
-					movesData={movesData}
-					columnData={columnData}
-					isDataReady={isDataReady}
-				/>
+				{/*  */}
+				{movesData && (
+					<MovesTable
+						movesData={movesData}
+						columnData={columnData}
+						changefilteredMethod={changefilteredMethod} 
+						filteredMethod={filteredMethod} 
+						selectedVersion={selectedVersion}
+						isDataReady={isDataReady}
+					/>
+				)}
 			</div>
 		</>
 	)
-};
+});
+export default Moves;

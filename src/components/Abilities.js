@@ -1,10 +1,11 @@
 import { useState, memo } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectAbilities, selectLanguage, abilityLoaded } from '../features/pokemonData/pokemonDataSlice';
 import Spinner from './Spinner';
 import Modal from './Modal';
 import { transformToKeyName, transformToDash, getNameByLanguage, getTextByLanguage } from '../util';
 import { getAbilitiesToDisplay, getData } from '../api';
-import { useSelector, useDispatch } from 'react-redux';
-import { selectAbilities, selectLanguage, abilityLoaded } from '../features/pokemonData/pokemonDataSlice';
+import { flushSync } from 'react-dom';
 
 const Abilities = memo(function Abilities({pokemon}) {
 	const dispatch = useDispatch();
@@ -25,13 +26,16 @@ const Abilities = memo(function Abilities({pokemon}) {
 		};
 
 		setIsModalShown(true);
-
 		if (!abilities[abilityKey]) {
 			fetchedAbility = await getData('ability', ability, 'name');
-			dispatch(abilityLoaded(fetchedAbility));
+			// for some reason redux's state update and local state update will not be batched if in the current component it's listening for the redux state that's gonna be updated and there's any await expression before the state updates, I just found out that flushSynch will help solve this problem, so use it to batch the state updates.
+			flushSync(() => {
+				dispatch(abilityLoaded(fetchedAbility));
+				setAbilityData(fetchedAbility[abilityKey]);
+			});
+		} else {
+			setAbilityData(abilities[abilityKey]);
 		};
-
-		setAbilityData(fetchedAbility?.[abilityKey] || abilities[abilityKey]);
 	};
 
 	const showModalDetail = () => {

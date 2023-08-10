@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk, current, isAnyOf } from "@reduxjs/toolkit";
 import { transformToKeyName } from "../../util";
-import { getEndpointData, getPokemons, getData, getDataToFetch, getRequiredData, getAllSpecies  } from "../../api";
+import { getEndpointData, getPokemons, getData, getDataToFetch, getRequiredData, getAllSpecies } from "../../api";
 import { getIdFromURL, getNameByLanguage } from "../../util";
+
 const initialState = {
 	// pokemon
 	pokemons: {},
@@ -32,6 +33,12 @@ const initialState = {
 	nextRequest: [],
 	sortBy: 'numberAsc',
 	status: null,
+	tableInfo: {
+		page: 1,
+		rowsPerPage: 10,
+		// for scroll restoration
+		selectedPokemonId: null
+	}
 };
 
 // if we have multiple slices, and we decide to put loading status to its own slice, when we handle a thunk fetching pokemon, how are we gonna changing the status if it's in another "state"? (extraReducer' builder can only get access to the current state instead of the whole store state right?)
@@ -70,7 +77,12 @@ const pokemonDataSlice = createSlice({
 			state.display = action.payload;
 		},
 		advancedSearchReset: state => {
-			state.advancedSearch = {generations: {}, types: []};
+			if (state.advancedSearch.types.length) {
+				state.advancedSearch.types = [];
+			};
+			if (Object.keys(state.advancedSearch.generations).length) {
+				state.advancedSearch.generations = {};
+			};
 			state.searchParam = '';
 		},
 		backToRoot: state => {
@@ -85,9 +97,6 @@ const pokemonDataSlice = createSlice({
 		},
 		nextRequestChanged: (state, action) => {
 			state.nextRequest = action.payload;
-		},
-		scrolling: state => {
-			state.status = 'scrolling'
 		},
 		languageChanged: (state, action) => {
 			state.language = action.payload;
@@ -116,7 +125,7 @@ const pokemonDataSlice = createSlice({
 		evolutionChainsLoaded: (state, action) => {
 			state.evolutionChains = {...state.evolutionChains, ...action.payload};
 		},
-		sortByChanged: (state, action) => {
+		sortByChange: (state, action) => {
 			state.sortBy = action.payload;
 		},
 		//The "prepare callback" function can take multiple arguments, generate random values like unique IDs, and run whatever other synchronous logic is needed to decide what values go into the action object. It should then return an object with the payload field inside. (The return object may also contain a meta field, which can be used to add extra descriptive values to the action, and an error field, which should be a boolean indicating whether this action represents some kind of an error.)
@@ -142,11 +151,8 @@ const pokemonDataSlice = createSlice({
 			}, {});
 			state.machines = {...state.machines, ...newEntities};
 		},
-		viewModeChanged: (state, action) => {
-			// not doing anything if there's data being fetched(since we didn't disable the button in the component(we don't want the component to re-render when scrolling))
-			if (state.status !== 'loading') {
-				state.viewMode = action.payload;
-			};
+		tableInfoChanged: (state, action) => {
+			state.tableInfo = {...state.tableInfo, ...action.payload};
 		}
 	},
 	extraReducers: builder => {
@@ -175,9 +181,17 @@ const pokemonDataSlice = createSlice({
 				state.advancedSearch.generations = selectedGenerations || state.advancedSearch.generations;
 				state.advancedSearch.types = selectedTypes || state.advancedSearch.types;
 				state.searchParam = searchParam;
+
+				// reset table info
+				state.tableInfo.page = 1;
+				state.tableInfo.selectedPokemonId = null;
 			})
 			.addCase(getPokemonsOnScroll.pending, state => {
-				state.status = 'scrolling'
+				// prevent extra re-render if no fetching needed.
+				const nextDisplay = state.nextRequest.slice(0, 24);
+				if (!nextDisplay.every(id => state.pokemons[id])) {
+					state.status = 'scrolling';
+				};
 			})
 			.addCase(changeLanguageThunk.pending, state => {
 				const hasAllSpecies = Object.keys(state.pokemonSpecies).length === state.pokemonCount;
@@ -193,13 +207,14 @@ const pokemonDataSlice = createSlice({
 			})
 			.addCase(sortPokemons.pending, (state, action) => {
 				// change UI before data is fetched.
-				// we don't have to prevent it from doing anything like changeViewMode's pending reducer function, because we did disable the button when status === 'loading'(hence Sort is a fairly small component, I think that let it register to the status value wounldn't hurt performance that much.)
-				const sortBy = action.meta.arg;
-				state.sortBy = sortBy;
+				if (state.status === 'idle') {
+					const sortBy = action.meta.arg;
+					state.sortBy = sortBy;
+				};
 			})
 			.addCase(changeViewMode.pending, (state, action) => {
-				// change UI before data is fetched and prevent from doing anything when data is loading.
-				if (state.status !== 'loading') {
+				// change UI before data is fetched and prevent buttons from being clicked when there's data being fetched.
+				if (state.status === 'idle') {
 					const {viewMode} = action.meta.arg;
 					state.viewMode = viewMode;
 				};
@@ -222,7 +237,6 @@ const pokemonDataSlice = createSlice({
 								state[transformToKeyName(key)] = {...state[transformToKeyName(key)], ...fetchedData[key]};
 						};
 					});
-					// check if this cause err...
 					state.status = 'idle';
 				};
 			})
@@ -232,6 +246,13 @@ const pokemonDataSlice = createSlice({
 				state.nextRequest = nextRequest;
 				state.display = pokemonsToDisplay;
 				state.status = 'idle';
+			})
+			.addDefaultCase((state, action) => {
+				if (action.payload === 'multiple requests while data is loading') {
+					// intentionally do nothing.
+				} else if (action?.error?.message === 'Rejected') {
+					// handle fetch error
+				}
 			})
 	}
 });
@@ -246,7 +267,7 @@ const pokemonDataSlice = createSlice({
 
 export default pokemonDataSlice.reducer;
 
-export const {dataLoading, pokemonCountLoaded, pokemonNamesAndIdsLoaded, intersectionChanged, generationsLoaded, typesLoaded, pokemonsLoaded, displayChanged, advancedSearchReset, backToRoot, searchParamChanged, advancedSearchChanged, nextRequestChanged, scrolling, languageChanged, pokemonSpeciesLoaded, versionLoaded, moveDamageClassLoaded, statLoaded, itemLoaded, abilityLoaded, error, evolutionChainsLoaded, movesLoaded, machineDataLoaded, viewModeChanged, sortByChanged} = pokemonDataSlice.actions;
+export const {dataLoading, pokemonCountLoaded, pokemonNamesAndIdsLoaded, intersectionChanged, generationsLoaded, typesLoaded, pokemonsLoaded, displayChanged, advancedSearchReset, backToRoot, searchParamChanged, advancedSearchChanged, nextRequestChanged, languageChanged, pokemonSpeciesLoaded, versionLoaded, moveDamageClassLoaded, statLoaded, itemLoaded, abilityLoaded, error, evolutionChainsLoaded, movesLoaded, machineDataLoaded, tablePageChanged, tableInfoChanged, sortByChange} = pokemonDataSlice.actions;
 
 // maybe we can just do:
 // export const actions = pokemonDataSlice.actions, then use actions.xxx in each component, but if we're gonna separate these to different slice file, maybe there's no need to do this.
@@ -271,19 +292,26 @@ export const getInitialData = createAsyncThunk('pokeData/getInitialData', async(
 	const typeResponse = await getEndpointData('type');
 	typeData = await getData('type', typeResponse.results.map(entry => entry.name), 'name');
 
-	const {fetchedPokemons,	nextRequest, pokemonsToDisplay } = await getPokemons(pokeData, dispatch, intersection, pokeData.sortBy);
+	const {fetchedPokemons,	nextRequest, pokemonsToDisplay } = await getPokemons({}, pokemonsNamesAndId, dispatch, intersection, pokeData.sortBy);
 	return {pokemonCount: speciesResponse.count, pokemonsNamesAndId, intersection, generationData, typeData, fetchedPokemons, nextRequest, pokemonsToDisplay}
 });
 
-export const sortPokemons = createAsyncThunk('pokeData/sortPokemons', async(sortOption, {dispatch, getState}) => {
+export const sortPokemons = createAsyncThunk('pokeData/sortPokemons', async(sortOption, {dispatch, getState, rejectWithValue}) => {
 	const pokeData = getState().pokeData;
-	const res = await getPokemons(pokeData, dispatch, pokeData.intersection, sortOption);
-	return res;
+
+	if (pokeData.status === 'idle') {
+		const res = await getPokemons(pokeData.pokemons, pokeData.allPokemonNamesAndIds, dispatch, pokeData.intersection, sortOption);
+		return res;
+	} else {
+		// prevent fulfilled reducer function from runing.
+		return rejectWithValue('multiple requests while data is loading');
+	};
 });
 
 export const searchPokemon = createAsyncThunk('pokeData/searchPokemon', async ({searchParam, selectedGenerations, selectedTypes, matchMethod}, {dispatch, getState}) => {
 	const pokeData = getState().pokeData;
-	const pokemonNames = Object.keys(pokeData.allPokemonNamesAndIds);
+	const allNamesAndIds = pokeData.allPokemonNamesAndIds;
+	const pokemonNames = Object.keys(allNamesAndIds);
 	// get range
 	let pokemonRange = [];
 
@@ -291,7 +319,7 @@ export const searchPokemon = createAsyncThunk('pokeData/searchPokemon', async ({
 		for (let i = 0; i < pokemonNames.length; i ++) {
 			let obj = {};
 			obj.name = pokemonNames[i];
-			obj.url = `https://pokeapi.co/api/v2/pokemon-species/${pokeData.allPokemonNamesAndIds[pokemonNames[i]]}/`
+			obj.url = `https://pokeapi.co/api/v2/pokemon-species/${allNamesAndIds[pokemonNames[i]]}/`
 			pokemonRange.push(obj);
 		};
 	} else {
@@ -334,7 +362,7 @@ export const searchPokemon = createAsyncThunk('pokeData/searchPokemon', async ({
 			intersection = rangeIds.filter(id => typeMatchingPokemonIds.includes(id));
 		};
 	};
-	const {fetchedPokemons, pokemonsToDisplay, nextRequest} = await getPokemons(pokeData, dispatch, intersection, pokeData.sortBy);
+	const {fetchedPokemons, pokemonsToDisplay, nextRequest} = await getPokemons(pokeData.pokemons, allNamesAndIds, dispatch, intersection, pokeData.sortBy);
 	return {intersection, searchParam, selectedGenerations, selectedTypes, fetchedPokemons, nextRequest, pokemonsToDisplay};
 });
 
@@ -351,7 +379,6 @@ export const getPokemonsOnScroll = createAsyncThunk('pokeData/getPokemonsOnScrol
 	return {fetchedPokemons, nextRequest, pokemonsToDisplay: [...displayedPokemons, ...pokemonsToDisplay]};
 });
 
-// change this name to navigateToPokemon or something?
 export const getRequiredDataThunk = createAsyncThunk('pokeData/getRequiredData', async({requestPokemonIds, requests, lang}, {dispatch, getState}) => {
 	const fetchedData = await getRequiredData(getState().pokeData, dispatch, requestPokemonIds, requests, lang);
 	return {fetchedData};
@@ -421,6 +448,18 @@ export const selectVersions = state => state.pokeData.version;
 export const selectMoves = state => state.pokeData.moves;
 export const selectMoveDamageClass = state => state.pokeData.move_damage_class;
 export const selectMachines = state => state.pokeData.machines;
+export const selectTableInfo = state => state.pokeData.tableInfo;
+
+
+export const selectPokemonById = (state, id) => state.pokeData.pokemons[id];
+
+export const selectSpeciesById = (state, id) => {
+	const speciesId = getIdFromURL(state.pokeData.pokemons[id]?.species?.url);
+	return state.pokeData.pokemonSpecies[speciesId];
+};
+
+export const selectChainDataByChainId = (state, chainId) => state.pokeData.evolutionChains?.[chainId];
+
 
 export const selectPokeData = state => state.pokeData;
 
@@ -450,3 +489,38 @@ export const selectPokeData = state => state.pokeData;
 	// }
 	// or can we directly set lange to sessionStorage, so we don't have to dispatch languageChange, but we still have to fetch other data
 	// if (initialState.language !== 'en') {get generations/species...}
+
+// see if you want to disable Search/Sort the same way used in ViewMode
+	// html title...
+	// is it possible to batch thunk dispatch with regular action dispatch? (seems not possible, more experiments are needed.)
+
+
+
+	// optimize: reorder table, change viewMode (pokemons will re-renders twice because of sortPokemons's pending + sortPokemons's fulfilled + changeViewMode's pending) (but this will not be trigger that often.)
+
+
+	// can we change state in the thunk body instead of dispatching? e.g.
+	// getState().pokeData.status = 'loading'
+
+
+
+	// Redux dispatch pattern (for minimum re-renders):
+	/* 
+	Always only use thunk body + fulfilled reducer.
+	Have a isFetchRequired boolean value.
+	(fetch is needed)
+	1. if isFetchRequired is true, then dispatch dataLoading and dispatch UI change in the thunk body before fetching.
+	2. return the fetched data.
+	3. update state in the fulfilled reducer function
+	--------------------------------------------------------
+	in the case of fetch is required, there're only two re-renders.
+
+	(fetch is NOT needed)
+	1. if isFetchRequired is false, neither dispatch dataLoading nor dispatch UI change in the thunk body.
+	2. in the fulfilled reducer function, check if fetched data existes, if it does, update the relevant state value and UI, if it doesn't, just update the relevant state value.
+	--------------------------------------------------------
+	in the case of fetch is not required, there's only one re-renders
+
+	Note 1: in the fulfilled reducer function, there's should be a condition check if fetched data exist to determin whether update the UI here or UI has already been updated in the thunk body. (if UI update is about premitive value, then update UI again in the fulfilled reducer function wounldn't make extra re-render)
+	Note 2: the fetch logic should only be executed when isFetchRequired === true.
+	*/

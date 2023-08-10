@@ -5,7 +5,6 @@ import FilterGeneration from "./FilterGeneration";
 import FilterTypes from "./FilterTypes";
 
 const AdvancedSearch = memo(function AdvancedSearch({
-	searchParam,
 	setSearchParam,
 	selectedTypes,
 	setSelectedTypes,
@@ -14,21 +13,13 @@ const AdvancedSearch = memo(function AdvancedSearch({
 	setMatchMethod,
 	collapseId
 }) {
-	console.log(123)
 	const dispatch = useDispatch();
 	const handleReset = () => {
-		if (selectedTypes.length) {
-			setSelectedTypes([]);
-		};
-		if (Object.keys(selectedGenerations).length) {
-			setSelectedGenerations({});
-		}
-		if (searchParam !== '') {
-			setSearchParam('');
-		};
-		if (selectedTypes.length || Object.keys(selectedGenerations).length || searchParam !== '') {
-			dispatch(advancedSearchReset());
-		};
+		// if no state update needed, return the same state to prevent re-render.
+		setSelectedTypes(st => !st.length ? st : []);
+		setSelectedGenerations(sg => !Object.keys(sg).length ? sg : {});
+		setSearchParam('');
+		dispatch(advancedSearchReset());
 	};
 	return (
 		<div className="collapse" id={collapseId}>
@@ -52,5 +43,4 @@ const AdvancedSearch = memo(function AdvancedSearch({
 		</div>
 	)
 });
-
-export default AdvancedSearch
+export default AdvancedSearch;

@@ -1,28 +1,36 @@
-import { useRef, useState, memo } from "react"
+import { useRef, useState, useMemo, memo, useCallback } from "react"
 import { useSelector } from "react-redux";
 import { selectAllIdsAndNames } from "../features/pokemonData/pokemonDataSlice";
 import DataList from './DataList';
 
 const Input = memo(function Input({searchParam, setSearchParam}) {
 	const allPokemonNamesAndIds = useSelector(selectAllIdsAndNames);
-	const [showDataList, setShowDataList] = useState(false);
+	const [isDataListShown, setIsDataListShown] = useState(false);
 	const [hoveredPokemon, setHoveredPokemon] = useState('');
 	const [currentFocus, setCurrentFocus] = useState(-1);
 	const datalistRef = useRef(null);
 	const inputRef = useRef(null);
-	let matchList = [];
 
-	const resetFocus = datalist => {
+	const matchList = useMemo(() => {
+		const match = Object.keys(allPokemonNamesAndIds).filter(name => name.toLowerCase().includes(searchParam.toLowerCase()));
+		const sortedByStart = match.filter(name => name.startsWith(searchParam)).sort((a,b) => a.localeCompare(b));
+		const remainderMatches = match.filter(name => !sortedByStart.includes(name)).sort((a,b) => a.localeCompare(b));
+		return searchParam !== '' ? sortedByStart.concat(remainderMatches) : [];
+	}, [allPokemonNamesAndIds, searchParam])
+
+	const activePokemon = matchList[currentFocus];
+
+	const resetFocus = useCallback(datalist => {
 		setCurrentFocus(-1);
 		// reset previous auto focus
 		datalist.scrollTop = 0;
-	};
+	}, []);
 
 	const handleFocus = () => {
 		if (matchList.length === 1 && matchList[0] === searchParam) {
-			setShowDataList(false);
+			setIsDataListShown(false);
 		} else if (searchParam !== '') {
-			setShowDataList(true);
+			setIsDataListShown(true);
 		};
 	};
 
@@ -30,17 +38,25 @@ const Input = memo(function Input({searchParam, setSearchParam}) {
 		// only blur out when not hovering pokemon names
 		if (hoveredPokemon === '') {
 			resetFocus(datalistRef.current);
-			setShowDataList(false);
+			setIsDataListShown(false);
 		};
 	};
 
 	const handleInput = e => {
-		setShowDataList(true);
+		setIsDataListShown(true);
 		setSearchParam(e.target.value);
 		resetFocus(datalistRef.current);
 	};
 
-	const handleKeyDown = e => {
+	const handleClearInput = () => {
+		setSearchParam('');
+		resetFocus(datalistRef.current);
+		// for mobile
+		setHoveredPokemon('');
+		inputRef.current.focus();
+	};
+
+	const handleKeyDown = useCallback(e => {
 		const datalist = datalistRef.current;
 		const focusName = (datalist, nextFocus) => {
 			setCurrentFocus(nextFocus);
@@ -84,12 +100,12 @@ const Input = memo(function Input({searchParam, setSearchParam}) {
 					datalist.children[currentFocus].click();
 				};
 				// submit the form
-				setShowDataList(false);
+				setIsDataListShown(false);
 				break;
 			}
 			// escape
 			case 27 : {
-				setShowDataList(false);
+				setIsDataListShown(false);
 				setSearchParam('');
 				resetFocus(datalist);
 				break;
@@ -97,23 +113,7 @@ const Input = memo(function Input({searchParam, setSearchParam}) {
 			default : 
 			// most of the input changes are handled by handleInput
 		};
-	};
-
-	const handleClearInput = () => {
-		setSearchParam('');
-		resetFocus(datalistRef.current);
-		// for mobile
-		setHoveredPokemon('');
-		inputRef.current.focus();
-	};
-	const match = Object.keys(allPokemonNamesAndIds).filter(name => name.toLowerCase().includes(searchParam.toLowerCase()));
-	const sortedByStart = match.filter(name => name.startsWith(searchParam)).sort((a,b) => a.localeCompare(b));
-	const remainderMatches = match.filter(name => !sortedByStart.includes(name)).sort((a,b) => a.localeCompare(b));
-
-	if (searchParam !== '') {
-		matchList = sortedByStart.concat(remainderMatches);
-	};
-	const activePokemon = matchList[currentFocus];
+	}, [currentFocus, setSearchParam, matchList.length, resetFocus]);
 
 	return (
 		<div className="form-group position-relative searchInput">
@@ -123,7 +123,7 @@ const Input = memo(function Input({searchParam, setSearchParam}) {
 					autoComplete='off'
 					id="searchInput"
 					type="text"
-					className={`form-control form-control-lg ${showDataList && matchList.length ? 'showDatalist' : ''}`}
+					className={`form-control form-control-lg ${isDataListShown && matchList.length ? 'showDatalist' : ''}`}
 					value={searchParam}
 					onFocus={handleFocus}
 					onBlur={handleBlur}
@@ -136,8 +136,8 @@ const Input = memo(function Input({searchParam, setSearchParam}) {
 				matchList={matchList}
 				ref={datalistRef}
 				inputRef={inputRef}
-				showDataList={showDataList}
-				setShowDataList={setShowDataList}
+				isDataListShown={isDataListShown}
+				setIsDataListShown={setIsDataListShown}
 				searchParam={searchParam}
 				setSearchParam={setSearchParam}
 				hoveredPokemon={hoveredPokemon}

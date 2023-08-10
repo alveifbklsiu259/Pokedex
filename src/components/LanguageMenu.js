@@ -41,7 +41,11 @@ export default function LanguageMenu() {
 		
 	const changeLanguage = async option => {
 		handleClose();
-		dispatch(changeLanguageThunk({option, pokeId}));
+		try {
+			await dispatch(changeLanguageThunk({option, pokeId})).unwrap();
+		} catch (e) {
+			console.log(e)
+		}
 	};
 
 	return (

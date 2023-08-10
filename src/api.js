@@ -118,7 +118,7 @@ export const getAbilities = async (pokemonData, cachedAbilities) => {
 	};
 };
 
-const sortPokemons = (allPokemons, sortOption, allPokemonNamesAndIds, request) => {
+export const sortPokemons = (allPokemons, sortOption, allPokemonNamesAndIds, request) => {
 	const sortPokemonsByName = () => {
 		let sortedNames;
 		let sort = sortOption.includes('Asc') ? 'asc' : 'desc';
@@ -143,7 +143,30 @@ const sortPokemons = (allPokemons, sortOption, allPokemonNamesAndIds, request) =
 			.filter(id => request.includes(id));
 	};
 
+	const sortPokemonsByStat = stat => {
+		let sortedPokemons;
+		const getBaseStat = pokemon => {
+			if (stat.includes('total')) {
+				return pokemon.stats.reduce((pre, cur) => pre + cur.base_stat, 0);
+			} else {
+				return pokemon.stats.find(entry => entry.stat.name === stat).base_stat;
+			};
+		};
+		let sort = sortOption.includes('Asc') ? 'asc' : 'desc';
+		if (sort === 'asc') {
+			sortedPokemons = Object.values(allPokemons).sort((a, b) => getBaseStat(a) - getBaseStat(b));
+		} else if (sort === 'desc') {
+			sortedPokemons = Object.values(allPokemons).sort((a, b) => getBaseStat(b) - getBaseStat(a));
+		};
+		return sortedPokemons.map(pokemon => pokemon.id)
+			.filter(id => request.includes(id));
+	};
+	
+
 	switch(sortOption) {
+		case 'numberAsc' : {
+			return [...request].sort((a, b) => a - b);
+		}
 		case 'numberDesc' : {
 			return [...request].sort((a, b) => b - a);
 		}
@@ -160,34 +183,39 @@ const sortPokemons = (allPokemons, sortOption, allPokemonNamesAndIds, request) =
 			return sortPokemonsByWeightOrHeight('weight');
 		}
 		default : {
-			// 'numberAsc'
-			return [...request].sort((a, b) => a - b);
-		}
+			let stat;
+			if (sortOption.includes('Asc')) {
+				stat = sortOption.slice(0, sortOption.indexOf('Asc'));
+			} else {
+				stat = sortOption.slice(0, sortOption.indexOf('Desc'));
+			};
+			return sortPokemonsByStat(stat);
+		};
 	};
 };
 
-export const getPokemons = async (pokeData, dispatch, request, sortOption) => {
+export const getPokemons = async (cachedPokemons, allPokemonNamesAndIds, dispatch, request, sortOption) => {
 	// the dataLoading dispatches in this function will not cause extra re-render in getInitialData thunk.(I think it's because of Immer and we update the status in a mutational way.)
 	let sortedRequest, pokemonsToFetch, fetchedPokemons, pokemonsToDisplay, nextRequest, allPokemons;
 	
-	if (sortOption.includes('weight') || sortOption.includes('height')) {
-		pokemonsToFetch = getDataToFetch(pokeData.pokemons, request);
+	if (!(sortOption.includes('number') || sortOption.includes('name'))) {
+		pokemonsToFetch = getDataToFetch(cachedPokemons, request);
 		if (pokemonsToFetch.length) {
 			dispatch(dataLoading());
 			fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
-			allPokemons = {...pokeData.pokemons, ...fetchedPokemons};
+			allPokemons = {...cachedPokemons, ...fetchedPokemons};
 		} else {
-			allPokemons = {...pokeData.pokemons};
+			allPokemons = {...cachedPokemons};
 		};
 	};
 
-	sortedRequest = sortPokemons(allPokemons, sortOption, pokeData.allPokemonNamesAndIds, request).slice();
+	sortedRequest = sortPokemons(allPokemons, sortOption, allPokemonNamesAndIds, request).slice();
 	pokemonsToDisplay = sortedRequest.splice(0, 24);
 	nextRequest = sortedRequest.length ? sortedRequest : null;
 
 	// when sortBy is neither weight nor height.
 	if (!pokemonsToFetch) {
-		pokemonsToFetch = getDataToFetch(pokeData.pokemons, pokemonsToDisplay);
+		pokemonsToFetch = getDataToFetch(cachedPokemons, pokemonsToDisplay);
 		if (pokemonsToFetch.length) {
 			dispatch(dataLoading());
 			fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
@@ -464,7 +492,7 @@ export function useNavigateToPokemon() {
 		dispatch(getRequiredDataThunk({requestPokemonIds, requests, lang}));
 	};
 	return navigateToPokemon;
-}
+};
 
 
 
