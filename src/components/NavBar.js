@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, memo } from 'react';
+import { useDispatch } from 'react-redux';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
@@ -7,66 +7,77 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import Slide from '@mui/material/Slide';
+import { advancedSearchReset, backToRoot } from '../features/pokemonData/pokemonDataSlice';
+import { useNavigateNoUpdates } from './RouterUtils';
 import LanguageMenu from './LanguageMenu';
 import Modal from './Modal';
 import Search from './Search';
-import { useDispatch } from 'react-redux';
-import { advancedSearchReset, backToRoot } from '../features/pokemonData/pokemonDataSlice';
 
-function HideOnScroll(props) {
+const HideOnScroll = (props) => {
 	const { children, window } = props;
 	const trigger = useScrollTrigger({
-	  target: window ? window() : undefined,
+		target: window ? window() : undefined,
 	});
-  
+
 	return (
-	  <Slide appear={false} direction="down" in={!trigger}>
-		{children}
-	  </Slide>
+		<Slide appear={false} direction="down" in={!trigger}>
+			{children}
+		</Slide>
 	);
-}
+};
 
 export default function NavBar() {
 	const [isModalShown, setIsModalShown] = useState(false);
-	const dispatch = useDispatch();
-	const onShowModal = () => {
-		setIsModalShown(true);
-		dispatch(advancedSearchReset());
-	};
 
-	const onCloseModal = () => {
+	const handleCloseModal = () => {
 		setIsModalShown(false);
-	};
-
-	const onBackToRoot = () => {
-		dispatch(backToRoot())
 	};
 
 	return (
 		<div className='navbar'>
-			<Box sx={{ flexGrow: 1, mb: 9 }}>
-				<HideOnScroll>
-					<AppBar sx={{bgcolor: theme => theme.palette.primary.light, position: 'fixed'}}>
-						<Toolbar sx={{justifyContent: 'space-between'}}>
-						<Typography variant="h5" component={Link} to="/" color="#fff" onClick={onBackToRoot}>Pokédex</Typography>
-						<Box sx={{display: 'flex'}}>
-							<Button size='large' variant="contained" onClick={onShowModal}><i className="fa-solid fa-magnifying-glass"></i></Button>
-							<LanguageMenu />
-							{/* see if we can disable pokedex link when loading */}
-						</Box>
-						</Toolbar>
-					</AppBar>
-				</HideOnScroll>
-			</Box>
+			<SearchBtn setIsModalShown={setIsModalShown}/>
 			{isModalShown && (
 				<Modal
 					isModalShown={isModalShown}
 					setIsModalShown={setIsModalShown}
 					customClass='modalBody searchModal'
 				>
-					<Search closeModal={onCloseModal}/>
+					<Search closeModal={handleCloseModal}/>
 				</Modal>
 			)}
 		</div>
 	);
-}
+};
+
+const SearchBtn = memo(function SearchBtn({setIsModalShown}) {
+	const dispatch = useDispatch();
+	const navigateNoUpdates = useNavigateNoUpdates();
+
+	const handleShowModal = () => {
+		setIsModalShown(true);
+		dispatch(advancedSearchReset());
+	};
+
+	const handleBackToRoot = () => {
+		dispatch(backToRoot());
+		navigateNoUpdates('/');
+	};
+	
+	return (
+		<Box sx={{ flexGrow: 1, mb: 9 }}>
+			<HideOnScroll>
+				<AppBar sx={{bgcolor: theme => theme.palette.primary.light, position: 'fixed'}}>
+					<Toolbar sx={{justifyContent: 'space-between'}}>
+					<Typography variant="h5" color="#fff" sx={{cursor: 'pointer'}} onClick={handleBackToRoot}>Pokédex</Typography>
+					<Box sx={{display: 'flex'}}>
+						<Button size='large' variant="contained" onClick={handleShowModal}>
+							<i className="fa-solid fa-magnifying-glass"></i>
+						</Button>
+						<LanguageMenu />
+					</Box>
+					</Toolbar>
+				</AppBar>
+			</HideOnScroll>
+		</Box>
+	)
+});

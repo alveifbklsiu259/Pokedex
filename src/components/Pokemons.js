@@ -19,7 +19,7 @@ export default function Pokemons() {
 	const viewMode = useSelector(selectViewMode);
 	const tableInfoRef = useRef({});
 	const intersection = useSelector(selectIntersection, shallowEqual);
-	
+
 	const cachedDispaly = useMemo(() => {
 		return display.map(id => Object.values(pokemons).find(pokemon => pokemon.id === id));
 	}, [display, pokemons]);

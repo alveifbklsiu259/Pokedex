@@ -1,7 +1,7 @@
 import { useDispatch } from 'react-redux';
 import { useNavigateNoUpdates } from "./components/RouterUtils";
 import { getIdFromURL, transformToKeyName, transformToDash } from "./util";
-import { dataLoading, getRequiredDataThunk, pokemonsLoaded, displayChanged, nextRequestChanged, scrolling, pokemonSpeciesLoaded, evolutionChainsLoaded } from "./features/pokemonData/pokemonDataSlice";
+import { dataLoading, getRequiredDataThunk, pokemonsLoaded, displayChanged, nextRequestChanged, scrolling, pokemonSpeciesLoaded, evolutionChainsLoaded, searchPokemon } from "./features/pokemonData/pokemonDataSlice";
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
@@ -484,11 +484,11 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 };
 
 export function useNavigateToPokemon() {
-	const navigate = useNavigateNoUpdates();
+	const navigateNoUpdates = useNavigateNoUpdates();
 	const dispatch = useDispatch();
 	
 	const navigateToPokemon = (requestPokemonIds, requests, lang) => {
-		navigate(`/pokemons/${requestPokemonIds[0]}`);
+		navigateNoUpdates(`/pokemons/${requestPokemonIds[0]}`);
 		dispatch(getRequiredDataThunk({requestPokemonIds, requests, lang}));
 	};
 	return navigateToPokemon;

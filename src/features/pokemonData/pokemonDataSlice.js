@@ -175,6 +175,15 @@ const pokemonDataSlice = createSlice({
 					status: 'idle'
 				}
 			})
+			// .addCase(searchPokemon.pending, (state, action) => {
+			// 	const {searchParam, selectedGenerations, selectedTypes} = action.meta.arg;
+			// 	state.advancedSearch.generations = selectedGenerations || state.advancedSearch.generations;
+			// 	state.advancedSearch.types = selectedTypes || state.advancedSearch.types;
+			// 	state.searchParam = searchParam;
+			// 	// reset table info
+			// 	state.tableInfo.page = 1;
+			// 	state.tableInfo.selectedPokemonId = null;
+			// })
 			.addCase(searchPokemon.fulfilled, (state, action) => {
 				const {intersection, searchParam, selectedGenerations, selectedTypes} = action.payload;
 				state.intersection = intersection;
@@ -193,13 +202,7 @@ const pokemonDataSlice = createSlice({
 					state.status = 'scrolling';
 				};
 			})
-			.addCase(changeLanguageThunk.pending, state => {
-				const hasAllSpecies = Object.keys(state.pokemonSpecies).length === state.pokemonCount;
-				if (!hasAllSpecies) {
-					state.status = 'loading';
-				};
-			})
-			.addCase(changeLanguageThunk.fulfilled, (state, {payload}) => {
+			.addCase(changeLanguage.fulfilled, (state, {payload}) => {
 				const {fetchedSpecies, newNamesIds, language} = payload;
 				state.pokemonSpecies = fetchedSpecies ? {...state.pokemonSpecies, ...fetchedSpecies} : state.pokemonSpecies;
 				state.allPokemonNamesAndIds = newNamesIds;
@@ -219,7 +222,7 @@ const pokemonDataSlice = createSlice({
 					state.viewMode = viewMode;
 				};
 			})
-			.addMatcher(isAnyOf(getRequiredDataThunk.fulfilled, changeViewMode.fulfilled, changeLanguageThunk.fulfilled), (state, action) => {
+			.addMatcher(isAnyOf(getRequiredDataThunk.fulfilled, changeViewMode.fulfilled, changeLanguage.fulfilled), (state, action) => {
 				const {fetchedData} = action.payload;
 				const keys = Object.keys(fetchedData);
 				if (keys.length) {
@@ -250,6 +253,7 @@ const pokemonDataSlice = createSlice({
 			.addDefaultCase((state, action) => {
 				if (action.payload === 'multiple requests while data is loading') {
 					// intentionally do nothing.
+					console.log('multiple requests while data is loading')
 				} else if (action?.error?.message === 'Rejected') {
 					// handle fetch error
 				}
@@ -380,7 +384,8 @@ export const getPokemonsOnScroll = createAsyncThunk('pokeData/getPokemonsOnScrol
 });
 
 export const getRequiredDataThunk = createAsyncThunk('pokeData/getRequiredData', async({requestPokemonIds, requests, lang}, {dispatch, getState}) => {
-	const fetchedData = await getRequiredData(getState().pokeData, dispatch, requestPokemonIds, requests, lang);
+	const pokeData = getState().pokeData;
+	const fetchedData = await getRequiredData(pokeData, dispatch, requestPokemonIds, requests, lang);
 	return {fetchedData};
 });
 
@@ -398,26 +403,32 @@ export const changeViewMode = createAsyncThunk('pokeData/changeViewMode', async(
 	return {fetchedData, viewMode};
 });
 
-export const changeLanguageThunk = createAsyncThunk('pokeData/changeLanguage', async({option: language, pokeId}, {dispatch, getState}) => {
+export const changeLanguage = createAsyncThunk('pokeData/changeLanguage', async({option: language, pokeId}, {dispatch, getState, rejectWithValue}) => {
 	const pokeData = getState().pokeData;
-	let fetchedSpecies;
-	const hasAllSpecies = Object.keys(pokeData.pokemonSpecies).length === pokeData.pokemonCount;
-
-	const requests = pokeId ? ['pokemons', 'abilities', 'items', 'version', 'move-damage-class', 'stat'] : ['version', 'move-damage-class', 'stat'];
-	const requestPokemonIds = pokeId ? pokeData.pokemonSpecies[getIdFromURL(pokeData.pokemons[pokeId].species.url)].varieties.map(variety => getIdFromURL(variety.pokemon.url)) : [undefined];
-
-	if (!hasAllSpecies) {
-		fetchedSpecies = await getAllSpecies(pokeData.pokemonSpecies, pokeData.pokemonCount);
+	if (pokeData.status === 'idle') {
+		let fetchedSpecies;
+		const hasAllSpecies = Object.keys(pokeData.pokemonSpecies).length === pokeData.pokemonCount;
+	
+		const requests = pokeId ? ['pokemons', 'abilities', 'items', 'version', 'move-damage-class', 'stat'] : ['version', 'move-damage-class', 'stat'];
+		const requestPokemonIds = pokeId ? pokeData.pokemonSpecies[getIdFromURL(pokeData.pokemons[pokeId].species.url)].varieties.map(variety => getIdFromURL(variety.pokemon.url)) : [undefined];
+	
+		if (!hasAllSpecies) {
+			// the reason why I decide to dispatch dataLoading here instead of passing the dispatch down to getAllSpecies like some other functions(getRequiredData, getPokemons) is because that it requires some effors to check if the fecth is needed, but right here I already know that.
+			dispatch(dataLoading());
+			fetchedSpecies = await getAllSpecies(pokeData.pokemonSpecies, pokeData.pokemonCount);
+		};
+	
+		const fetchedData = await getRequiredData(pokeData, dispatch, requestPokemonIds, requests, language);
+		
+		const newNamesIds = Object.values({...pokeData.pokemonSpecies, ...fetchedSpecies}).reduce((pre, cur) => {
+			pre[getNameByLanguage(cur.name, language, cur)] = cur.id;
+			return pre;
+		}, {});
+		
+		return {fetchedData, fetchedSpecies, newNamesIds ,language};
+	} else {
+		return rejectWithValue('multiple requests while data is loading');
 	};
-
-	const fetchedData = await getRequiredData(pokeData, dispatch, requestPokemonIds, requests, language);
-	
-	const newNamesIds = Object.values({...pokeData.pokemonSpecies, ...fetchedSpecies}).reduce((pre, cur) => {
-		pre[getNameByLanguage(cur.name, language, cur)] = cur.id;
-		return pre;
-	}, {});
-	
-	return {fetchedData, fetchedSpecies, newNamesIds ,language};
 });
 
 // selector

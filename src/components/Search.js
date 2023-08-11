@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect, useRef, useId } from 'react';
+import { useState, useLayoutEffect, useRef, useId, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectStatus, selectAdvancedSearch, selectSearchParam, searchPokemon } from '../features/pokemonData/pokemonDataSlice';
 import { useNavigateNoUpdates } from './RouterUtils';
@@ -7,17 +7,16 @@ import Input from './Input';
 import pokeBall from '../assets/pokeBall.png';
 
 export default function Search({closeModal}) {
-	const status = useSelector(selectStatus);
+	const dispatch = useDispatch();
 	const advancedSearch = useSelector(selectAdvancedSearch);
 	const cachedSearchParam = useSelector(selectSearchParam);
-	const dispatch = useDispatch();
-	const navigateNoUpdates = useNavigateNoUpdates();
-	const collapseId = useId();
-	const collapseBtnRef = useRef(null);
-	const [searchParam, setSearchParam] = useState('');
-	const [selectedGenerations, setSelectedGenerations] = useState({});
-	const [selectedTypes, setSelectedTypes] = useState([]);
+	const [searchParam, setSearchParam] = useState(cachedSearchParam);
+	const [selectedGenerations, setSelectedGenerations] = useState(advancedSearch.generations);
+	const [selectedTypes, setSelectedTypes] = useState(advancedSearch.types);
 	const [matchMethod, setMatchMethod] = useState('all');
+	const collapseBtnRef = useRef(null);
+	const collapseId = useId();
+	const navigateNoUpdates = useNavigateNoUpdates();
 
 	const handleIconChange = () => {
 		if (collapseBtnRef.current.closest('button').getAttribute('aria-expanded') === 'true') {
@@ -55,7 +54,6 @@ export default function Search({closeModal}) {
 	useLayoutEffect(() => {
 		// synchronizing state
 		setSearchParam(cachedSearchParam);
-		
 		setSelectedGenerations(sg => JSON.stringify(advancedSearch.generations) !== JSON.stringify(sg) ? advancedSearch.generations : sg);
 		setSelectedTypes(st => JSON.stringify(advancedSearch.types) !== JSON.stringify(st) ? advancedSearch.types : st);
 	}, [cachedSearchParam, advancedSearch]);
@@ -85,14 +83,21 @@ export default function Search({closeModal}) {
 							collapseId={collapseId}
 						/>
 					</div>
-				<button
-					disabled={status === 'loading' ? true : false}
-					className="btn btn-primary btn-lg btn-block w-100 my-3" 
-					type="submit"
-				>
-					Search
-				</button>
+				<SubmitBtn />
 			</form>
 		</div>
 	)
 };
+
+const SubmitBtn = memo(function SubmitBtn() {
+	const status = useSelector(selectStatus);
+	return (
+		<button
+			disabled={status === 'loading' ? true : false}
+			className="btn btn-primary btn-lg btn-block w-100 my-3" 
+			type="submit"
+		>
+			Search
+		</button>
+	);
+});

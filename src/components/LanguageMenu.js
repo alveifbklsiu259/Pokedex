@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useParams } from 'react-router-dom';
+import { selectLanguage, changeLanguage } from '../features/pokemonData/pokemonDataSlice';
 import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { useParams } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { selectLanguage, selectStatus } from '../features/pokemonData/pokemonDataSlice';
-import { changeLanguageThunk } from '../features/pokemonData/pokemonDataSlice';
 
 const languageOptions = {
 	en: 'English',
@@ -17,11 +16,7 @@ const languageOptions = {
 	de: 'Deutsch',
 };
 
-export default function LanguageMenu() {
-	const language = useSelector(selectLanguage);
-	const status = useSelector(selectStatus);
-	const dispatch = useDispatch();
-	const {pokeId} = useParams();
+const LanguageMenu = memo(function LanguageMenu() {
 	const [anchorEl, setAnchorEl] = useState(null);
 	const open = Boolean(anchorEl);
 	const handleClick = (event) => {
@@ -30,7 +25,7 @@ export default function LanguageMenu() {
 
 	const handleClose = useCallback(() => {
 		setAnchorEl(null);
-	}, [setAnchorEl])
+	}, [setAnchorEl]);
 
 	useEffect(() => {
 		window.addEventListener('scroll', handleClose);
@@ -38,15 +33,6 @@ export default function LanguageMenu() {
 			window.removeEventListener('scroll', handleClose);
 		};
 	}, [handleClose]);
-		
-	const changeLanguage = async option => {
-		handleClose();
-		try {
-			await dispatch(changeLanguageThunk({option, pokeId})).unwrap();
-		} catch (e) {
-			console.log(e)
-		}
-	};
 
 	return (
 		<div>
@@ -59,55 +45,75 @@ export default function LanguageMenu() {
 				aria-haspopup="true"
 				aria-expanded={open ? 'true' : undefined}
 				onClick={handleClick}
-				disabled={status === 'loading' ? true : false}
 			>
 				<i className="fa-solid fa-language"></i>
 			</Button>
-			<Menu
-				disableScrollLock={true}
-				id="language-menu"
-				anchorEl={anchorEl}
-				open={open}
-				onClose={handleClose}
-				anchorOrigin={{
-					vertical: 'bottom',
-					horizontal: 'left',
-				}}
-				transformOrigin={{
-					vertical: 'top',
-					horizontal: 'center',
-				}}
-				MenuListProps={{
-					'aria-labelledby': 'language-button',
-				}}
-				sx={{
-					'& .MuiMenuItem-root:hover': {
-						backgroundColor: '#8bbaff',
-					},
-					'& .MuiMenuItem-root.Mui-selected': {
-						backgroundColor: '#0d6efd',
-					},
-				}}
-			>
-				{Object.keys(languageOptions).map(option => (
-					<MenuItem
-						sx={{
-							mx: 1,
-							my: 0.4,
-							borderRadius: 2,
-							'&.Mui-disabled': {
-								opacity: 1
-							}
-						}}
-						key={option} 
-						selected={option === language ? true : false} 
-						onClick={() => changeLanguage(option)}
-						disabled={option === language ? true : false}
-					>
-						{languageOptions[option]}
-					</MenuItem>
-				))}
-			</Menu>
+			{open && (
+				<Menu
+					disableScrollLock={true}
+					id="language-menu"
+					anchorEl={anchorEl}
+					open={open}
+					onClose={handleClose}
+					anchorOrigin={{
+						vertical: 'bottom',
+						horizontal: 'left',
+					}}
+					transformOrigin={{
+						vertical: 'top',
+						horizontal: 'center',
+					}}
+					MenuListProps={{
+						'aria-labelledby': 'language-button',
+					}}
+					sx={{
+						'& .MuiMenuItem-root:hover': {
+							backgroundColor: '#8bbaff',
+						},
+						'& .MuiMenuItem-root.Mui-selected': {
+							backgroundColor: '#0d6efd',
+						},
+					}}
+				>
+					{Object.keys(languageOptions).map(option => (
+						<Item 
+							key={option}
+							option={option}
+							handleClose={handleClose}
+						/>
+					))}
+				</Menu>
+			)}
 		</div>
 	);
-}
+});
+
+const Item = memo(function Item({option, handleClose}) {
+	const dispatch = useDispatch();
+	const language = useSelector(selectLanguage);
+	const {pokeId} = useParams();
+
+	const handleChangeLanguage = () => {
+		handleClose();
+		dispatch(changeLanguage({option, pokeId}));
+	}
+
+	return (
+		<MenuItem
+			sx={{
+				mx: 1,
+				my: 0.4,
+				borderRadius: 2,
+				'&.Mui-disabled': {
+					opacity: 1
+				}
+			}}
+			selected={option === language ? true : false}
+			onClick={handleChangeLanguage}
+		>
+			{languageOptions[option]}
+		</MenuItem>
+	)
+});
+
+export default LanguageMenu;
