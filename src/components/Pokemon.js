@@ -11,7 +11,7 @@ import ScrollToTop from "./ScrollToTop";
 import Moves from "./Moves";
 import ErrorPage from "./ErrorPage";
 import Varieties from "./Varieties";
-import { getAbilitiesToDisplay, getItemsFromChain, useNavigateToPokemon } from "../api";
+import { getAbilitiesToDisplay, getItemsFromChain, useNavigateToPokemon, usePrefetch } from "../api";
 import { getIdFromURL, transformToKeyName } from "../util";
 import { useNavigateNoUpdates } from "./RouterUtils";
 
@@ -122,9 +122,38 @@ export default function Pokemon() {
 
 const RelatedPokemon = memo(function RelatedPokemon ({pokemonId, order}) {
 	const navigateToPokemon = useNavigateToPokemon();
+	const [prefetchedData, prefetch] = usePrefetch();
+
+	const handleMouseEnter = () => {
+		console.log(prefetchedData.current)
+		 // now it works, but mouse enter is not working properly, and alos if you hover then immediately click, you should check if the prefetchedData is resolved, if not, then when the user click, you should show spinner and wait for the request to resolve instead of sending a new request.
+		 // maybe we should make a component that use this hook, and whenever we want to prefetch (usually a pokemon image that can be clicked), we can use that component(we can call it prefetchLink or somethign.)
+		if (prefetchedData.current === null) {
+			prefetch([pokemonId], ['pokemons', 'pokemonSpecies', 'evolutionChains', 'abilities', 'items']);
+		};
+
+	};
+	// when we click, we need to reset prefetchedData
+	// the prefetchedData will be the same even re-renders. unless the component unmounts.
+
+	const handleClick = async() => {
+		// console.log(prefetchedData)
+		if (prefetchedData.current) {
+			const data = await prefetchedData.current;
+			// console.log(data)
+			// we can dispatch getRequiredData.fulfilled + navigate to the pokemon 
+			// or we can let navigateToPokemon to take an optional fourth argument which is a promose, if the promise is passed down, then we don't have to make request in the thunk.
+			navigateToPokemon([pokemonId], ['pokemons', 'pokemonSpecies', 'evolutionChains', 'abilities', 'items'], undefined, data);
+			prefetchedData.current = null;
+		}
+	}
 
 	return (
-		<div className={`navigation ${order} `} onClick={() => {navigateToPokemon([pokemonId], ['pokemons', 'pokemonSpecies', 'evolutionChains', 'abilities', 'items'])}}>
+		<div 
+			className={`navigation ${order} `} 
+			onClick={handleClick}
+			onMouseEnter={handleMouseEnter}
+		>
 			<span>{String(pokemonId).padStart(4, 0)}</span>
 			<img width='475' height='475' src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`} alt={pokemonId} />
 		</div>
@@ -132,3 +161,6 @@ const RelatedPokemon = memo(function RelatedPokemon ({pokemonId, order}) {
 });
 
 // try prefetch when hover or come into sight
+
+
+// a variabel 

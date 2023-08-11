@@ -1,7 +1,9 @@
-import { useDispatch } from 'react-redux';
+import { useState, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigateNoUpdates } from "./components/RouterUtils";
 import { getIdFromURL, transformToKeyName, transformToDash } from "./util";
 import { dataLoading, getRequiredDataThunk, pokemonsLoaded, displayChanged, nextRequestChanged, scrolling, pokemonSpeciesLoaded, evolutionChainsLoaded, searchPokemon } from "./features/pokemonData/pokemonDataSlice";
+import { flushSync } from 'react-dom';
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
@@ -78,8 +80,7 @@ export const getData = async (dataType, dataToFetch, resultKey) => {
 	};
 
 	const dataResponses = await Promise.all(request.map(entry => fetch(`${BASE_URL}/${dataType}/${entry}`)));
-	const datas = dataResponses.map(response => response.json());
-	const finalData = await Promise.all(datas);
+	const finalData = await Promise.all(dataResponses.map(response => response.json()));
 
 	if (dataToFetch instanceof Array) {
 		const obj = {};
@@ -399,7 +400,9 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 
 	for (let req of sortedRequests) {
 		if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
-			disaptch(dataLoading());
+			if (disaptch) {
+				disaptch(dataLoading());
+			};
 			break;
 		};
 	};
@@ -483,14 +486,56 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 	return fetchedData;
 };
 
+// or maybe prefetch when in sight?
+// export const prefetchOnHover = () => {
+	
+// 	// prefetch
+// 	const fetchedData = getRequiredData(pokeData, dispatch, requestPokemonIds, requests, lang);
+
+
+// 	//navigate
+// 	const data = await fetchedData
+// 	navigateNoUpdates(`/pokemons/${requestPokemonIds[0]}`);
+// 	dispatch(getRequiredDataThunk.fulfilled({fetchedData: data}));
+
+// 	// or we could pass a promise down to getRequiredDataThunk and if this promise is passed, we don't make request
+// }
+
+export function usePrefetch() {
+	// const [prefetchedData, setPrefetchedData] = useState(null);
+	const prefetchedDataRef = useRef(null);
+	
+	const pokeData = useSelector(state => state.pokeData);
+
+	const prefetch = (requestPokemonIds, requests, lang) => {
+		// unresolved Promise
+		prefetchedDataRef.current = (getRequiredData(pokeData, undefined, requestPokemonIds, requests, lang));
+	};
+	// or maybe dispatch something when hover?
+
+	return [prefetchedDataRef, prefetch];
+};
+
+
+
 export function useNavigateToPokemon() {
 	const navigateNoUpdates = useNavigateNoUpdates();
 	const dispatch = useDispatch();
 	
-	const navigateToPokemon = (requestPokemonIds, requests, lang) => {
+	const navigateToPokemon = async (requestPokemonIds, requests, lang, fetchedData) => {
+		if (fetchedData) {
+			// console.log(fetchedData)
+			console.log('fulfilled')
+			dispatch(getRequiredDataThunk.fulfilled({fetchedData}));
+			
+			// does this dispatch get batched with the Pokemon Effect's getRequiredData thunk dispatch?
+		} else {
+			console.log('thunk')
+			dispatch(getRequiredDataThunk({requestPokemonIds, requests, lang}));
+		};
 		navigateNoUpdates(`/pokemons/${requestPokemonIds[0]}`);
-		dispatch(getRequiredDataThunk({requestPokemonIds, requests, lang}));
 	};
+	
 	return navigateToPokemon;
 };
 

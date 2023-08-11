@@ -384,6 +384,7 @@ export const getPokemonsOnScroll = createAsyncThunk('pokeData/getPokemonsOnScrol
 });
 
 export const getRequiredDataThunk = createAsyncThunk('pokeData/getRequiredData', async({requestPokemonIds, requests, lang}, {dispatch, getState}) => {
+	console.log('thunk runs')
 	const pokeData = getState().pokeData;
 	const fetchedData = await getRequiredData(pokeData, dispatch, requestPokemonIds, requests, lang);
 	return {fetchedData};
