@@ -240,8 +240,8 @@ const pokemonDataSlice = createSlice({
 								state[transformToKeyName(key)] = {...state[transformToKeyName(key)], ...fetchedData[key]};
 						};
 					});
-					state.status = 'idle';
 				};
+				state.status = 'idle';
 			})
 			.addMatcher(isAnyOf(sortPokemons.fulfilled, searchPokemon.fulfilled, getPokemonsOnScroll.fulfilled), (state, action) => {
 				const {fetchedPokemons,	nextRequest, pokemonsToDisplay } = action.payload;
@@ -384,7 +384,6 @@ export const getPokemonsOnScroll = createAsyncThunk('pokeData/getPokemonsOnScrol
 });
 
 export const getRequiredDataThunk = createAsyncThunk('pokeData/getRequiredData', async({requestPokemonIds, requests, lang}, {dispatch, getState}) => {
-	console.log('thunk runs')
 	const pokeData = getState().pokeData;
 	const fetchedData = await getRequiredData(pokeData, dispatch, requestPokemonIds, requests, lang);
 	return {fetchedData};

@@ -501,44 +501,39 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 // 	// or we could pass a promise down to getRequiredDataThunk and if this promise is passed, we don't make request
 // }
 
-export function usePrefetch() {
-	// const [prefetchedData, setPrefetchedData] = useState(null);
-	const prefetchedDataRef = useRef(null);
-	
+export function usePrefetchOnNavigation() {
+	const unresolvedDataRef = useRef(null);
 	const pokeData = useSelector(state => state.pokeData);
 
 	const prefetch = (requestPokemonIds, requests, lang) => {
-		// unresolved Promise
-		prefetchedDataRef.current = (getRequiredData(pokeData, undefined, requestPokemonIds, requests, lang));
+		unresolvedDataRef.current = getRequiredData(pokeData, undefined, requestPokemonIds, requests, lang);
 	};
-	// or maybe dispatch something when hover?
 
-	return [prefetchedDataRef, prefetch];
+	return [unresolvedDataRef, prefetch];
 };
-
-
 
 export function useNavigateToPokemon() {
 	const navigateNoUpdates = useNavigateNoUpdates();
 	const dispatch = useDispatch();
 	
-	const navigateToPokemon = async (requestPokemonIds, requests, lang, fetchedData) => {
-		if (fetchedData) {
-			// console.log(fetchedData)
-			console.log('fulfilled')
+	const navigateToPokemon = async (requestPokemonIds, requests, lang, unresolvedData) => {
+		if (unresolvedData) {
+			dispatch(dataLoading());
+			const fetchedData = await unresolvedData;
 			dispatch(getRequiredDataThunk.fulfilled({fetchedData}));
-			
-			// does this dispatch get batched with the Pokemon Effect's getRequiredData thunk dispatch?
 		} else {
-			console.log('thunk')
 			dispatch(getRequiredDataThunk({requestPokemonIds, requests, lang}));
 		};
 		navigateNoUpdates(`/pokemons/${requestPokemonIds[0]}`);
 	};
-	
 	return navigateToPokemon;
 };
 
+// can I combine prefetch and navigate to one hook?
+
+// downsides:
+// always loading --> idle even though data is cached (but it's fast)
+// the liink will alway re-render the first click
 
 
 // problem:
