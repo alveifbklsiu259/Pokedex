@@ -176,7 +176,7 @@ const Moves = memo(function Moves({pokeId, chainId}) {
 			const learnOnEvolution = <span data-tag="allowRowEvents" value={maxEvoLevel === 0 ? 2 : maxEvoLevel} title="Learned when Evolution" className="learnUponEvolution">Evo.</span>;
 			const checkLearnOnEvo = level => {
 				// there's some incorrect data in the API...
-				return !maxEvoLevel && level === 0 ? 1 : maxEvoLevel && level === 0 ? learnOnEvolution : level;
+				return maxEvoLevel === undefined && level === 0 ? 1 : maxEvoLevel >= 0 && level === 0 ? learnOnEvolution : level;
 			};
 			// some moves can be learned at different levels.
 			const levelData = versionDetails.length === 1 ? checkLearnOnEvo(versionDetails[0].level_learned_at) : versionDetails.map(detail => checkLearnOnEvo(detail.level_learned_at));
@@ -215,7 +215,8 @@ const Moves = memo(function Moves({pokeId, chainId}) {
 			// moves that learned at differetn levels
 			if (move.level instanceof Array) {
 				move.level.forEach(level => {
-					data.push({...move, level: level, id: move.move.concat(`-${level}`)})
+					const lv = typeof level === 'object' ? 0 : level;
+					data.push({...move, level: level, id: move.move.concat(`-${lv}`)})
 				})
 				delete data[index];
 			};

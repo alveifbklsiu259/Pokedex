@@ -151,7 +151,7 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId}) {
 	}
 
 	return (
-		chainDetails && (
+		chainDetails ? (
 			<>
 				<div className="evolutionDetails">
 					<div className="mainText">{mainText}</div>
@@ -170,6 +170,10 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId}) {
 					)
 				}
 			</>
+		) : (
+			<div className="evolutionDetails">
+				<div className="mainText">No Data</div>
+			</div>
 		)
 	)
 });

@@ -426,7 +426,7 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 					const pokemonsToFetch = getDataToFetch(pokeData[req], requestPokemonIds);
 					if (pokemonsToFetch.length) {
 						const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
-						// also get formData (for Move.js)
+						// also get formData
 						const formsToFetch = [];
 						Object.values(fetchedPokemons).forEach(pokemon => {
 							if (!pokemon.is_default) {

@@ -11,7 +11,7 @@ export const transformToDash = name => {
 };
 
 export const getNameByLanguage = (defaultName, language, entries) => {
-	const getMatchName = lang => entries?.names?.find(entry => entry?.language?.name === transformToDash(lang))?.name;
+	const getMatchName = lang => (entries?.['form_names'] || entries?.names)?.find(entry => entry?.language?.name === transformToDash(lang))?.name;
 	return language === 'en' ? defaultName : getMatchName(language) ? getMatchName(language) : language === 'ja' ? getMatchName('ja-Hrkt') || defaultName : defaultName;
 };
 

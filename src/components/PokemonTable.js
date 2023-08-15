@@ -169,7 +169,7 @@ export default function PokemonTable({tableInfoRef}) {
 				behavior: 'smooth',
 				block: 'center',
 				inline: 'nearest'
-			}), 100);
+			}), 400);
 		};
 	}, [tableInfo.selectedPokemonId]);
 

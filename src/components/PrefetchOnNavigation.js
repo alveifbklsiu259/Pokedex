@@ -5,7 +5,7 @@ const PrefetchOnNavigation = memo(function PrefetchOnNavigation({children, reque
 	const navigateToPokemon = useNavigateToPokemon();
 	const [unresolvedDataRef, prefetch] = usePrefetchOnNavigation();
 
-	const handleMouseEnter = () => {
+	const handlePrefetch = () => {
 		if (unresolvedDataRef.current === null) {
 			prefetch(requestPokemonIds, requests);
 		};
@@ -20,7 +20,8 @@ const PrefetchOnNavigation = memo(function PrefetchOnNavigation({children, reque
 	return (
 		<div className={customClass}
 			onClick={handleClick}
-			onMouseEnter={handleMouseEnter}
+			onMouseEnter={handlePrefetch}
+			onTouchStart={handlePrefetch}
 		>
 			{children}
 		</div>
