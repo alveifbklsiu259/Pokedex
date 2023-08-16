@@ -1,9 +1,9 @@
 import React, { memo } from "react";
+import { useSelector } from "react-redux";
 import BasicInfo from "./BasicInfo";
 import EvolutionDetails from "./EvolutionDetails";
-import { useNavigateToPokemon } from "../api";
-import { useSelector } from "react-redux";
-import { selectChainDataByChainId } from "../features/pokemonData/pokemonDataSlice";
+import { useNavigateToPokemon } from "../../api";
+import { selectChainDataByChainId, selectPokemons } from "./pokemonDataSlice";
 
 const EvolutionChains = memo(function EvolutionChains({chainId}) {
 	const navigateToPokemon = useNavigateToPokemon();

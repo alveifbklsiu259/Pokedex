@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { capitalize } from "@mui/material";
-import { selectGenerations, selectPokemons, selectLanguage, selectTypes, selectVersions, selectMoves, selectMoveDamageClass, selectMachines, movesLoaded, machineDataLoaded, selectSpeciesById, selectChainDataByChainId } from "../features/pokemonData/pokemonDataSlice";
-import { transformToKeyName, getIdFromURL, getNameByLanguage } from "../util";
+import { selectGenerations, selectPokemons, selectTypes, selectVersions, selectMoves, selectMoveDamageClass, selectMachines, selectSpeciesById, selectChainDataByChainId, movesLoaded, machineDataLoaded } from "./pokemonDataSlice";
+import { selectLanguage } from "../display/displaySlice";
+import { transformToKeyName, getIdFromURL, getNameByLanguage } from "../../util";
 import MovesTable from "./MovesTable";
 
 const columnDataCreator = filteredMethod => {

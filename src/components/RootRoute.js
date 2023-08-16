@@ -1,7 +1,7 @@
 import { ScrollRestoration, Outlet } from "react-router-dom";
 import RouterUtils from "./RouterUtils";
-import Search from "./Search";
-import Pokemons from "./Pokemons";
+import Search from "../features/search/Search";
+import Pokemons from "../features/pokemonData/Pokemons";
 import NavBar from "./NavBar";
 
 export default function RootRoute () {

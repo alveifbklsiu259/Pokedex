@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigateNoUpdates } from "./components/RouterUtils";
 import { getIdFromURL, transformToKeyName, transformToDash } from "./util";
-import { dataLoading, getRequiredDataThunk, pokemonsLoaded, displayChanged, nextRequestChanged, scrolling, pokemonSpeciesLoaded, evolutionChainsLoaded, searchPokemon } from "./features/pokemonData/pokemonDataSlice";
-import { flushSync } from 'react-dom';
+import { getRequiredDataThunk} from "./features/pokemonData/pokemonDataSlice";
+import { dataLoading, selectLanguage } from './features/display/displaySlice';
+
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
@@ -225,7 +226,7 @@ export const getPokemons = async (cachedPokemons, allPokemonNamesAndIds, dispatc
 	return {fetchedPokemons, pokemonsToDisplay, nextRequest}
 };
 
-export const getChainData = async(chainUrl, cachedPokemons, fetchedPokemon) => {
+export const getChainData = async(chainUrl, cachedPokemons, fetchedPokemons) => {
 	let chainData, pokemonsFromChain;
 	const getEvolutionChains = async () => {
 		const evolutionChainResponse = await getData('evolution-chain', chainUrl)
@@ -284,8 +285,9 @@ export const getChainData = async(chainUrl, cachedPokemons, fetchedPokemon) => {
 	const pokemonsInChain = new Set(chainData.sortedChains.flat());
 
 	let currentCachedPokemons;
-	if (fetchedPokemon) {
-		currentCachedPokemons = {...cachedPokemons, ...{[fetchedPokemon.id]: fetchedPokemon}};
+	// fetchedPokemons will be an object
+	if (fetchedPokemons) {
+		currentCachedPokemons = {...cachedPokemons, ...fetchedPokemons};
 	} else {
 		currentCachedPokemons = cachedPokemons;
 	};
@@ -321,9 +323,7 @@ export const getAllSpecies = async (cachedSpecies, pokemonCount) => {
 	return fetchedSpecies;
 };
 
-export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requests, lang) => {
-	// lang is an optional parameter (used when language change);
-	const language = lang ? lang : pokeData.language;
+export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requests, language) => {
 	const cachedData = {}, fetchedData = {};
 	const getCachedData = (dataType, ids) => {
 		// cachedData[dataType] may contain undefined element.
@@ -418,7 +418,7 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 
 	// fetchedData will be:
 	// pokemons/pokemonSpecies/abilities: object/undefined
-	// chain: an array of object, or undefined
+	// evolutionChains: an object or undefined.
 	for (let req of sortedRequests) {
 		if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
 			switch(req) {
@@ -459,14 +459,17 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 					const speciesData = getCachedSpeciesData();
 					const chainToFetch = getDataToFetch(pokeData[req], [getIdFromURL(speciesData[0].evolution_chain.url)]);
 					if (chainToFetch.length) {
-						const [{sortedChains: chains, evolutionDetails: details} ,fetchedPokemons] = await getChainData(chainToFetch[0], pokeData.pokemons, cachedData['pokemons']);
-						fetchedData[req] = [{[chainToFetch[0]]: {chains, details}}, fetchedPokemons];
+						const [{sortedChains: chains, evolutionDetails: details}, fetchedPokemons] = await getChainData(chainToFetch[0], pokeData.pokemons, fetchedData['pokemons']);
+						fetchedData[req] = {
+							chainData: {[chainToFetch[0]]: {chains, details}},
+							fetchedPokemons
+						};
 					};
 					break;
 				};
 				case 'items' : {
 					const speciesData = getCachedSpeciesData();
-					const chainData = pokeData.evolutionChains[getIdFromURL(speciesData[0].evolution_chain.url)] || fetchedData['evolutionChains'][0][getIdFromURL(speciesData[0].evolution_chain.url)];
+					const chainData = pokeData.evolutionChains[getIdFromURL(speciesData[0].evolution_chain.url)] || fetchedData['evolutionChains'].chainData[getIdFromURL(speciesData[0].evolution_chain.url)];
 					const requiredItems = getItemsFromChain(chainData);
 					const itemToFetch = getDataToFetch(pokeData[req], requiredItems.map(item => transformToKeyName(item)));
 					if (itemToFetch.length) {
@@ -504,8 +507,9 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 export function usePrefetchOnNavigation() {
 	const unresolvedDataRef = useRef(null);
 	const pokeData = useSelector(state => state.pokeData);
+	const language = useSelector(selectLanguage);
 
-	const prefetch = (requestPokemonIds, requests, lang) => {
+	const prefetch = (requestPokemonIds, requests, lang = language) => {
 		unresolvedDataRef.current = getRequiredData(pokeData, undefined, requestPokemonIds, requests, lang);
 	};
 

@@ -7,11 +7,12 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import Slide from '@mui/material/Slide';
-import { advancedSearchReset, backToRoot } from '../features/pokemonData/pokemonDataSlice';
+import { advancedSearchReset } from '../features/search/searchSlice';
+import { backToRoot } from '../features/display/displaySlice';
 import { useNavigateNoUpdates } from './RouterUtils';
-import LanguageMenu from './LanguageMenu';
+import LanguageMenu from '../features/display/LanguageMenu';
 import Modal from './Modal';
-import Search from './Search';
+import Search from '../features/search/Search';
 
 const HideOnScroll = (props) => {
 	const { children, window } = props;

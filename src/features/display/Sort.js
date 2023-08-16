@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { useSelector, useDispatch } from "react-redux";
-import { selectSortBy, sortPokemons, tableInfoChanged } from "../features/pokemonData/pokemonDataSlice";
+import { selectSortBy, tableInfoChanged, sortPokemons } from './displaySlice';
 
 const dropdownOptions = [
 	{text:'Number(low - high)', value: 'numberAsc'},

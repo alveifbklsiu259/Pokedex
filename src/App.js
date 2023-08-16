@@ -1,7 +1,7 @@
 import './App.css';
 import { createBrowserRouter,createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
 import RootRoute, { Index } from './components/RootRoute';
-import Pokemon from './components/Pokemon';
+import Pokemon from './features/pokemonData/Pokemon';
 import ErrorPage from './components/ErrorPage';
 
 export const router = createBrowserRouter(createRoutesFromElements(

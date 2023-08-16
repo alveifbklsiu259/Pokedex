@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import Input from "./Input";
+import Input from "../features/search/Input";
 import { router } from "../App";
-import { backToRoot, searchPokemon } from "../features/pokemonData/pokemonDataSlice";
+import { searchPokemon } from "../features/search/searchSlice";
+import { backToRoot } from "../features/display/displaySlice";
 
 export default function ErrorPage() {
 	const [searchParam, setSearchParam] = useState('');

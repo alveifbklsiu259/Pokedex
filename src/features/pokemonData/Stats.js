@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { useSelector } from "react-redux";
-import { selectLanguage, selectStat, selectPokemonById } from "../features/pokemonData/pokemonDataSlice";
-import { getNameByLanguage, transformToKeyName } from "../util";
+import { selectLanguage } from "../display/displaySlice";
+import { selectStat, selectPokemonById } from "./pokemonDataSlice";
+import { getNameByLanguage, transformToKeyName } from "../../util";
 
 const Stats = memo(function Stats({pokeId}) {
 	const pokemon = useSelector(state => selectPokemonById(state, pokeId));

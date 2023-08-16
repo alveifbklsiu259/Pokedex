@@ -1,8 +1,9 @@
 import { useState, memo } from "react";
 import { useSelector } from "react-redux";
-import { selectItems, selectChainDataByChainId, selectLanguage } from "../features/pokemonData/pokemonDataSlice";
-import Modal from "./Modal";
-import { transformToKeyName, getNameByLanguage } from "../util";
+import { selectItems, selectChainDataByChainId } from "./pokemonDataSlice";
+import { selectLanguage } from "../display/displaySlice";
+import Modal from "../../components/Modal";
+import { transformToKeyName, getNameByLanguage } from "../../util";
 
 const textsForOtherRequirements = {
 	gender: 'Gender',
@@ -30,10 +31,9 @@ const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId}) {
 	const [isModalShown, setIsModalShown] = useState(false);
 	// some evolution detail data is missing from the API, e.g. 489, 490...
 	const chainDetails = useSelector(state => selectChainDataByChainId(state, chainId))?.details?.[pokemonId];
+	// some pokemon can evolve by different triggers.
 	let selectedDetail = chainDetails?.[0];
-	if (chainDetails && chainDetails.length > 1 && chainDetails.find(chainDetail => chainDetail.trigger.name === 'use-item')) {
-		selectedDetail = chainDetails.find(chainDetail => chainDetail.trigger.name === 'use-item');
-	};
+
 	let requirements, trigger, mainText;
 	if (selectedDetail) {
 		requirements = Object.entries(selectedDetail)

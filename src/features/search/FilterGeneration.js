@@ -1,7 +1,7 @@
 import { memo, useCallback } from 'react';
 import { useSelector } from "react-redux";
-import { selectGenerations } from "../features/pokemonData/pokemonDataSlice";
-import pokeBall from '../assets/ball.svg';
+import { selectGenerations } from '../pokemonData/pokemonDataSlice';
+import pokeBall from '../../assets/ball.svg';
 
 const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, setSelectedGenerations}) {
 	const generations = useSelector(selectGenerations);

@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo, memo, useCallback } from "react"
 import { useSelector } from "react-redux";
-import { selectAllIdsAndNames } from "../features/pokemonData/pokemonDataSlice";
+import { selectAllIdsAndNames } from "../pokemonData/pokemonDataSlice";
 import DataList from './DataList';
 
 const Input = memo(function Input({searchParam, setSearchParam}) {

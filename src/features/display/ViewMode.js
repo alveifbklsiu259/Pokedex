@@ -2,7 +2,8 @@ import { memo, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import { selectViewMode, selectPokemonCount, changeViewMode, sortPokemons, tableInfoChanged } from '../features/pokemonData/pokemonDataSlice';
+import { selectViewMode, sortPokemons, tableInfoChanged, changeViewMode } from './displaySlice';
+import { selectPokemonCount } from '../pokemonData/pokemonDataSlice';
 
 const ViewMode = memo(function ViewMode({tableInfoRef}) {
 	const dispatch = useDispatch();

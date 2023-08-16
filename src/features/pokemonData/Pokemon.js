@@ -1,20 +1,21 @@
 import React, { useEffect, memo, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { selectPokemonById, selectSpeciesById, selectChainDataByChainId, selectLanguage, selectStatus, selectAllIdsAndNames, selectAbilities, selectItems, selectPokemonCount, error, getRequiredDataThunk } from "../features/pokemonData/pokemonDataSlice";
+import { selectPokemonById, selectSpeciesById, selectChainDataByChainId, selectAllIdsAndNames, selectAbilities, selectItems, selectPokemonCount, getRequiredDataThunk } from "./pokemonDataSlice";
+import { selectLanguage, selectStatus, error } from "../display/displaySlice";
 import BasicInfo from "./BasicInfo";
 import Detail from "./Detail";
 import Stats from "./Stats";
 import EvolutionChains from "./EvolutionChains";
-import Spinner from "./Spinner";
-import ScrollToTop from "./ScrollToTop";
+import Spinner from "../../components/Spinner";
+import ScrollToTop from "../../components/ScrollToTop";
 import Moves from "./Moves";
-import ErrorPage from "./ErrorPage";
+import ErrorPage from "../../components/ErrorPage";
 import Varieties from "./Varieties";
-import PrefetchOnNavigation from "./PrefetchOnNavigation";
-import { getAbilitiesToDisplay, getItemsFromChain } from "../api";
-import { getIdFromURL, transformToKeyName } from "../util";
-import { useNavigateNoUpdates } from "./RouterUtils";
+import PrefetchOnNavigation from "../../components/PrefetchOnNavigation";
+import { getAbilitiesToDisplay, getItemsFromChain } from "../../api";
+import { getIdFromURL, transformToKeyName } from "../../util";
+import { useNavigateNoUpdates } from "../../components/RouterUtils";
 
 export default function Pokemon() {
 	const dispatch = useDispatch();
@@ -50,6 +51,8 @@ export default function Pokemon() {
 	const isDataReady = language === 'en' ? defaultRequiredData.every(Boolean) : (defaultRequiredData.every(Boolean) && isAbilitiesReady && isItemsReady);
 	useEffect(() => {
 		if (!isDataReady && status === 'idle') {
+			// console.log(isAbilitiesReady)
+			// console.log(isItemsReady)
 			const getIndividualPokemonData = async () => {
 				try {
 					await dispatch(getRequiredDataThunk({

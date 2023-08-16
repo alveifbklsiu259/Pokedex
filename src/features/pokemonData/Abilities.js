@@ -1,11 +1,12 @@
 import { useState, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectAbilities, selectLanguage, abilityLoaded } from '../features/pokemonData/pokemonDataSlice';
-import Spinner from './Spinner';
-import Modal from './Modal';
-import { transformToKeyName, transformToDash, getNameByLanguage, getTextByLanguage } from '../util';
-import { getAbilitiesToDisplay, getData } from '../api';
 import { flushSync } from 'react-dom';
+import { selectAbilities, abilityLoaded } from './pokemonDataSlice';
+import { selectLanguage } from '../display/displaySlice';
+import Spinner from '../../components/Spinner';
+import Modal from '../../components/Modal';
+import { transformToKeyName, transformToDash, getNameByLanguage, getTextByLanguage } from '../../util';
+import { getAbilitiesToDisplay, getData } from '../../api';
 
 const Abilities = memo(function Abilities({pokemon}) {
 	const dispatch = useDispatch();

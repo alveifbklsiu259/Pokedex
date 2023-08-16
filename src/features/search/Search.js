@@ -1,10 +1,11 @@
 import { useState, useLayoutEffect, useRef, useId, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectStatus, selectAdvancedSearch, selectSearchParam, searchPokemon } from '../features/pokemonData/pokemonDataSlice';
-import { useNavigateNoUpdates } from './RouterUtils';
+import { selectStatus } from '../display/displaySlice';
+import { selectSearchParam, selectAdvancedSearch, searchPokemon } from './searchSlice';
+import { useNavigateNoUpdates } from '../../components/RouterUtils';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
-import pokeBall from '../assets/pokeBall.png';
+import pokeBall from '../../assets//pokeBall.png';
 
 export default function Search({closeModal}) {
 	const dispatch = useDispatch();

@@ -1,9 +1,10 @@
 import { memo, useCallback } from 'react';
 import { useSelector } from "react-redux";
 import { Switch, Stack, Typography, FormControlLabel } from '@mui/material';
-import { selectTypes, selectLanguage } from "../features/pokemonData/pokemonDataSlice";
-import { getNameByLanguage } from '../util';
-import pokeBall from '../assets/ball.svg';
+import { selectTypes } from '../pokemonData/pokemonDataSlice';
+import { selectLanguage } from '../display/displaySlice';
+import { getNameByLanguage } from '../../util';
+import pokeBall from '../../assets/ball.svg';
 
 const FilterTypes = memo(function FilterTypes ({selectedTypes, setSelectedTypes, setMatchMethod}) {
 	const types = useSelector(selectTypes);

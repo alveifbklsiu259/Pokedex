@@ -1,8 +1,9 @@
 import React, { memo } from "react";
 import { useSelector } from 'react-redux';
-import { selectLanguage, selectPokemonById, selectSpeciesById } from '../features/pokemonData/pokemonDataSlice';
+import { selectLanguage } from "../display/displaySlice";
+import { selectPokemonById, selectSpeciesById } from './pokemonDataSlice';
 import Abilities from "./Abilities";
-import { getTextByLanguage } from "../util";
+import { getTextByLanguage } from "../../util";
 
 function getGender(gender_rate) {
 	switch(gender_rate) {

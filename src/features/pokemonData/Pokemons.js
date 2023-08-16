@@ -1,13 +1,14 @@
 import { useEffect, useCallback, useMemo, useRef } from "react";
 import { useSelector, useDispatch, shallowEqual } from "react-redux";
-import { selectPokemons, selectDisplay, selectNextRequest, selectStatus, selectViewMode, selectIntersection, getPokemonsOnScroll } from "../features/pokemonData/pokemonDataSlice";
-import { useNavigateToPokemon } from "../api";
-import Sort from "./Sort";
+import { selectPokemons, getPokemonsOnScroll } from "./pokemonDataSlice";
+import { selectDisplay, selectNextRequest, selectStatus, selectViewMode, selectIntersection } from "../display/displaySlice";
+import { useNavigateToPokemon } from "../../api";
+import Sort from "../display/Sort"
 import BasicInfo from "./BasicInfo";
 import PokemonTable from "./PokemonTable";
-import ScrollToTop from "./ScrollToTop";
-import Spinner from "./Spinner";
-import ViewMode from "./ViewMode";
+import ScrollToTop from "../../components/ScrollToTop";
+import Spinner from "../../components/Spinner";
+import ViewMode from "../display/ViewMode";
 
 export default function Pokemons() {
 	const dispatch = useDispatch();

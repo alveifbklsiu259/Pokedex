@@ -9,7 +9,6 @@ import { getInitialData } from './features/pokemonData/pokemonDataSlice';
 
 store.dispatch(getInitialData());
 
-
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
 // <React.StrictMode>

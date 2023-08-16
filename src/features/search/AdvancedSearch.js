@@ -1,6 +1,6 @@
 import { memo } from "react"
 import { useDispatch } from "react-redux";
-import { advancedSearchReset } from "../features/pokemonData/pokemonDataSlice";
+import { advancedSearchReset } from "./searchSlice";
 import FilterGeneration from "./FilterGeneration";
 import FilterTypes from "./FilterTypes";
 

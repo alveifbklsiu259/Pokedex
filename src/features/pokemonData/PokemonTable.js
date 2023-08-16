@@ -1,10 +1,12 @@
 import { useMemo, useEffect, useCallback } from "react";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import DataTable from "react-data-table-component"
-import { tableInfoChanged, selectTableInfo, selectIntersection, selectPokemons, selectSpecies, selectLanguage, selectTypes, selectStatus, selectStat, selectSortBy, sortPokemons, selectAllIdsAndNames, sortByChange } from "../features/pokemonData/pokemonDataSlice";
-import { useNavigateToPokemon, getPokemons } from "../api"
-import Spinner from "./Spinner";
-import { getNameByLanguage, transformToKeyName } from "../util";
+import { selectPokemons, selectSpecies, selectTypes, selectStat, selectAllIdsAndNames } from "./pokemonDataSlice";
+import { selectTableInfo, selectIntersection, selectLanguage, selectStatus, selectSortBy, tableInfoChanged, sortByChange, sortPokemons } from "../display/displaySlice";
+
+import { useNavigateToPokemon, getPokemons } from "../../api"
+import Spinner from "../../components/Spinner";
+import { getNameByLanguage, transformToKeyName } from "../../util";
 import { capitalize } from "@mui/material";
 
 const scrollToTop = () => {

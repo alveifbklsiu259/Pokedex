@@ -1,7 +1,7 @@
 import { forwardRef, memo } from "react";
 import { flushSync } from "react-dom";
 import { useSelector } from "react-redux";
-import { selectAllIdsAndNames } from "../features/pokemonData/pokemonDataSlice";
+import { selectAllIdsAndNames } from "../pokemonData/pokemonDataSlice";
 
 const DataList = forwardRef(function DataList({
 	matchList,

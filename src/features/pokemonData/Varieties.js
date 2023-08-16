@@ -1,8 +1,9 @@
 import React, { memo } from 'react';
-import { getIdFromURL, getNameByLanguage } from '../util';
-import { useNavigateToPokemon } from '../api';
 import { useSelector } from 'react-redux';
-import { selectLanguage, selectPokemonById, selectSpeciesById } from '../features/pokemonData/pokemonDataSlice';
+import { selectPokemonById, selectSpeciesById } from './pokemonDataSlice';
+import { selectLanguage } from '../display/displaySlice';
+import { getIdFromURL, getNameByLanguage } from '../../util';
+import { useNavigateToPokemon } from '../../api';
 
 const Varieties = memo(function Varieties({pokeId}) {
 	const navigateToPokemon = useNavigateToPokemon();

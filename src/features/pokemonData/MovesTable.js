@@ -2,9 +2,9 @@ import { memo, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import DataTable from "react-data-table-component"
 import { Switch, Stack, Typography, capitalize } from "@mui/material"
-import { selectLanguage } from "../features/pokemonData/pokemonDataSlice";
-import Spinner from "./Spinner";
-import { getTextByLanguage } from "../util";
+import { selectLanguage } from "../display/displaySlice";
+import Spinner from "../../components/Spinner";
+import { getTextByLanguage } from "../../util";
 
 const getMoveIds = movesData => JSON.stringify(Object.values(movesData).map(move => move.id));
 

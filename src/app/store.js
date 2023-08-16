@@ -1,10 +1,14 @@
 import { configureStore } from "@reduxjs/toolkit";
 import pokemonDataReducer from '../features/pokemonData/pokemonDataSlice';
+import searchSliceReducer from "../features/search/searchSlice";
+import displaySliceReducer from "../features/display/displaySlice";
 
 const store = configureStore({
 	reducer: {
 		// the key is used for the property name of tge state, e.g. state.pokeData
 		pokeData: pokemonDataReducer,
+		search: searchSliceReducer,
+		display: displaySliceReducer
 	},
 	middleware: getDefaultMiddleware => getDefaultMiddleware({serializableCheck: false}),
 	devTools: {
