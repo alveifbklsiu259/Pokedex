@@ -51,8 +51,6 @@ export default function Pokemon() {
 	const isDataReady = language === 'en' ? defaultRequiredData.every(Boolean) : (defaultRequiredData.every(Boolean) && isAbilitiesReady && isItemsReady);
 	useEffect(() => {
 		if (!isDataReady && status === 'idle') {
-			// console.log(isAbilitiesReady)
-			// console.log(isItemsReady)
 			const getIndividualPokemonData = async () => {
 				try {
 					await dispatch(getRequiredDataThunk({
@@ -89,7 +87,11 @@ export default function Pokemon() {
 						</div>
 						<Detail pokeId={urlParam} />
 						<Stats pokeId={urlParam} />
-						<EvolutionChains chainId={chainId} />
+						<EvolutionChains chainId={chainId} 
+							nonDefaultPokemonData={pokemon.is_default ? null : pokemon}
+							nonBattlePokemonData={pokemon?.formData?.is_battle_only === false ? pokemon : null}
+							pokeId={pokeId}
+						/>
 						<Moves
 							pokeId={urlParam}
 							chainId={chainId}

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigateNoUpdates } from "./components/RouterUtils";
 import { getIdFromURL, transformToKeyName, transformToDash } from "./util";
@@ -226,8 +226,19 @@ export const getPokemons = async (cachedPokemons, allPokemonNamesAndIds, dispatc
 	return {fetchedPokemons, pokemonsToDisplay, nextRequest}
 };
 
-export const getChainData = async(chainUrl, cachedPokemons, fetchedPokemons) => {
-	let chainData, pokemonsFromChain;
+export const getFormData = async pokemons => {
+	const formsToFetch = [];
+	Object.values(pokemons).forEach(pokemon => {
+		if (!pokemon.is_default) {
+			formsToFetch.push(pokemon.forms[0].url);
+		};
+	});
+	const formData = await getData('pokemon-form', formsToFetch, 'name');
+	return formData
+};
+
+export const getChainData = async(chainUrl, cachedPokemons, cachedSpecies) => {
+	let chainData, pokemonsToFetch, fetchedPokemons, fetchedSpecies = {};
 	const getEvolutionChains = async () => {
 		const evolutionChainResponse = await getData('evolution-chain', chainUrl)
 
@@ -281,20 +292,30 @@ export const getChainData = async(chainUrl, cachedPokemons, fetchedPokemons) => 
 	};
 	chainData = await getEvolutionChains();
 
-	// get pokemon data from the chain(s)
+	// get all pokemons' pokemon/species data from the chain(s), including non-default-pokemon's pokemon data.(this is for evolutionChain to correctly display chain of different form)
 	const pokemonsInChain = new Set(chainData.sortedChains.flat());
-
-	let currentCachedPokemons;
-	// fetchedPokemons will be an object
-	if (fetchedPokemons) {
-		currentCachedPokemons = {...cachedPokemons, ...fetchedPokemons};
+	if (pokemonsInChain.size > 1) {
+		const speciesToFetch = getDataToFetch(cachedSpecies, [...pokemonsInChain]);
+		fetchedSpecies = await getData('pokemon-species', speciesToFetch, 'id');
+		
+		let allFormIds = [];
+		[...pokemonsInChain].forEach(pokemonId => {
+			(cachedSpecies[pokemonId] || fetchedSpecies[pokemonId]).varieties.forEach(variety => {
+				allFormIds.push(getIdFromURL(variety.pokemon.url));
+			});
+		});
+		pokemonsToFetch = getDataToFetch(cachedPokemons, allFormIds);
+		fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
+		const formData = await getFormData(fetchedPokemons);
+		Object.values(formData).forEach(entry => {
+			fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
+		});
 	} else {
-		currentCachedPokemons = cachedPokemons;
+		pokemonsToFetch = getDataToFetch(cachedPokemons, [...pokemonsInChain]);
+		fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
 	};
-	const pokemonsToFetch = getDataToFetch(currentCachedPokemons, [...pokemonsInChain]);
-	pokemonsFromChain = await getData('pokemon', pokemonsToFetch, 'id');
 
-	return [chainData, pokemonsFromChain];
+	return [chainData, fetchedPokemons, fetchedSpecies];
 };
 
 export const getItemsFromChain = chainData => {
@@ -420,6 +441,8 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 	// pokemons/pokemonSpecies/abilities: object/undefined
 	// evolutionChains: an object or undefined.
 	for (let req of sortedRequests) {
+		// does each await call waits before the previous one's done?
+		// can we remove await expression and at the end do a Promise.all(fetchedData)?
 		if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
 			switch(req) {
 				case 'pokemons' : {
@@ -427,13 +450,15 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 					if (pokemonsToFetch.length) {
 						const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
 						// also get formData
-						const formsToFetch = [];
-						Object.values(fetchedPokemons).forEach(pokemon => {
-							if (!pokemon.is_default) {
-								formsToFetch.push(pokemon.forms[0].url);
-							};
-						});
-						const formData = await getData('pokemon-form', formsToFetch, 'name');
+						const formData = await getFormData(fetchedPokemons);
+						
+						
+						// we can't know chain by now
+
+
+						
+						// changeLanguage
+						
 						Object.values(formData).forEach(entry => {
 							fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
 						});
@@ -459,10 +484,15 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 					const speciesData = getCachedSpeciesData();
 					const chainToFetch = getDataToFetch(pokeData[req], [getIdFromURL(speciesData[0].evolution_chain.url)]);
 					if (chainToFetch.length) {
-						const [{sortedChains: chains, evolutionDetails: details}, fetchedPokemons] = await getChainData(chainToFetch[0], pokeData.pokemons, fetchedData['pokemons']);
+						const cachedPokemons = {...pokeData.pokemons, ...fetchedData['pokemons']};
+						const cachedSpecies = {...pokeData.pokemonSpecies, ...fetchedData['pokemonSpecies']};
+
+						const [{sortedChains: chains, evolutionDetails: details}, fetchedPokemons, fetchedSpecies] = await getChainData(chainToFetch[0], cachedPokemons, cachedSpecies);
+
 						fetchedData[req] = {
 							chainData: {[chainToFetch[0]]: {chains, details}},
-							fetchedPokemons
+							fetchedPokemons,
+							fetchedSpecies
 						};
 					};
 					break;
@@ -486,8 +516,10 @@ export const getRequiredData = async(pokeData, disaptch, requestPokemonIds, requ
 			};
 		};
 	};
+
 	return fetchedData;
 };
+
 
 // or maybe prefetch when in sight?
 // export const prefetchOnHover = () => {
@@ -520,7 +552,7 @@ export function useNavigateToPokemon() {
 	const navigateNoUpdates = useNavigateNoUpdates();
 	const dispatch = useDispatch();
 	
-	const navigateToPokemon = async (requestPokemonIds, requests, lang, unresolvedData) => {
+	const navigateToPokemon = useCallback(async (requestPokemonIds, requests, lang, unresolvedData) => {
 		if (unresolvedData) {
 			dispatch(dataLoading());
 			const fetchedData = await unresolvedData;
@@ -529,7 +561,8 @@ export function useNavigateToPokemon() {
 			dispatch(getRequiredDataThunk({requestPokemonIds, requests, lang}));
 		};
 		navigateNoUpdates(`/pokemons/${requestPokemonIds[0]}`);
-	};
+	}, [dispatch, navigateNoUpdates]);
+
 	return navigateToPokemon;
 };
 

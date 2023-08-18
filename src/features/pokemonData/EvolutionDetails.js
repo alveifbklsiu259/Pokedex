@@ -25,14 +25,17 @@ const textsForOtherRequirements = {
 	turn_upside_down: 'Hold game system upside-down'
 };
 
-const EvolutionDetails = memo(function EvolutionDetails({chainId, pokemonId}) {
+const EvolutionDetails = memo(function EvolutionDetails({chainId, defaultFormId, isChainDefault}) {
 	const language = useSelector(selectLanguage);
 	const items = useSelector(selectItems);
 	const [isModalShown, setIsModalShown] = useState(false);
 	// some evolution detail data is missing from the API, e.g. 489, 490...
-	const chainDetails = useSelector(state => selectChainDataByChainId(state, chainId))?.details?.[pokemonId];
+	const chainDetails = useSelector(state => selectChainDataByChainId(state, chainId))?.details?.[defaultFormId];
 	// some pokemon can evolve by different triggers.
 	let selectedDetail = chainDetails?.[0];
+	if (isChainDefault === false && chainDetails?.length > 1) {
+		selectedDetail = chainDetails[1];
+	};
 
 	let requirements, trigger, mainText;
 	if (selectedDetail) {

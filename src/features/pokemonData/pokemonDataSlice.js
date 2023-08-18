@@ -151,15 +151,19 @@ const pokemonDataSlice = createSlice({
 			})
 			.addMatcher(isAnyOf(getRequiredDataThunk.fulfilled, changeViewMode.fulfilled, changeLanguage.fulfilled), (state, action) => {
 				const {fetchedData} = action.payload;
+				// console.log(fetchedData)
 				const keys = Object.keys(fetchedData);
 				if (keys.length) {
 					keys.forEach(key => {
 						switch(key) {
 							case 'evolutionChains' : {
-								const {chainData, fetchedPokemons} = fetchedData[key];
+								const {chainData, fetchedPokemons, fetchedSpecies} = fetchedData[key];
 								state[key] = {...state[key], ...chainData};
 								if (Object.keys(fetchedPokemons).length) {
 									state.pokemons = {...state.pokemons, ...fetchedPokemons}
+								};
+								if (Object.keys(fetchedSpecies).length) {
+									state.pokemonSpecies = {...state.pokemonSpecies, ...fetchedSpecies}
 								};
 								break;
 							}

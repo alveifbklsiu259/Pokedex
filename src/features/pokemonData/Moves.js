@@ -63,7 +63,7 @@ const Moves = memo(function Moves({pokeId, chainId}) {
 	let pokemon = pokemons[pokeId];
 	let debutGeneration = speciesData.generation.name;
 	if (!pokemon.is_default) {
-		if (!pokemon.formData?.is_battle_only) {
+		if (pokemon.formData?.is_battle_only === false) {
 			debutGeneration = generations.find(generation => generation.version_groups.some(version => version.name === pokemon.formData.version_group.name)).name;
 		} else {
 			// use the default form's pokemon data.

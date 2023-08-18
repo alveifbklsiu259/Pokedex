@@ -499,7 +499,7 @@ h1 {
 }
 
 .gtTwo .caret .evolutionDetails {
-    min-height: 70px;
+    height: 70px;
     align-items: center;
 }
 
