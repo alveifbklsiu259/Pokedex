@@ -96,7 +96,7 @@ const Item = memo(function Item({option, handleClose}) {
 	const handleChangeLanguage = () => {
 		handleClose();
 		dispatch(changeLanguage({option, pokeId}));
-	}
+	};
 
 	return (
 		<MenuItem

@@ -1,15 +1,19 @@
-import { useRef, useState, useMemo, memo, useCallback } from "react"
+import { useRef, useState, useMemo, memo, useCallback, forwardRef } from "react"
 import { useSelector } from "react-redux";
 import { selectAllIdsAndNames } from "../pokemonData/pokemonDataSlice";
 import DataList from './DataList';
+import { flushSync } from "react-dom";
 
-const Input = memo(function Input({searchParam, setSearchParam}) {
+const Input = forwardRef(function Input({searchParam, setSearchParam}, forwardedInputRef) {
 	const allPokemonNamesAndIds = useSelector(selectAllIdsAndNames);
 	const [isDataListShown, setIsDataListShown] = useState(false);
 	const [hoveredPokemon, setHoveredPokemon] = useState('');
 	const [currentFocus, setCurrentFocus] = useState(-1);
 	const datalistRef = useRef(null);
-	const inputRef = useRef(null);
+
+	// we don't have inputRef passed from Search component in ErrorPage.js
+	const inputRefForErrorPage = useRef(null);
+	const inputRef = useMemo(() => forwardedInputRef ? forwardedInputRef : inputRefForErrorPage, [forwardedInputRef, inputRefForErrorPage]);
 
 	const matchList = useMemo(() => {
 		const match = Object.keys(allPokemonNamesAndIds).filter(name => name.toLowerCase().includes(searchParam.toLowerCase()));
@@ -49,7 +53,7 @@ const Input = memo(function Input({searchParam, setSearchParam}) {
 	};
 
 	const handleClearInput = () => {
-		setSearchParam('');
+		flushSync(() => {setSearchParam('')});
 		resetFocus(datalistRef.current);
 		// for mobile
 		setHoveredPokemon('');
@@ -148,4 +152,4 @@ const Input = memo(function Input({searchParam, setSearchParam}) {
 		</div>
 	)
 });
-export default Input;
+export default memo(Input);

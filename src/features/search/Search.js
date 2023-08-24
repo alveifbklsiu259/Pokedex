@@ -13,11 +13,21 @@ export default function Search({closeModal}) {
 	const cachedSearchParam = useSelector(selectSearchParam);
 	const [searchParam, setSearchParam] = useState(cachedSearchParam);
 	const [selectedGenerations, setSelectedGenerations] = useState(advancedSearch.generations);
+
+	// console.log(selectedGenerations)
 	const [selectedTypes, setSelectedTypes] = useState(advancedSearch.types);
 	const [matchMethod, setMatchMethod] = useState('all');
 	const collapseBtnRef = useRef(null);
+	const inputRef = useRef(null);
 	const collapseId = useId();
 	const navigateNoUpdates = useNavigateNoUpdates();
+
+	// auto focus when open modal.
+	useLayoutEffect(() => {
+		if (closeModal) {
+			inputRef.current.focus();
+		};
+	}, [closeModal]);
 
 	const handleIconChange = () => {
 		if (collapseBtnRef.current.closest('button').getAttribute('aria-expanded') === 'true') {
@@ -27,7 +37,7 @@ export default function Search({closeModal}) {
 			collapseBtnRef.current.classList.remove('fa-caret-up');
 			collapseBtnRef.current.classList.add('fa-caret-down');
 		};
-	}
+	};
 
 	const handleSubmit = async e => {
 		e.preventDefault();
@@ -69,6 +79,7 @@ export default function Search({closeModal}) {
 				<Input
 					searchParam={searchParam} 
 					setSearchParam={setSearchParam}
+					ref={inputRef}
 				/>
 					<div className="advancedSearch text-center mt-3">
 						<button type="button" data-bs-toggle="collapse" data-bs-target={`#${collapseId}`} aria-expanded='false' aria-controls={collapseId} onClick={handleIconChange}>

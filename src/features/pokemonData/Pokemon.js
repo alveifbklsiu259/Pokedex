@@ -1,8 +1,8 @@
 import React, { useEffect, memo, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { selectPokemonById, selectSpeciesById, selectChainDataByChainId, selectAllIdsAndNames, selectAbilities, selectItems, selectPokemonCount, getRequiredDataThunk } from "./pokemonDataSlice";
-import { selectLanguage, selectStatus, error } from "../display/displaySlice";
+import { selectPokemonById, selectSpeciesById, selectChainDataByChainId, selectAllIdsAndNames, selectPokemonCount, getRequiredDataThunk, selectPokemons } from "./pokemonDataSlice";
+import { selectStatus, error } from "../display/displaySlice";
 import BasicInfo from "./BasicInfo";
 import Detail from "./Detail";
 import Stats from "./Stats";
@@ -13,42 +13,30 @@ import Moves from "./Moves";
 import ErrorPage from "../../components/ErrorPage";
 import Varieties from "./Varieties";
 import PrefetchOnNavigation from "../../components/PrefetchOnNavigation";
-import { getAbilitiesToDisplay, getItemsFromChain } from "../../api";
-import { getIdFromURL, transformToKeyName } from "../../util";
+import { getIdFromURL } from "../../util";
 import { useNavigateNoUpdates } from "../../components/RouterUtils";
 
 export default function Pokemon() {
 	const dispatch = useDispatch();
 	const {pokeId} = useParams();
 	const navigateNoUpdates = useNavigateNoUpdates();
-	const language = useSelector(selectLanguage);
 	const status = useSelector(selectStatus);
 	const namesAndIds = useSelector(selectAllIdsAndNames);
-	const abilities = useSelector(selectAbilities);
-	const items = useSelector(selectItems);
 	const pokemonCount = useSelector(selectPokemonCount);
+	const pokemons = useSelector(selectPokemons)
 
 	// enable searching pokemon name in url bar in English.
 	let urlParam = pokeId;
 	if (isNaN(Number(pokeId))) {
 		// if we can't find the corresponding id, use what it is.
-		urlParam = namesAndIds[pokeId.toLowerCase()] || pokeId;
+		urlParam = namesAndIds[pokeId.toLowerCase()] || Object.values(pokemons).find(pokemon => pokemon.name.toLowerCase() === urlParam.toLowerCase())?.id || pokeId;
 	};
 	const pokemon = useSelector(state => selectPokemonById(state, urlParam));
 	const speciesData = useSelector(state => selectSpeciesById(state, urlParam));
 	const chainId = getIdFromURL(speciesData?.evolution_chain?.url);
 	const chainData = useSelector(state => selectChainDataByChainId(state, chainId));
+	const isDataReady = [pokemon, speciesData, chainData].every(Boolean);
 
-	const requiredItems = getItemsFromChain(chainData);
-	let abilitiesToDisplay, isAbilitiesReady, isItemsReady;
-	if (language !== 'en') {
-		abilitiesToDisplay = getAbilitiesToDisplay(pokemon);
-		isAbilitiesReady = abilitiesToDisplay?.length ? abilitiesToDisplay.every(ability => abilities[ability]) : true;
-		isItemsReady = requiredItems?.length ? requiredItems.every(item => items[transformToKeyName(item)]) : true;
-	};
-
-	const defaultRequiredData = [pokemon, speciesData, chainData];
-	const isDataReady = language === 'en' ? defaultRequiredData.every(Boolean) : (defaultRequiredData.every(Boolean) && isAbilitiesReady && isItemsReady);
 	useEffect(() => {
 		if (!isDataReady && status === 'idle') {
 			const getIndividualPokemonData = async () => {
@@ -70,7 +58,7 @@ export default function Pokemon() {
 	const nextPokemonId = nationalNumber === pokemonCount ? 1 : nationalNumber + 1;
 	const previousPokemonId = nationalNumber === 1 ? pokemonCount : nationalNumber - 1;
 
-	const rootLink = useMemo(() => <div onClick={() => navigateNoUpdates('/')} className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</div>, []);
+	const rootLink = useMemo(() => <div onClick={() => navigateNoUpdates('/')} className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</div>, [navigateNoUpdates]);
 	let content;
 	if (status === 'idle' && isDataReady) {
 		content = (
@@ -87,11 +75,7 @@ export default function Pokemon() {
 						</div>
 						<Detail pokeId={urlParam} />
 						<Stats pokeId={urlParam} />
-						<EvolutionChains chainId={chainId} 
-							nonDefaultPokemonData={pokemon.is_default ? null : pokemon}
-							nonBattlePokemonData={pokemon?.formData?.is_battle_only === false ? pokemon : null}
-							pokeId={pokeId}
-						/>
+						<EvolutionChains chainId={chainId} />
 						<Moves
 							pokeId={urlParam}
 							chainId={chainId}

@@ -5,7 +5,6 @@ import pokeBall from '../../assets/ball.svg';
 
 const FilterGeneration = memo(function FilterGeneration ({selectedGenerations, setSelectedGenerations}) {
 	const generations = useSelector(selectGenerations);
-
 	const handleSelectGeneration = useCallback(generation => {
 		setSelectedGenerations(sg => {
 			const update = {...sg};

@@ -1,5 +1,5 @@
 import './App.css';
-import { createBrowserRouter,createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
 import RootRoute, { Index } from './components/RootRoute';
 import Pokemon from './features/pokemonData/Pokemon';
 import ErrorPage from './components/ErrorPage';

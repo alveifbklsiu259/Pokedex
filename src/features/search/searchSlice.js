@@ -1,9 +1,6 @@
-import { createSlice, createAsyncThunk ,isAnyOf } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getPokemons } from "../../api";
 import { getIdFromURL } from "../../util";
-import { getPokemonsOnScroll } from "../pokemonData/pokemonDataSlice";
-import { sortPokemons } from "../display/displaySlice";
-
 
 const initialState = {
 	searchParam: '',
@@ -33,51 +30,31 @@ const searchSlice = createSlice({
 		// 	const {field, data} = action.payload;
 		// 	state.advancedSearch = {...state.advancedSearch, [field]: data};
 		// },
-
-
 	},
 	extraReducers: builder => {
 		builder
-			// .addCase(searchPokemon.pending, (state, action) => {
-			// 	const {searchParam, selectedGenerations, selectedTypes} = action.meta.arg;
-			// 	state.advancedSearch.generations = selectedGenerations || state.advancedSearch.generations;
-			// 	state.advancedSearch.types = selectedTypes || state.advancedSearch.types;
-			// 	state.searchParam = searchParam;
-			// 	// reset table info
-			// 	state.tableInfo.page = 1;
-			// 	state.tableInfo.selectedPokemonId = null;
-			// })
 			.addCase(searchPokemon.fulfilled, (state, action) => {
 				const {searchParam, selectedGenerations, selectedTypes} = action.payload;
 				state.advancedSearch.generations = selectedGenerations || state.advancedSearch.generations;
 				state.advancedSearch.types = selectedTypes || state.advancedSearch.types;
 				state.searchParam = searchParam;
 			})
-			
-			// may be have a common reducer taht update states that fall in addMatcher?
-
-
 	}
 });
 
-export const searchPokemon = createAsyncThunk('search/searchPokemon', async ({searchParam, selectedGenerations, selectedTypes, matchMethod}, {dispatch, getState}) => {
+export const searchPokemon = createAsyncThunk('search/searchPokemon', async({searchParam, selectedGenerations, selectedTypes, matchMethod}, {dispatch, getState}) => {
 	const pokeData = getState().pokeData;
+	const dispalyData = getState().display;
 	const allNamesAndIds = pokeData.allPokemonNamesAndIds;
-	const pokemonNames = Object.keys(allNamesAndIds);
+
 	// get range
 	let pokemonRange = [];
-
+	// when searching in error page, selectedGenerations will be undefined.
 	if (!selectedGenerations || Object.keys(selectedGenerations).length === 0) {
-		for (let i = 0; i < pokemonNames.length; i ++) {
-			let obj = {};
-			obj.name = pokemonNames[i];
-			obj.url = `https://pokeapi.co/api/v2/pokemon-species/${allNamesAndIds[pokemonNames[i]]}/`
-			pokemonRange.push(obj);
-		};
+		pokemonRange = Object.values(pokeData.generations).map(gen => gen.pokemon_species).flat();
 	} else {
 		pokemonRange = Object.values(selectedGenerations).flat();
 	};
-
 	// handle search param
 	const trimmedText = searchParam.trim();
 	let searchResult = [];
@@ -93,8 +70,7 @@ export const searchPokemon = createAsyncThunk('search/searchPokemon', async ({se
 	};
 
 	// get intersection
-	const rangeIds = searchResult.map(pokemon => getIdFromURL(pokemon.url));
-	let intersection = rangeIds;
+	let intersection = searchResult.map(pokemon => getIdFromURL(pokemon.url));
 
 	// handle types
 	if (selectedTypes?.length) {
@@ -111,17 +87,12 @@ export const searchPokemon = createAsyncThunk('search/searchPokemon', async ({se
 				pokeData.types[cur].pokemon.forEach(entry => pre.push(getIdFromURL(entry.pokemon.url)));
 				return pre;
 			}, []);
-			intersection = rangeIds.filter(id => typeMatchingPokemonIds.includes(id));
+			intersection = intersection.filter(id => typeMatchingPokemonIds.includes(id));
 		};
 	};
-	const {fetchedPokemons, pokemonsToDisplay, nextRequest} = await getPokemons(pokeData.pokemons, allNamesAndIds, dispatch, intersection, pokeData.sortBy);
+	const {fetchedPokemons, pokemonsToDisplay, nextRequest} = await getPokemons(pokeData.pokemons, allNamesAndIds, dispatch, intersection, dispalyData.sortBy);
 	return {intersection, searchParam, selectedGenerations, selectedTypes, fetchedPokemons, nextRequest, pokemonsToDisplay};
 });
-
-
-
-
-
 
 export default searchSlice.reducer;
 

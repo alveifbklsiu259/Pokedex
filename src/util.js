@@ -12,7 +12,21 @@ export const transformToDash = name => {
 
 export const getNameByLanguage = (defaultName, language, entries) => {
 	const getMatchName = lang => (entries?.['form_names'] || entries?.names)?.find(entry => entry?.language?.name === transformToDash(lang))?.name;
-	return language === 'en' ? defaultName : getMatchName(language) ? getMatchName(language) : language === 'ja' ? getMatchName('ja-Hrkt') || defaultName : defaultName;
+	// return language === 'en' ? defaultName : getMatchName(language) ? getMatchName(language) : language === 'ja' ? getMatchName('ja-Hrkt') || defaultName : defaultName;
+	return getMatchName(language) ? getMatchName(language) : language === 'ja' ? getMatchName('ja-Hrkt') || defaultName : defaultName;
+};
+
+export const getFormName = (speciesData, language, pokemonData) => {
+	let pokemonName = getNameByLanguage(pokemonData.name, language, speciesData);
+	if (!pokemonData.is_default) {
+		const formName = getNameByLanguage(pokemonData.formData.form_name, language, pokemonData.formData)
+		if (formName.includes(pokemonName)) {
+			pokemonName = formName;
+		} else {
+			pokemonName = pokemonName.concat(`(${formName})`);
+		};
+	};
+	return pokemonName;
 };
 
 export const getTextByLanguage = (language, entries, dataType, version) => {

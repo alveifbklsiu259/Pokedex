@@ -58,16 +58,6 @@ export default function MovesTable({columnData, movesData, selectedVersion, chan
 		return;
 	};
 
-	// by the time MovesTable renders(Moves re-render), we're passing down the old column data (really?) notice that those columns do not re-render(because I cached them)
-	// then the next re-render the column updates or I should say that it's caused by column change, so the re-render happen
-
-	// confusion:
-	// 1. why the log in MovesTable being logged to the console twice even though it only re-render once?
-	// A: seems like it's caused by setPreviousData()
-
-	// 2. when I log the columnData, it shows the newest value
-	// A: even I don't cache columnData, the first time it's passed, it will be cached?
-
 	return (
 		<DataTable
 			columns={columnData}

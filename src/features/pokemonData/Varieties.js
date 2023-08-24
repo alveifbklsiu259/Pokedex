@@ -1,8 +1,8 @@
 import React, { memo } from 'react';
 import { useSelector } from 'react-redux';
-import { selectPokemonById, selectSpeciesById } from './pokemonDataSlice';
+import { selectPokemonById, selectPokemons, selectSpeciesById } from './pokemonDataSlice';
 import { selectLanguage } from '../display/displaySlice';
-import { getIdFromURL, getNameByLanguage } from '../../util';
+import { getFormName, getIdFromURL } from '../../util';
 import { useNavigateToPokemon } from '../../api';
 
 const Varieties = memo(function Varieties({pokeId}) {
@@ -10,35 +10,20 @@ const Varieties = memo(function Varieties({pokeId}) {
 	const pokemon = useSelector(state => selectPokemonById(state, pokeId));
 	const speciesData = useSelector(state => selectSpeciesById(state, pokeId));
 	const language = useSelector(selectLanguage);
-
-	const handleClick = async variety => {
-		const targetFormId = getIdFromURL(variety.pokemon.url)
-		const allFormIds = speciesData.varieties.map(entry => getIdFromURL(entry.pokemon.url));
-		allFormIds.splice(allFormIds.indexOf(targetFormId), 1);
-		const requestPokemonIds = [targetFormId, ...allFormIds];
-		navigateToPokemon(requestPokemonIds, ['pokemons', 'abilities']);
-	};
+	const pokemons = useSelector(selectPokemons);
 	
-	const getVarietyName = ({pokemon: poke, is_default}) => {
-		if (language === 'en') {
-			return poke.name;
-		} else {
-			const defaultName = getNameByLanguage(poke.name, language, speciesData);
-			if (!is_default) {
-				return defaultName.concat(`(${poke.name.replace(`${speciesData.name}-`, '')})`);
-			} else {
-				return defaultName;
-			};
-		};
-	};
-
 	return (
 		<div className='col-12 varieties'>
 			<ul>
 				{speciesData.varieties.map(variety => (
 					<React.Fragment key={variety.pokemon.name}>
 						<li className={pokemon.name === variety.pokemon.name ? 'active' : ''}>
-							<button className='text-capitalize' onClick={() => handleClick(variety)}>{getVarietyName(variety)}</button>
+							<button 
+								className='text-capitalize' 
+								onClick={() => navigateToPokemon([getIdFromURL(variety.pokemon.url)], ['abilities'])}
+							>
+								{getFormName(speciesData, language, pokemons[getIdFromURL(variety.pokemon.url)])}
+							</button>
 						</li>
 					</React.Fragment>
 				))}
@@ -48,9 +33,6 @@ const Varieties = memo(function Varieties({pokeId}) {
 	)
 });
 export default Varieties;
-
-
-
 
 // import React, { memo } from 'react';
 // import { getIdFromURL, getNameByLanguage } from '../util';

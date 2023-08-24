@@ -1,14 +1,13 @@
-import React, { useState, memo } from 'react';
-import { useDispatch } from 'react-redux';
+import React, { useState, memo, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import Slide from '@mui/material/Slide';
 import { advancedSearchReset } from '../features/search/searchSlice';
-import { backToRoot } from '../features/display/displaySlice';
+import { backToRoot, selectStatus } from '../features/display/displaySlice';
 import { useNavigateNoUpdates } from './RouterUtils';
 import LanguageMenu from '../features/display/LanguageMenu';
 import Modal from './Modal';
@@ -30,13 +29,13 @@ const HideOnScroll = (props) => {
 export default function NavBar() {
 	const [isModalShown, setIsModalShown] = useState(false);
 
-	const handleCloseModal = () => {
+	const handleCloseModal = useCallback(() => {
 		setIsModalShown(false);
-	};
+	}, [setIsModalShown]);
 
 	return (
 		<div className='navbar'>
-			<SearchBtn setIsModalShown={setIsModalShown}/>
+			<MainBar setIsModalShown={setIsModalShown}/>
 			{isModalShown && (
 				<Modal
 					isModalShown={isModalShown}
@@ -50,18 +49,11 @@ export default function NavBar() {
 	);
 };
 
-const SearchBtn = memo(function SearchBtn({setIsModalShown}) {
+const MainBar = memo(function MainBar({setIsModalShown}) {
 	const dispatch = useDispatch();
-	const navigateNoUpdates = useNavigateNoUpdates();
-
 	const handleShowModal = () => {
 		setIsModalShown(true);
 		dispatch(advancedSearchReset());
-	};
-
-	const handleBackToRoot = () => {
-		dispatch(backToRoot());
-		navigateNoUpdates('/');
 	};
 	
 	return (
@@ -69,7 +61,7 @@ const SearchBtn = memo(function SearchBtn({setIsModalShown}) {
 			<HideOnScroll>
 				<AppBar sx={{bgcolor: theme => theme.palette.primary.light, position: 'fixed'}}>
 					<Toolbar sx={{justifyContent: 'space-between'}}>
-					<Typography variant="h5" color="#fff" sx={{cursor: 'pointer'}} onClick={handleBackToRoot}>Pokédex</Typography>
+					<BackToRootBtn />
 					<Box sx={{display: 'flex'}}>
 						<Button size='large' variant="contained" onClick={handleShowModal}>
 							<i className="fa-solid fa-magnifying-glass"></i>
@@ -80,5 +72,19 @@ const SearchBtn = memo(function SearchBtn({setIsModalShown}) {
 				</AppBar>
 			</HideOnScroll>
 		</Box>
+	)
+});
+
+const BackToRootBtn = memo(function BackToRootBtn() {
+	const dispatch = useDispatch();
+	const status = useSelector(selectStatus);
+	const navigateNoUpdates = useNavigateNoUpdates();
+	const handleBackToRoot = () => {
+		dispatch(backToRoot());
+		navigateNoUpdates('/');
+	};
+
+	return (
+		<button className={`nav-btn ${status === 'loading' ? 'nav-btn-not-allowed' : ''}`} disabled={status === 'loading'} onClick={handleBackToRoot}>Pokédex</button>
 	)
 });

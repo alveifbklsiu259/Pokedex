@@ -26,7 +26,8 @@ export default function Pokemons() {
 	}, [display, pokemons]);
 
 	const handleScroll = useCallback(() => {
-		if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight && status === 'idle' && nextRequest !== null) {
+		// if we zoom out, window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight will very likely never be true.
+		if (window.innerHeight + document.documentElement.scrollTop > document.documentElement.offsetHeight * 0.98 && status === 'idle' && nextRequest !== null) {
 			dispatch(getPokemonsOnScroll());
 		};
 	}, [status, nextRequest, dispatch]);

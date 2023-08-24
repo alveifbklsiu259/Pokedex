@@ -154,8 +154,7 @@ const Moves = memo(function Moves({pokeId, chainId}) {
 
 	// all moves for current pokemon.
 	const movesToFetch = useMemo(() => {
-		return pokemon.moves.filter(entry => !cachedMoves[transformToKeyName(entry.move.name)])
-		.map(entry => entry.move.url);
+		return pokemon.moves.filter(entry => !cachedMoves[transformToKeyName(entry.move.name)]).map(entry => entry.move.url);
 	}, [pokemon, cachedMoves]);
 	
 	const isMachineDataReady = movesLearnedByMachine.every(entry => entry.version_group_details.every(detail => Boolean(machines?.[transformToKeyName(entry.move.name)]?.version_groups?.[detail.version_group.name])));
@@ -298,7 +297,7 @@ const Moves = memo(function Moves({pokeId, chainId}) {
 			dispatch(machineDataLoaded(machineData));
 		};
 	}, [cachedMoves, dispatch, isMachineDataReady, movesLearnedByMachine]);
-
+	
 	const isDataReady = filteredMethod === 'level-up' ? !!movesData : !!movesData && isMachineDataReady;
 
 	return (

@@ -264,6 +264,11 @@ h1 {
     cursor: pointer;
 }
 
+.pokemonName.form {
+    font-weight: bold;
+    font-size: 0.6em;
+}
+
 /* detail */
 .detail p {
     font-size: 1.2em
@@ -428,8 +433,12 @@ h1 {
 /* evolution chain */
 
 .evolutionChains .poke-img {
-    min-width: 120px;
-    max-width: 230px;
+    min-width: 125px;
+    max-width: 250px;
+}
+
+.evolutionChains .basicInfo h1 {
+    font-size: 2em;
 }
 
 .gtTwo {
@@ -471,8 +480,8 @@ h1 {
 }
 
 .multiplePath {
-    min-width: 120px;
-    max-width: 230px;
+    min-width: 125px;
+    max-width: 250px;
 }
 
 .caret {
@@ -863,6 +872,20 @@ h1 {
 
 .navbar i {
     font-size: 25px
+}
+
+.nav-btn {
+    border: none;
+    background-color: transparent;
+    color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.5em;
+}
+
+.nav-btn-not-allowed {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
 }
 
 @media(min-width: 576px) {

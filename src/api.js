@@ -86,7 +86,7 @@ export const getData = async (dataType, dataToFetch, resultKey) => {
 	if (dataToFetch instanceof Array) {
 		const obj = {};
 		for (let i of finalData) {
-			obj[transformToKeyName(String(i[resultKey]))] = i
+			obj[transformToKeyName(String(i[resultKey]))] = i;
 		};
 		return obj;
 	} else {
@@ -294,7 +294,7 @@ export const getChainData = async(chainUrl, cachedPokemons, cachedSpecies) => {
 
 	// get all pokemons' pokemon/species data from the chain(s), including non-default-pokemon's pokemon data.(this is for evolutionChain to correctly display chain of different form)
 	const pokemonsInChain = new Set(chainData.sortedChains.flat());
-	if (pokemonsInChain.size > 1) {
+	// if (pokemonsInChain.size > 1) {
 		const speciesToFetch = getDataToFetch(cachedSpecies, [...pokemonsInChain]);
 		fetchedSpecies = await getData('pokemon-species', speciesToFetch, 'id');
 		
@@ -310,10 +310,10 @@ export const getChainData = async(chainUrl, cachedPokemons, cachedSpecies) => {
 		Object.values(formData).forEach(entry => {
 			fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
 		});
-	} else {
-		pokemonsToFetch = getDataToFetch(cachedPokemons, [...pokemonsInChain]);
-		fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
-	};
+	// } else {
+	// 	pokemonsToFetch = getDataToFetch(cachedPokemons, [...pokemonsInChain]);
+	// 	fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
+	// };
 
 	return [chainData, fetchedPokemons, fetchedSpecies];
 };

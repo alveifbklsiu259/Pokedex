@@ -1,9 +1,8 @@
 import { createSlice, createAsyncThunk, isAnyOf } from "@reduxjs/toolkit";
-import { getIdFromURL, getNameByLanguage, transformToKeyName } from "../../util";
+import { getIdFromURL, getNameByLanguage } from "../../util";
 import { getAllSpecies, getRequiredData, getPokemons } from "../../api";
 import { getInitialData, getPokemonsOnScroll, getRequiredDataThunk } from "../pokemonData/pokemonDataSlice";
 import { searchPokemon } from "../search/searchSlice";
-
 
 const initialState = {
 	display: [],
@@ -19,7 +18,7 @@ const initialState = {
 		// for scroll restoration
 		selectedPokemonId: null
 	}
-}
+};
 
 const displaySlice = createSlice({
 	name: 'display',
@@ -64,7 +63,6 @@ const displaySlice = createSlice({
 					state.viewMode = viewMode;
 				};
 			})
-			// thunks from other slices
 			.addCase(getInitialData.pending, state => {
 				state.status = 'loading';
 			})
@@ -80,55 +78,19 @@ const displaySlice = createSlice({
 			})
 			.addCase(searchPokemon.fulfilled, (state, action) => {
 				const {intersection} = action.payload;
-				
 				state.intersection = intersection
-				// did we change intersection before separating slices?
 
 				// reset table info
 				state.tableInfo.page = 1;
 				state.tableInfo.selectedPokemonId = null;
 			})
-
-
-
-
-			// end thunks from other slices
-			// .addMatcher(isAnyOf(sortPokemons.fulfilled, searchPokemon.fulfilled, getPokemonsOnScroll.fulfilled), (state, action) => {
-			// 	const {fetchedPokemons,	nextRequest, pokemonsToDisplay } = action.payload;
-			// 	state.pokemons = fetchedPokemons ? {...state.pokemons, ...fetchedPokemons} : state.pokemons;
-			// 	state.nextRequest = nextRequest;
-			// 	state.display = pokemonsToDisplay;
-			// 	state.status = 'idle';
-			// })
 			.addMatcher(isAnyOf(sortPokemons.fulfilled, searchPokemon.fulfilled, getPokemonsOnScroll.fulfilled), (state, action) => {
 				const {nextRequest, pokemonsToDisplay} = action.payload;
 				state.nextRequest = nextRequest;
 				state.display = pokemonsToDisplay;
 				state.status = 'idle';
 			})
-
-			// we can move status idle to their own fulfilled reducer, and add getRequiredData, then we can remove this addMatcher
-			.addMatcher(isAnyOf(getRequiredDataThunk.fulfilled, changeViewMode.fulfilled, changeLanguage.fulfilled), (state, action) => {
-				// const {fetchedData} = action.payload;
-				// const keys = Object.keys(fetchedData);
-				// if (keys.length) {
-				// 	keys.forEach(key => {
-				// 		switch(key) {
-				// 			case 'evolutionChains' : {
-				// 				const [chainData, fetchedPokemons] = fetchedData[key];
-				// 				state[key] = {...state[key], ...chainData};
-				// 				if (Object.keys(fetchedPokemons)) {
-				// 					state.pokemons = {...state.pokemons, ...fetchedPokemons}
-				// 				};
-				// 				break;
-				// 			}
-				// 			default : 
-				// 				state[transformToKeyName(key)] = {...state[transformToKeyName(key)], ...fetchedData[key]};
-				// 		};
-				// 	});
-				// };
-
-				// change viewMode, sort, search pokemon, change to cards, not sync
+			.addMatcher(isAnyOf(getRequiredDataThunk.fulfilled, changeViewMode.fulfilled, changeLanguage.fulfilled), state => {
 				state.status = 'idle';
 			})
 	}
@@ -137,28 +99,37 @@ const displaySlice = createSlice({
 export const changeLanguage = createAsyncThunk('display/changeLanguage', async({option: language, pokeId}, {dispatch, getState, rejectWithValue}) => {
 	const pokeData = getState().pokeData;
 	const dispalyData = getState().display;
+	// I didn't disable the button from being clicked when status === 'loading', because it would cause LanguageMenu to re-render when status changes, by adding the below condition we can basically achieve the same thing.
+	// another workaround is to extract the button to a separate component, and listens for the status in the button component, the button component will re-render when status changes, but it would be quite cheap to re-render.
 	if (dispalyData.status === 'idle') {
 		let fetchedSpecies;
+		let newPokeId = pokeId;
 		const hasAllSpecies = Object.keys(pokeData.pokemonSpecies).length === pokeData.pokemonCount;
-	
-		const requests = pokeId ? ['pokemons', 'abilities', 'items', 'version', 'move-damage-class', 'stat'] : ['version', 'move-damage-class', 'stat'];
-		const requestPokemonIds = pokeId ? pokeData.pokemonSpecies[getIdFromURL(pokeData.pokemons[pokeId].species.url)].varieties.map(variety => getIdFromURL(variety.pokemon.url)) : [undefined];
+		
+		// user may directly search pokemon in url bar using pokemon name
+		if (newPokeId && isNaN(Number(newPokeId))) {
+			newPokeId = pokeData.allPokemonNamesAndIds[pokeId.toLowerCase()] || Object.values(pokeData.pokemons).find(pokemon => pokemon.name.toLowerCase() === pokeId.toLowerCase())?.id || pokeId;
+		};
+
+		const requests = newPokeId ? ['pokemons', 'abilities', 'items', 'version', 'move-damage-class', 'stat'] : ['version', 'move-damage-class', 'stat'];
+		const requestPokemonIds = newPokeId ? pokeData.pokemonSpecies[getIdFromURL(pokeData.pokemons[newPokeId].species.url)].varieties.map(variety => getIdFromURL(variety.pokemon.url)) : [undefined];
+
 	
 		if (!hasAllSpecies) {
 			// the reason why I decide to dispatch dataLoading here instead of passing the dispatch down to getAllSpecies like some other functions(getRequiredData, getPokemons) is because that it requires some effors to check if the fecth is needed, but right here I already know that.
 			dispatch(dataLoading());
 			fetchedSpecies = await getAllSpecies(pokeData.pokemonSpecies, pokeData.pokemonCount);
 		};
-	
 		const fetchedData = await getRequiredData(pokeData, dispatch, requestPokemonIds, requests, language);
-		
 		const newNamesIds = Object.values({...pokeData.pokemonSpecies, ...fetchedSpecies}).reduce((pre, cur) => {
 			pre[getNameByLanguage(cur.name, language, cur)] = cur.id;
 			return pre;
 		}, {});
+		console.log(fetchedData)
 		
 		return {fetchedData, fetchedSpecies, newNamesIds, language};
 	} else {
+		// prevent fulfilled reducer function from runing.
 		return rejectWithValue('multiple requests while data is loading');
 	};
 });
@@ -171,12 +142,11 @@ export const sortPokemons = createAsyncThunk('display/sortPokemons', async(sortO
 		const res = await getPokemons(pokeData.pokemons, pokeData.allPokemonNamesAndIds, dispatch, displayData.intersection, sortOption);
 		return res;
 	} else {
-		// prevent fulfilled reducer function from runing.
 		return rejectWithValue('multiple requests while data is loading');
 	};
 });
 
-export const changeViewMode = createAsyncThunk('display/changeViewMode', async({requestPokemonIds, requests, viewMode}, {dispatch, getState}) => {
+export const changeViewMode = createAsyncThunk('display/changeViewMode', async({requestPokemonIds, requests, viewMode}, {dispatch, getState, rejectWithValue}) => {
 	const pokeData = getState().pokeData;
 	const displayData = getState().display
 
@@ -188,17 +158,14 @@ export const changeViewMode = createAsyncThunk('display/changeViewMode', async({
 		if (!isAllSpeciesCached || !isAllPokemonsCached) {
 			fetchedData = await getRequiredData(getState().pokeData, dispatch, requestPokemonIds, requests, displayData.language);
 		};
-	};
 	return {fetchedData, viewMode};
+	} else {
+		return rejectWithValue('multiple requests while data is loading');
+	};
 });
 
-
-
-
-export const {dataLoading, backToRoot, tableInfoChanged, error, scrolling, sortByChange} = displaySlice.actions;
-
 export default displaySlice.reducer;
-
+export const {dataLoading, backToRoot, tableInfoChanged, error, scrolling, sortByChange} = displaySlice.actions;
 
 export const selectLanguage = state => state.display.language;
 export const selectSortBy = state => state.display.sortBy;
