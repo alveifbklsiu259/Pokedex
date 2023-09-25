@@ -1,16 +1,18 @@
 import { useMemo, useEffect, useCallback } from "react";
-import { shallowEqual, useDispatch, useSelector } from "react-redux";
-import DataTable from "react-data-table-component"
+import { shallowEqual } from "react-redux";
+import DataTable, { type TableColumn, type SortOrder } from "react-data-table-component"
 import { selectPokemons, selectSpecies, selectTypes, selectStat, selectAllIdsAndNames } from "./pokemonDataSlice";
-import { selectTableInfo, selectIntersection, selectLanguage, selectStatus, selectSortBy, tableInfoChanged, sortByChange, sortPokemons } from "../display/displaySlice";
-
+import { selectTableInfo, selectIntersection, selectLanguage, selectStatus, selectSortBy, tableInfoChanged, sortByChange, sortPokemons, SortOption } from "../display/displaySlice";
 import { useNavigateToPokemon, getPokemons } from "../../api"
 import Spinner from "../../components/Spinner";
 import { getNameByLanguage, transformToKeyName } from "../../util";
 import { capitalize } from "@mui/material";
+import { TableInfoRefTypes } from "./Pokemons";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
 
 const scrollToTop = () => {
-	document.querySelector('.viewMode').nextSibling.scrollTo({
+	const viewModeElement = document.querySelector('.viewMode')!;
+	(viewModeElement.nextSibling as HTMLDivElement).scrollTo({
 		top: 0,
 		left: 0,
 		behavior: "smooth",
@@ -19,22 +21,35 @@ const scrollToTop = () => {
 
 const prowsPerPageOptions=[10, 30, 50, 100];
 
-export default function PokemonTable({tableInfoRef}) {
-	const dispatch = useDispatch();
+type Stats = {
+	"attack": number,
+	"defense": number,
+	"hp": number,
+	"special-attack": number,
+	"special-defense": number,
+	"speed": number
+}
+
+type PokemonTableProps = {
+	tableInfoRef: React.MutableRefObject<TableInfoRefTypes>
+}
+
+export default function PokemonTable({tableInfoRef}: PokemonTableProps) {
+	const dispatch = useAppDispatch();
 	const navigateToPokemon = useNavigateToPokemon();
-	const intersection = useSelector(selectIntersection, shallowEqual);
-	const pokemons = useSelector(selectPokemons);
-	const species = useSelector(selectSpecies);
-	const language = useSelector(selectLanguage);
-	const types = useSelector(selectTypes );
-	const status = useSelector(selectStatus);
-	const stats = useSelector(selectStat);
-	const sortBy = useSelector(selectSortBy);
-	const allPokemonNamesAndIds = useSelector(selectAllIdsAndNames);
+	const intersection = useAppSelector(selectIntersection, shallowEqual);
+	const pokemons = useAppSelector(selectPokemons);
+	const species = useAppSelector(selectSpecies);
+	const language = useAppSelector(selectLanguage);
+	const types = useAppSelector(selectTypes );
+	const status = useAppSelector(selectStatus);
+	const stats = useAppSelector(selectStat);
+	const sortBy = useAppSelector(selectSortBy);
+	const allPokemonNamesAndIds = useAppSelector(selectAllIdsAndNames);
 
 	// table info
-	const tableInfo = useSelector(selectTableInfo);
-	let sortField, sortMethod;
+	const tableInfo = useAppSelector(selectTableInfo);
+	let sortField: string, sortMethod: "asc" | 'desc';
 	if (sortBy.includes('Asc')) {
 		sortField = sortBy.slice(0, sortBy.indexOf('Asc'));
 		sortMethod = 'asc';
@@ -49,13 +64,12 @@ export default function PokemonTable({tableInfoRef}) {
 		const pokemonName = getNameByLanguage(speciesData.name, language, speciesData);
 
 		const idData = (
-			// value is for sorting
-			<div value={id} className={`idData idData-${id}`}>
-				<div data-tag="allowRowEvents">{String(id).padStart(4, 0)}</div>
+			// data-value is for sorting
+			<div data-value={id} className={`idData idData-${id}`}>
+				<div data-tag="allowRowEvents">{String(id).padStart(4, '0')}</div>
 				<img width='96px' height='96px' data-tag="allowRowEvents" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${[id]}.png`} alt={pokemonName} className="id"/>
 			</div>
 		);
-		
 		const typeData = (
 			<div className="typeData">
 				{
@@ -76,12 +90,13 @@ export default function PokemonTable({tableInfoRef}) {
 		);
 		
 		const total = pokemon.stats.reduce((accumulator, currentVal) => accumulator + currentVal.base_stat, 0);
-		const totalData = <span data-tag="allowRowEvents" value={total} className="totalData">{total}</span>
+		const totalData = <span data-tag="allowRowEvents" data-value={total} className="totalData">{total}</span>
 
-		const stats = pokemon.stats.reduce((pre, cur) => {
-			pre[cur.stat.name] = cur.base_stat;
+		// other workaround to handle type for stats?
+		const stats = pokemon.stats.reduce<Partial<Stats>>((pre, cur) => {
+			pre[cur.stat.name as keyof Stats] = cur.base_stat;
 			return pre;
-		}, {});
+		}, {}) as Stats;
 
 		const basicInfo = {
 			// id: pokemonName,
@@ -95,8 +110,10 @@ export default function PokemonTable({tableInfoRef}) {
 		return {...basicInfo, ...stats}
 	}), [language, species, pokemons, types, intersection]);
 
-	const columnData = useMemo(() => Object.keys(pokemonTableData[0] || []).map(data => {
-		const formatTableHeader = data => {
+	type ColData = (typeof pokemonTableData)[number]
+
+	const columnData: TableColumn<ColData>[] = useMemo(() => Object.keys(pokemonTableData[0] || []).map((data) => {
+		const formatTableHeader = (data: keyof ColData) => {
 			const columnHeader = getNameByLanguage(data, language, stats[transformToKeyName(data)]);
 			switch (columnHeader) {
 				case 'hp' : 
@@ -116,51 +133,51 @@ export default function PokemonTable({tableInfoRef}) {
 			};
 		};
 
-		const sortElement = data => (rowA, rowB) => {
-			const a = rowA[data].props.value;
-			const b = rowB[data].props.value;
-			return String(a).localeCompare(String(b), undefined, {numeric: true});
+		const sortElement = (data: 'number' | 'total') => (rowA: ColData, rowB: ColData) => {
+			const a: number = rowA[data].props['data-value'];
+			const b: number = rowB[data].props['data-value'];
+			return a - b
 		};
 
 		return {
 			id: data,
-			name: formatTableHeader(data),
-			selector: row => row[data],
+			name: formatTableHeader(data as keyof ColData),
+			// the declaration file of rdt specifies that the return type of "selector" can only be Primitive, but in my use case, I want to show React.JSX.Element in some of the field.
+			selector: row => (row[data as keyof ColData] as any),
 			sortable: data === 'type' ? false : true,
 			center: true,
-			sortFunction: data === 'number' || data === 'total' ? sortElement(data) : null
+			sortFunction: data === 'number' || data === 'total' ? sortElement(data) : undefined
 		};
 	}), [pokemonTableData, language, stats]);
 
-	const handleRowClick = useCallback(async row => {
-		const pokemonId = row.number.props.value;
-		const nextSortBy = tableInfoRef.current.sortBy;
+	const handleRowClick = useCallback(async (row: ColData) => {
+		const pokemonId: number = row.number.props['data-value'];
+		const nextSortBy = tableInfoRef.current.sortBy;  // should not be undefined
 		if (nextSortBy) {
-			// this is basically the same as dispatch(sortPokemons(...)), but if we just do that, it'll cause multiple re-renders(both sortPokemons and getRequiredDataThunk(thunk dispatched in navigateToPokemon) have state updates in both pending and fulfilled reducer functions), and since there's no fetching needed when sorting pokemons, we can manually make theses dispatches batched together(even with tableInfoChanged and the getRequiredDataThunk's pending reducer function).
+			// this is basically the same as dispatch(sortPokemons(...)), but if we just do that, it'll cause multiple re-renders(both sortPokemons and getRequiredDataThunk(thunk dispatched in navigateToPokemon) have state updates in both pending and fulfilled reducer functions), and since there's no fetching needed when sorting pokemons, we can manually make these dispatches batched together(even with tableInfoChanged and the getRequiredDataThunk's pending reducer function).
 			const {fetchedPokemons, nextRequest, pokemonsToDisplay} = await getPokemons(pokemons, allPokemonNamesAndIds, dispatch, intersection, nextSortBy);
 			dispatch(sortByChange(nextSortBy));
 			dispatch(sortPokemons.fulfilled({fetchedPokemons, nextRequest, pokemonsToDisplay}));
 		};
-		// this doesn't need to be stored in tableInfo
-		delete tableInfoRef.current.sortBy;
+		// this doesn't need to be stored in tableInfo anymore.
+		// delete tableInfoRef.current.sortBy;
+
 		dispatch(tableInfoChanged({...tableInfoRef.current, selectedPokemonId: pokemonId}));
-		navigateToPokemon([pokemonId], ['evolutionChains', 'abilities', 'items']);
+		navigateToPokemon([pokemonId], ['evolutionChain', 'ability', 'item']);
 	}, [tableInfoRef, pokemons, allPokemonNamesAndIds, dispatch, intersection, navigateToPokemon]);
 
-	const handleChangePage = useCallback(page => {
+	const handleChangePage = useCallback((page: number) => {
 		tableInfoRef.current.page = page;
-		console.log(tableInfoRef)
 		scrollToTop();
 	}, [tableInfoRef]);
-	
 
-	const handleChangeRowsPerPage = useCallback((currentRowsPerPage, currentPage) => {
+	const handleChangeRowsPerPage = useCallback((currentRowsPerPage: number, currentPage: number) => {
 		tableInfoRef.current.rowsPerPage = currentRowsPerPage;
 		tableInfoRef.current.page = currentPage;
 	}, [tableInfoRef]);
 
-	const handleSort = useCallback((selectedColumn, sortDirection) => {
-		const sortBy = selectedColumn.id.concat(sortDirection.replace(sortDirection[0], sortDirection[0].toUpperCase()));
+	const handleSort = useCallback((selectedColumn: TableColumn<ColData>, sortDirection: SortOrder) => {
+		const sortBy = (selectedColumn.id as string).concat(sortDirection.replace(sortDirection[0], sortDirection[0].toUpperCase())) as SortOption;
 		tableInfoRef.current.sortBy = sortBy;
 		scrollToTop();
 	}, [tableInfoRef]);
@@ -168,7 +185,7 @@ export default function PokemonTable({tableInfoRef}) {
 	useEffect(() => {
 		if (tableInfo.selectedPokemonId) {
 			// mimic scroll restoration when come back to /.
-			setTimeout(() =>document.querySelector(`.idData-${tableInfo.selectedPokemonId}`).scrollIntoView({
+			setTimeout(() => (document.querySelector(`.idData-${tableInfo.selectedPokemonId}`) as HTMLDivElement).scrollIntoView({
 				behavior: 'smooth',
 				block: 'center',
 				inline: 'nearest'

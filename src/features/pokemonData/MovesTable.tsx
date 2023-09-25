@@ -5,21 +5,26 @@ import { Switch, Stack, Typography, capitalize } from "@mui/material"
 import { selectLanguage } from "../display/displaySlice";
 import Spinner from "../../components/Spinner";
 import { getTextByLanguage } from "../../util";
+import type { ColData, MovesData } from "./Moves";
+import type { TableColumn, ExpanderComponentProps } from "react-data-table-component";
 
-const getMoveIds = movesData => JSON.stringify(Object.values(movesData).map(move => move.id));
+const getMoveIds = (movesData: MovesData[]) => JSON.stringify(Object.values(movesData).map(move => move.id));
 
-const MoveEffect = ({data, previousSelectedVersion}) => {
+interface MoveEffectProps extends ExpanderComponentProps<MovesData> {
+	// currently, props that extend ExpanderComponentProps must be set to optional.
+	previousSelectedVersion?: string
+}
+
+const MoveEffect: React.FC<MoveEffectProps> = ({data, previousSelectedVersion}: MoveEffectProps) => {
 	const language = useSelector(selectLanguage);
 
 	// why it's data['effect'][0]? what's about the 0 here?
-	console.log(data.effect)
 	const effect = getTextByLanguage(language, data.effect, 'effect', previousSelectedVersion);
 	const flavorText = getTextByLanguage(language, data.flavorText, 'flavor_text', previousSelectedVersion);
-console.log(data)
 
 	return (
 		<div className="moveDes">
-			{data?.level?.type === 'span' && (
+			{typeof data.level === 'object' && data.level.type === 'span' && (
 				<ul className="evo">
 					Evo.
 					<li>{data.level.props.title}</li>
@@ -37,8 +42,12 @@ console.log(data)
 	)
 };
 
+type FilterButtonProps = {
+	isDataReady: boolean,
+	changefilteredMethod: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>,
+};
 
-const FilterButton = memo(function FilterButton({isDataReady, changefilteredMethod}) {
+const FilterButton = memo(function FilterButton({isDataReady, changefilteredMethod}: FilterButtonProps) {
 	return (
 		<Stack direction="row" spacing={1} alignItems="center">
 			<Typography>Level</Typography>
@@ -48,7 +57,16 @@ const FilterButton = memo(function FilterButton({isDataReady, changefilteredMeth
 	)
 });
 
-export default function MovesTable({columnData, movesData, selectedVersion, changefilteredMethod, filteredMethod, isDataReady}) {
+type MovesTableProps = {
+	columnData: TableColumn<ColData>[],
+	movesData: MovesData[],
+	selectedVersion: string,
+	changefilteredMethod: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>,
+	filteredMethod: "machine" | "level-up",
+	isDataReady: boolean
+}
+
+export default function MovesTable({columnData, movesData, selectedVersion, changefilteredMethod, filteredMethod, isDataReady}: MovesTableProps) {
 	const [previousData, setPreviousData] = useState(movesData);
 	const [previousSelectedVersion, setPreviousSelectedVersion] = useState(selectedVersion);
 
@@ -66,12 +84,13 @@ export default function MovesTable({columnData, movesData, selectedVersion, chan
 
 	return (
 		<DataTable
-			columns={columnData}
 			data={previousData}
+			columns={columnData}
 			highlightOnHover
 			expandableRows
 			expandOnRowClicked
 			expandableRowsHideExpander
+			// // @ts-ignore
 			expandableRowsComponent={MoveEffect}
 			expandableRowsComponentProps={expandableRowsComponentProps}
 			title={`Moves Learn by ${capitalize(filteredMethod)}`}

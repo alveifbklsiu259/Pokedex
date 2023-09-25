@@ -1,7 +1,10 @@
-import type { Ability, PokemonData, SpeciesData } from "../typeModule";
-import type { LanguageOptions } from "./features/display/displaySlice";
+import type { Ability, Pokemon, PokemonSpecies } from "../typeModule";
+import type { LanguageOption } from "./features/display/displaySlice";
+import type { PokemonDataTypes } from "./features/pokemonData/pokemonDataSlice";
+import type { EndPointRequest } from "./api";
 
-type NameInstance = SpeciesData.Name
+
+type NameInstance = PokemonSpecies.Name
 
 type NameEntries = {
 	names: NameInstance[],
@@ -32,7 +35,7 @@ export function transformToDash (name: string | undefined): string | undefined {
 };
 
 type GetNameByLanguage = {
-	(defaultName: string, language: LanguageOptions, entries: NameEntries): string | undefined
+	(defaultName: string, language: LanguageOption, entries: NameEntries): string
 }
 
 export const getNameByLanguage: GetNameByLanguage = (defaultName, language, entries) => {
@@ -40,11 +43,11 @@ export const getNameByLanguage: GetNameByLanguage = (defaultName, language, entr
 		return defaultName;
 	} else {
 		const getMatchName = (lang: string) => (entries['form_names'] || entries.names).find(entry => entry.language.name === transformToDash(lang))?.name;
-		return getMatchName(language) ? getMatchName(language) : language === 'ja' ? getMatchName('ja-Hrkt') || defaultName : defaultName;
+		return getMatchName(language) ? getMatchName(language)! : language === 'ja' ? getMatchName('ja-Hrkt') || defaultName : defaultName;
 	};
 };
 
-export const getFormName = (speciesData: SpeciesData.Root, language: LanguageOptions, pokemonData: PokemonData.Root) => {
+export const getFormName = (speciesData: PokemonSpecies.Root, language: LanguageOption, pokemonData: Pokemon.Root) => {
 	let pokemonName = getNameByLanguage(pokemonData.name, language, speciesData)!;
 	if (!pokemonData.is_default) {
 		let formName: ReturnType<typeof getNameByLanguage>;
@@ -65,10 +68,10 @@ export const getFormName = (speciesData: SpeciesData.Root, language: LanguageOpt
 type FlavorTextInstance = Ability.FlavorTextEntry;
 type EffectInstance = Ability.EffectEntry;
 
-// export const getTextByLanguage = (language: LanguageOptions, entries: TextEntries, dataType: 'effect' | 'flavor_text', version? : string | undefined): string=> {
+// export const getTextByLanguage = (language: LanguageOption, entries: TextEntries, dataType: 'effect' | 'flavor_text', version? : string | undefined): string=> {
 // 	let result: string = '';
 
-// 	const getResult = (language: LanguageOptions): string | undefined => {
+// 	const getResult = (language: LanguageOption): string | undefined => {
 // 		const ignoreVersion = entries?.find(entry => entry?.language?.name === transformToDash(language))?.[dataType as keyof TextEntries[number]];
 // 		if (version) {
 // 			return entries.find(entry => entry.language.name === transformToDash(language) && entry?.version_group?.name === version)?.[dataType as keyof TextEntries[number]] || ignoreVersion;
@@ -88,12 +91,12 @@ type EffectInstance = Ability.EffectEntry;
 
 
 
-export function getTextByLanguage(language: LanguageOptions, entries: FlavorTextInstance[], dataType: 'flavor_text'): string;
-export function getTextByLanguage(language: LanguageOptions, entries: EffectInstance[], dataType: 'effect'): string;
-export function getTextByLanguage(language: LanguageOptions, entries: (FlavorTextInstance | EffectInstance)[], dataType: 'flavor_text' | 'effect', version?: string): string;
-export function getTextByLanguage(language: LanguageOptions, entries: (FlavorTextInstance | EffectInstance)[], dataType: 'flavor_text' | 'effect', version? : string): string {
+export function getTextByLanguage(language: LanguageOption, entries: FlavorTextInstance[], dataType: 'flavor_text'): string;
+export function getTextByLanguage(language: LanguageOption, entries: EffectInstance[], dataType: 'effect'): string;
+export function getTextByLanguage(language: LanguageOption, entries: (FlavorTextInstance | EffectInstance)[], dataType: 'flavor_text' | 'effect', version?: string): string;
+export function getTextByLanguage(language: LanguageOption, entries: (FlavorTextInstance | EffectInstance)[], dataType: 'flavor_text' | 'effect', version? : string): string {
 	let result: string = '';
-	const getResult = (language: LanguageOptions): string | undefined => {
+	const getResult = (language: LanguageOption): string | undefined => {
 		const ignoreVersion = entries.find(entry => entry.language.name === transformToDash(language))?.[dataType as keyof (FlavorTextInstance | EffectInstance)];
 		
 		if (version) {
@@ -109,4 +112,18 @@ export function getTextByLanguage(language: LanguageOptions, entries: (FlavorTex
 	};
 
 	return result || 'No Data To Show';
+};
+
+
+export function toEndPointString(str: EndPointRequest) {
+	let endPointString: string = '';
+	const characters = str.split('');
+	for (let i = 0; i < characters.length; i++ ) {
+		if (characters[i] !== '-' && characters[i] === characters[i].toUpperCase()) {
+			endPointString += `-${characters[i].toLowerCase()}`
+		} else {
+			endPointString += characters[i];
+		};
+	};
+	return endPointString;
 };

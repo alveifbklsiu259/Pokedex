@@ -23,7 +23,7 @@ const BasicInfo = memo<BasicInfoProps>(function BasicInfo({pokeId}) {
 		newName = (
 			<>
 	 		{pokemonName}
-			<div className="pokemonName form">{form}</div>
+			<div className="formName">{form}</div>
 		</>
 		)
 	};
@@ -39,7 +39,7 @@ const BasicInfo = memo<BasicInfoProps>(function BasicInfo({pokeId}) {
 			{/* width/heigh attributes are important for ScrollRestoration */}
 			<img width='475' height='475' className="poke-img mx-auto p-0" src={pokemon.sprites.other['official-artwork'].front_default} alt={formName} />
 			<span className="id p-0">#{String(nationalNumber).padStart(4 ,'0')}</span>
-			<h1 className="p-0 text-capitalize">{newName || formName}</h1>
+			<div className="p-0 text-capitalize pokemonName">{newName || formName}</div>
 			<div className="types row justify-content-center">
 				{pokemon.types.map(entry => (
 					<span 

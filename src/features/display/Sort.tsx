@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { selectSortBy, tableInfoChanged, sortPokemons } from './displaySlice';
 import { useAppDispatch } from '../../app/hooks';
 
-const dropdownOptions = [
+export const dropdownOptions = [
 	{text:'Number(low - high)', value: 'numberAsc'},
 	{text:'Number(high - low)', value: 'numberDesc'},
 	{text:'Name(A - Z)', value: 'nameAsc'},
@@ -26,7 +26,7 @@ const dropdownOptions = [
 	{text:'Special-Defense(low - heigh)', value: 'special-defenseAsc'},
 	{text:'Speed(heigh - low)', value: 'speedDesc'},
 	{text:'Speed(low - heigh)', value: 'speedAsc'},
-];
+] as const;
 
 const Sort = memo(function Sort() {
 	const sortBy = useSelector(selectSortBy);

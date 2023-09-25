@@ -3,18 +3,13 @@ import { useSelector } from 'react-redux';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { useAppDispatch } from '../../app/hooks';
-import { selectViewMode, sortPokemons, tableInfoChanged, changeViewMode, type SortOptions } from './displaySlice';
+import { selectViewMode, sortPokemons, tableInfoChanged, changeViewMode, type SortOption } from './displaySlice';
 import { selectPokemonCount } from '../pokemonData/pokemonDataSlice';
-
-export type TableInfoRefProps = {
-	sortBy?: SortOptions
-	page?: number
-	rowsPerPage?: number
-}
+import type { TableInfoRefTypes } from '../pokemonData/Pokemons';
 
 type ViewModeProps = {
 	tableInfoRef: {
-		current: TableInfoRefProps
+		current: TableInfoRefTypes
 	}
 }
 
@@ -42,7 +37,7 @@ const ViewMode = memo(function ViewMode({tableInfoRef}: ViewModeProps) {
 			};
 			dispatch(changeViewMode({
 				requestPokemonIds,
-				requests: ['pokemons', 'pokemonSpecies'],
+				requests: ['pokemon', 'pokemonSpecies'],
 				viewMode: nextView
 			}));
 		};

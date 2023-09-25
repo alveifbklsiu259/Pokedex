@@ -7,7 +7,7 @@ import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 
-const languageOptions = {
+export const languageOptions = {
 	en: 'English',
 	ja: '日本語',
 	zh_Hant: '繁體中文',

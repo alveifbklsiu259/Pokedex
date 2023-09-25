@@ -1,17 +1,17 @@
 import { useState, memo } from 'react';
 import { useSelector } from 'react-redux';
 import { flushSync } from 'react-dom';
-import { selectAbilities, abilityLoaded, type PokemonAbilities } from './pokemonDataSlice';
+import { selectAbilities, abilityLoaded, type CachedAbility } from './pokemonDataSlice';
 import { selectLanguage } from '../display/displaySlice';
 import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
 import { transformToKeyName, transformToDash, getNameByLanguage, getTextByLanguage } from '../../util';
 import { getAbilitiesToDisplay, getData } from '../../api';
-import type { PokemonData, Ability } from '../../../typeModule';
+import type { Pokemon, Ability } from '../../../typeModule';
 import { useAppDispatch } from '../../app/hooks';
 
 type AbilitiesProps = {
-	pokemon: PokemonData.Root
+	pokemon: Pokemon.Root
 };
 
 const Abilities = memo<AbilitiesProps>(function Abilities({pokemon}) {
@@ -25,7 +25,7 @@ const Abilities = memo<AbilitiesProps>(function Abilities({pokemon}) {
 
 	const showModal = async (ability: string) => {
 		const abilityKey = transformToKeyName(ability);
-		let fetchedAbility: PokemonAbilities | undefined;
+		let fetchedAbility: CachedAbility | undefined;
 
 		// for spinner to show
 		if (abilityData?.name !== ability) {

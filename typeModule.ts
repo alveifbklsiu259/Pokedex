@@ -1,6 +1,170 @@
 // should I rename it to .d.ts?
 
-export namespace PokemonData {
+// utilities
+type ToUnderscore<T extends string> = T extends `${infer A}-${infer B}`
+	? `${A}_${B}`
+	: never;
+type RemoveDash<T extends string> = T extends `${infer A}-${infer B}`
+	? `${A}${Capitalize<string & B>}`
+	: never;
+
+export type GetStringOrNumberKey<T> = {
+	[K in keyof T]: T[K] extends string | number ? K : never;
+}[keyof T];
+
+type GetObjectKey<T> = {
+	// notice the never type at the end, that's the reason why T{keyof T} is not showing those member who has never type
+	[K in keyof T]: T[K] extends object ? K : never;
+}[keyof T];
+
+type GetPrimitiveKey<T> = Exclude<keyof T, GetObjectKey<T>>;
+
+type Obj = {
+	name: string;
+	age: number;
+	test: number;
+	pet: any[];
+	test2: object;
+};
+
+type ObjKeys = GetObjectKey<Obj>;
+type PrimitiveKeys = GetPrimitiveKey<Obj>;
+
+// pickKeyByValue
+// reference: https://stackoverflow.com/questions/55150760/how-to-write-pickbyvalue-type
+
+type Test = {
+	includeMe: "a";
+	andMe: "a";
+	butNotMe: "b";
+	orMe: "b";
+};
+
+type PickByValue<T, V> = Pick<
+	T,
+	{ [K in keyof T]: T[K] extends V ? K : never }[keyof T]
+>;
+type TestA = PickByValue<Test, "a">; // {includeMe: "a"; andMe: "a"}
+type IncludedKeys = keyof PickByValue<Test, "a">; // "includeMe" | "andMe"
+
+// how to check if an union type has a specific type? e.g
+// check if "string | number | boolean" has 'string'?
+
+// type Flatten<Type> = Type extends Array<infer Item> ? Item : Type;
+
+export type Writable<T> = {
+	- readonly [K in keyof T]: T[K];
+};
+
+// also works for tuple.
+type GetArrayElementType<T extends unknown[]> = T[number];
+
+
+// the intellisense is okay about it, but is this valid?
+type C = [...any] // any[]
+
+
+
+
+
+
+
+
+/* 
+	Rules:
+	1. camelCase for js variable
+	2. PascalCase for ts type
+*/
+import { PokemonDataTypes } from "./src/features/pokemonData/pokemonDataSlice";
+
+// type State = {
+// 	pokemon: 'cached_pokemon'
+// 	species: 'cached_species'
+// 	allIdsandNames: 'allIds_Names'
+// }
+
+// type Values<T> = T[keyof T]
+
+// let val: Values<State>;
+
+// type D = typeof val
+
+// type GetCachedData<T> = T extends `${infer A}_${infer B}` ? A extends 'cached' ? B : 'nonCached' : unknown
+
+// type E = GetCachedData<D>
+
+// type A = PokemonDataTypes
+
+// type State = {
+// 	pokemon: 'Cached_Pokemon'
+// 	species: 'Cached_Species'
+// 	allIdsandNames: 'AllNamesAndIds'
+// }
+
+// type GetValues<T> = T[keyof T]
+
+// type StateValues = GetValues<State>
+
+// type GetCachedData<T extends keyof State> = State[T] extends `${infer A}_${infer B}` ? A extends 'Cached' ? B : T :
+
+// type E = GetCachedData<keyof State>
+
+type State = {
+	pokemon: "CachedPokemon";
+	species: "CachedSpecies";
+	allIdsandNames: "AllNamesAndIds";
+};
+
+type GetValues<T> = T[keyof T];
+
+type StateValues = GetValues<State>;
+
+type GetCachedData<T extends State> = {
+	[K in keyof T]: T[K] extends `${infer A}${Capitalize<string & K>}`
+		? K
+		: unknown;
+};
+
+type Res = GetCachedData<State>;
+
+// type ValStartsWith<T> = T[keyof T]
+
+// type A<T> = {
+// 	[key in keyof T]: T[key] extends {[name:string|number]: infer Q} ? Q : never
+// }
+
+// type B = A<PokemonDataTypes>
+
+// type C = `${string & PokemonDataTypes[keyof PokemonDataTypes]}`
+
+// is it possible to:
+// 1. convert a literal type to namespace and vice versa
+// 2. map a literal type to a already declared type? e.g. 'Pokemon' --> Pokemon
+// 3. find all "Defined types" that starts with a certain word, e.g. interface CachedPokemon, interface CachedItem, and use the word "Cached" to search;
+
+// maybe try Record?
+// or maybe put all the types in a namespace then use namespace['xxx']?
+
+/* 
+interface CatInfo {
+  age: number;
+  breed: string;
+}
+ 
+type CatName = "miffy" | "boris" | "mordred";
+ 
+const cats: Record<CatName, CatInfo> = {
+  miffy: { age: 10, breed: "Persian" },
+  boris: { age: 5, breed: "Maine Coon" },
+  mordred: { age: 16, breed: "British Shorthair" },
+};
+ 
+cats.boris;
+
+
+*/
+
+export namespace Pokemon {
 	export interface Root {
 		abilities: Ability[];
 		base_experience: number;
@@ -20,7 +184,7 @@ export namespace PokemonData {
 		stats: Stat[];
 		types: Type[];
 		weight: number;
-		formData?: FormData.Root;
+		formData?: PokemonForm.Root;
 	}
 
 	export interface Ability {
@@ -341,7 +505,7 @@ export namespace PokemonData {
 	}
 }
 
-export namespace SpeciesData {
+export namespace PokemonSpecies {
 	export interface Root {
 		base_happiness: number;
 		capture_rate: number;
@@ -479,7 +643,7 @@ export namespace SpeciesData {
 	}
 }
 
-export namespace FormData {
+export namespace PokemonForm {
 	export interface Root {
 		form_name: string;
 		form_names: FormName[];
@@ -549,7 +713,7 @@ export namespace FormData {
 	}
 }
 
-export namespace Types {
+export namespace Type {
 	export interface Root {
 		damage_relations: DamageRelations;
 		game_indices: Index[];
@@ -677,32 +841,32 @@ export namespace Types {
 	}
 }
 
-export namespace Moves {
+export namespace Move {
 	export interface Root {
-		accuracy: number | null;
+		accuracy: number;
 		contest_combos: ContestCombos;
 		contest_effect: ContestEffect;
 		contest_type: ContestType;
 		damage_class: DamageClass;
-		effect_chance: any;
+		effect_chance: number;
 		effect_changes: any[];
 		effect_entries: EffectEntry[];
 		flavor_text_entries: FlavorTextEntry[];
 		generation: Generation;
 		id: number;
 		learned_by_pokemon: LearnedByPokemon[];
-		machines: any[];
+		machines: Machine[];
 		meta: Meta;
 		name: string;
 		names: Name[];
-		past_values: PastValue[];
+		past_values: any[];
 		power: number;
 		pp: number;
 		priority: number;
 		stat_changes: any[];
 		super_contest_effect: SuperContestEffect;
 		target: Target;
-		type: Type2;
+		type: Type;
 	}
 
 	export interface ContestCombos {
@@ -712,10 +876,15 @@ export namespace Moves {
 
 	export interface Normal {
 		use_after: UseAfter[];
-		use_before: any;
+		use_before: UseBefore[];
 	}
 
 	export interface UseAfter {
+		name: string;
+		url: string;
+	}
+
+	export interface UseBefore {
 		name: string;
 		url: string;
 	}
@@ -776,6 +945,20 @@ export namespace Moves {
 		url: string;
 	}
 
+	export interface Machine {
+		machine: Machine2;
+		version_group: VersionGroup2;
+	}
+
+	export interface Machine2 {
+		url: string;
+	}
+
+	export interface VersionGroup2 {
+		name: string;
+		url: string;
+	}
+
 	export interface Meta {
 		ailment: Ailment;
 		ailment_chance: number;
@@ -811,26 +994,6 @@ export namespace Moves {
 		url: string;
 	}
 
-	export interface PastValue {
-		accuracy: any;
-		effect_chance: any;
-		effect_entries: any[];
-		power: any;
-		pp: any;
-		type: Type;
-		version_group: VersionGroup2;
-	}
-
-	export interface Type {
-		name: string;
-		url: string;
-	}
-
-	export interface VersionGroup2 {
-		name: string;
-		url: string;
-	}
-
 	export interface SuperContestEffect {
 		url: string;
 	}
@@ -840,13 +1003,13 @@ export namespace Moves {
 		url: string;
 	}
 
-	export interface Type2 {
+	export interface Type {
 		name: string;
 		url: string;
 	}
 }
 
-export namespace Machines {
+export namespace Machine {
 	export interface Root {
 		id: number;
 		item: Item;
@@ -870,7 +1033,7 @@ export namespace Machines {
 	}
 }
 
-export namespace Stats {
+export namespace Stat {
 	export interface Root {
 		affecting_moves: AffectingMoves;
 		affecting_natures: AffectingNatures;
@@ -1097,15 +1260,28 @@ export namespace Item {
 	}
 }
 
-export namespace EvolutionChains {
+export namespace EvolutionChainResponse {
 	export interface Root {
-		chains: number[][];
-		details: {
-			[id: number]: Details[]
-		}
+		baby_trigger_item: any;
+		chain: Chain;
+		id: number;
 	}
 
-	export interface Details {
+	export interface Chain {
+		evolution_details: any[];
+		evolves_to: EvolvesTo[];
+		is_baby: boolean;
+		species: Species3;
+	}
+
+	export interface EvolvesTo {
+		evolution_details: EvolutionDetail[];
+		evolves_to: EvolvesTo2[];
+		is_baby: boolean;
+		species: Species2;
+	}
+
+	export interface EvolutionDetail {
 		gender: any;
 		held_item: any;
 		item: any;
@@ -1129,6 +1305,63 @@ export namespace EvolutionChains {
 	export interface Trigger {
 		name: string;
 		url: string;
+	}
+
+	export interface EvolvesTo2 {
+		evolution_details: EvolutionDetail2[];
+		evolves_to: any[];
+		is_baby: boolean;
+		species: Species;
+	}
+
+	export interface EvolutionDetail2 {
+		gender: any;
+		held_item: any;
+		item: any;
+		known_move: any;
+		known_move_type: any;
+		location: any;
+		min_affection: any;
+		min_beauty: any;
+		min_happiness: any;
+		min_level: number;
+		needs_overworld_rain: boolean;
+		party_species: any;
+		party_type: any;
+		relative_physical_stats: any;
+		time_of_day: string;
+		trade_species: any;
+		trigger: Trigger2;
+		turn_upside_down: boolean;
+	}
+
+	export interface Trigger2 {
+		name: string;
+		url: string;
+	}
+
+	export interface Species {
+		name: string;
+		url: string;
+	}
+
+	export interface Species2 {
+		name: string;
+		url: string;
+	}
+
+	export interface Species3 {
+		name: string;
+		url: string;
+	}
+}
+
+export namespace EvolutionChain {
+	export interface Root {
+		chains: number[][];
+		details: {
+			[id: number]: EvolutionChainResponse.EvolutionDetail[];
+		};
 	}
 }
 
@@ -1199,7 +1432,6 @@ export namespace Ability {
 	}
 }
 
-// api
 export namespace EndPointData {
 	export interface Root {
 		count: number;
@@ -1213,6 +1445,3 @@ export namespace EndPointData {
 		url: string;
 	}
 }
-
-// 1. keep working with typescript
-// 2. discard typescript code and start playing with redux query

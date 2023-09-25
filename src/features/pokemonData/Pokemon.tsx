@@ -49,7 +49,7 @@ export default function Pokemon() {
 				try {
 					await dispatch(getRequiredDataThunk({
 						requestPokemonIds: [urlParam],
-						requests: ['pokemons', 'pokemonSpecies', 'evolutionChains', 'abilities', 'items']
+						requests: ['pokemon', 'pokemonSpecies', 'evolutionChain', 'ability', 'item']
 					})).unwrap();
 				} catch(err) {
 					console.log(err)
@@ -124,7 +124,7 @@ const RelatedPokemon = memo<RelatedPokemonProps>(function RelatedPokemon ({pokem
 	return (
 		<PrefetchOnNavigation
 			requestPokemonIds={[pokemonId]}
-			requests={['pokemons', 'pokemonSpecies', 'evolutionChains', 'abilities', 'items']}
+			requests={['pokemon', 'pokemonSpecies', 'evolutionChain', 'ability', 'item']}
 			customClass={`navigation ${order} `}
 		>
 			<span>{String(pokemonId).padStart(4, '0')}</span>

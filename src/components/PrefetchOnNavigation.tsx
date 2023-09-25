@@ -1,10 +1,10 @@
 import { memo, type PropsWithChildren } from "react";
 import { useNavigateToPokemon, usePrefetchOnNavigation } from "../api";
-import type { RequiredDataTypes } from "../features/pokemonData/pokemonDataSlice";
+import type { GetRequiredData } from "../features/pokemonData/pokemonDataSlice";
 
 type PrefetchOnNavigationPorps = {
 	requestPokemonIds: number[],
-	requests: RequiredDataTypes.RequiredDataRequest[],
+	requests: GetRequiredData.Request[],
 	customClass: string
 }
 

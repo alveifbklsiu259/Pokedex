@@ -1,23 +1,24 @@
 import { PayloadAction, createSlice, isAnyOf } from "@reduxjs/toolkit";
 import { getIdFromURL, getNameByLanguage } from "../../util";
 import { getAllSpecies, getRequiredData, getPokemons } from "../../api";
-import { RequiredDataTypes, getInitialData, getPokemonsOnScroll, getRequiredDataThunk, type PokemonNamesAndIds } from "../pokemonData/pokemonDataSlice";
+import { GetRequiredData, getInitialData, getPokemonsOnScroll, getRequiredDataThunk, type CachedAllPokemonNamesAndIds } from "../pokemonData/pokemonDataSlice";
 import { searchPokemon } from "../search/searchSlice";
 import type { RootState } from "../../app/store";
 import { createAppAsyncThunk } from "../../app/hooks";
 import type { TableInfoRefProps } from "./ViewMode";
+import { dropdownOptions } from "./Sort";
+import { languageOptions } from "./LanguageMenu";
 
-export type SortOptions = 'numberAsc' | 'numberDesc' | 'nameAsc' | 'nameDesc' | 'heightAsc' | 'heightDesc' | 'weightAsc' | 'weightDesc' | 'totalDesc' | 'totalAsc' | 'attackDesc' | 'attackAsc' | 'hpDesc' | 'hpAsc' | 'defenseDesc' | 'defenseAsc' | 'special-attackDesc' | 'special-attackAsc' | 'special-defenseDesc' | 'special-defenseAsc' | 'speedDesc' | 'speedAsc';
-
-export type LanguageOptions = 'en' | 'ja' | 'zh_Hant' | 'zh_Hans' | 'ko' | 'fr' | 'de';
+export type SortOption = typeof dropdownOptions[number]['value'];
+export type LanguageOption = keyof typeof languageOptions;
 
 export type DisplayType = {
 	display: number[],
 	intersection: number[],
 	viewMode: 'module' | 'list',
-	language: LanguageOptions,
+	language: LanguageOption,
 	nextRequest: number[] | null,
-	sortBy: SortOptions
+	sortBy: SortOption
 	status: null | 'idle' | 'loading' | 'scrolling' | 'error'
 	tableInfo: {
 		page: number,
@@ -128,7 +129,6 @@ export const changeLanguage = createAppAsyncThunk('display/changeLanguage', asyn
 	const pokeData = getState().pokeData;
 	console.log(pokeData)
 	const dispalyData = getState().display;
-	console.log(pokeData)
 	// I didn't disable the button from being clicked when status === 'loading', because it would cause LanguageMenu to re-render when status changes, by adding the below condition we can basically achieve the same thing.
 	// another workaround is to extract the button to a separate component, and listens for the status in the button component, the button component will re-render when status changes, but it would be quite cheap to re-render.
 	
@@ -139,23 +139,21 @@ export const changeLanguage = createAppAsyncThunk('display/changeLanguage', asyn
 		
 		// user may directly search pokemon in url bar using pokemon name
 		if (pokeId && isNaN(Number(pokeId))) {
-			newPokeId = pokeData.allPokemonNamesAndIds[pokeId.toLowerCase()] || Object.values(pokeData.pokemons).find(pokemon => pokemon.name.toLowerCase() === pokeId.toLowerCase())?.id || pokeId;
+			newPokeId = pokeData.allPokemonNamesAndIds[pokeId.toLowerCase()] || Object.values(pokeData.pokemon).find(pokemon => pokemon.name.toLowerCase() === pokeId.toLowerCase())?.id || pokeId;
 		};
-
-		const requests: RequiredDataTypes.RequiredDataRequest[] = newPokeId ? ['pokemons', 'abilities', 'items', 'version', 'move-damage-class', 'stat'] : ['version', 'move-damage-class', 'stat'];
-		const requestPokemonIds = newPokeId ? pokeData.pokemonSpecies[getIdFromURL(pokeData.pokemons[newPokeId].species.url)].varieties.map(variety => getIdFromURL(variety.pokemon.url)) : [undefined];
+		const requests: GetRequiredData.Request[] = newPokeId ? ['pokemon', 'ability', 'item', 'version', 'moveDamageClass', 'stat'] : ['version', 'moveDamageClass', 'stat'];
+		const requestPokemonIds = newPokeId ? pokeData.pokemonSpecies[getIdFromURL(pokeData.pokemon[newPokeId].species.url)].varieties.map(variety => getIdFromURL(variety.pokemon.url)) : [undefined];
 	
 		if (!hasAllSpecies) {
 			// the reason why I decide to dispatch dataLoading here instead of passing the dispatch down to getAllSpecies like some other functions(getRequiredData, getPokemons) is because that it requires some effors to check if the fecth is needed, but right here I already know that.
 			dispatch(dataLoading());
 			fetchedSpecies = await getAllSpecies(pokeData.pokemonSpecies, pokeData.pokemonCount as number);
 		};
-		const fetchedData = await getRequiredData(pokeData, dispatch, requestPokemonIds, requests, language);
-		const newNamesIds: PokemonNamesAndIds = Object.values({...pokeData.pokemonSpecies, ...fetchedSpecies}).reduce((pre: PokemonNamesAndIds, cur) => {
+		const fetchedData = await getRequiredData(pokeData, requestPokemonIds, requests, language, dispatch);
+		const newNamesIds: CachedAllPokemonNamesAndIds = Object.values({...pokeData.pokemonSpecies, ...fetchedSpecies}).reduce((pre: CachedAllPokemonNamesAndIds, cur) => {
 			pre[getNameByLanguage(cur.name, language, cur)!] = cur.id;
 			return pre;
 		}, {});
-		
 		return {fetchedData, fetchedSpecies, newNamesIds, language};
 	} else {
 		// prevent fulfilled reducer function from runing.
@@ -163,12 +161,12 @@ export const changeLanguage = createAppAsyncThunk('display/changeLanguage', asyn
 	};
 });
 
-export const sortPokemons = createAppAsyncThunk('display/sortPokemons', async(sortOption: SortOptions, {dispatch, getState, rejectWithValue}) => {
+export const sortPokemons = createAppAsyncThunk('display/sortPokemons', async(sortOption: SortOption, {dispatch, getState, rejectWithValue}) => {
 	const pokeData = getState().pokeData;
 	const displayData = getState().display
 
 	if (displayData.status === 'idle') {
-		const res = await getPokemons(pokeData.pokemons, pokeData.allPokemonNamesAndIds, dispatch, displayData.intersection, sortOption);
+		const res = await getPokemons(pokeData.pokemon, pokeData.allPokemonNamesAndIds, dispatch, displayData.intersection, sortOption);
 		return res;
 	} else {
 		return rejectWithValue('multiple requests while data is loading');
@@ -177,7 +175,7 @@ export const sortPokemons = createAppAsyncThunk('display/sortPokemons', async(so
 
 type ChangeViewModeParamTypes = {
 	requestPokemonIds: number[]
-	requests: RequiredDataTypes.RequiredDataRequest[]
+	requests: GetRequiredData.Request[]
 	viewMode: "list" | "module"
 };
 
@@ -189,9 +187,9 @@ export const changeViewMode = createAppAsyncThunk('display/changeViewMode', asyn
 	if (displayData.status === 'idle') {
 		// prevent multiple fetches, I don't want to listen for status in the ViewMode component, else when scrolling, ViewMode will re-render.
 		const isAllSpeciesCached = Object.keys(pokeData.pokemonSpecies).length === pokeData.pokemonCount;
-		const isAllPokemonsCached = isAllSpeciesCached ? Object.keys(pokeData.pokemonSpecies).every(id => pokeData.pokemons[id]) : false;
+		const isAllPokemonsCached = isAllSpeciesCached ? Object.keys(pokeData.pokemonSpecies).every(id => pokeData.pokemon[id]) : false;
 		if (!isAllSpeciesCached || !isAllPokemonsCached) {
-			fetchedData = await getRequiredData(getState().pokeData, dispatch, requestPokemonIds, requests, displayData.language);
+			fetchedData = await getRequiredData(getState().pokeData, requestPokemonIds, requests, displayData.language, dispatch);
 		};
 	return {fetchedData, viewMode};
 	} else {

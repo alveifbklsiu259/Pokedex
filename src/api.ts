@@ -1,127 +1,105 @@
 import { useCallback, useRef } from 'react';
 import { useNavigateNoUpdates } from "./components/RouterUtils";
-import { getIdFromURL, transformToKeyName, transformToDash } from "./util";
-import { getRequiredDataThunk, type RequiredDataTypes, type PokemonAbilities, type Pokemons, type PokemonSpecies, type PokemonStats, type PokemonMoveDamageClass, type PokemonVersion, type PokemonItem, type PokemonNamesAndIds, getPokemonsOnScroll} from "./features/pokemonData/pokemonDataSlice";
-import { dataLoading, LanguageOptions, selectLanguage, type SortOptions } from './features/display/displaySlice';
-import { EndPointData } from '../typeModule';
+import { getIdFromURL, transformToKeyName, transformToDash, toEndPointString } from "./util";
+import { getRequiredDataThunk, type GetRequiredData, type CachedAbility, type CachedPokemon, type CachedPokemonSpecies, type CachedStat, type CachedMoveDamageClass, type CachedVersion, type CachedItem, type CachedAllPokemonNamesAndIds, getPokemonsOnScroll, PokemonDataTypes, CachedEvolutionChain} from "./features/pokemonData/pokemonDataSlice";
+import { dataLoading, selectLanguage, type LanguageOption, type SortOption } from './features/display/displaySlice';
 import type { AppDispatch, RootState } from './app/store';
 
 /* maybe these two are not necessay? may have defined types in slice files
 e.g
-let a: Pokemons[keyof Pokemons]; */
-import type { PokemonData, SpeciesData } from '../typeModule';
+let a: CachedPokemon[keyof CachedPokemon]; */
+import type { Pokemon, PokemonSpecies, EndPointData, PokemonForm, GetStringOrNumberKey, EvolutionChain, EvolutionChainResponse } from '../typeModule';
 import { useAppSelector, useAppDispatch } from './app/hooks';
-
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
-// export const getIndividualPokemon = async (pokemon, dispatch) => {
-// 	//pass in id or name
-// 	dispatch({type: 'dataLoading'});
-// 	const response = await fetch(`${BASE_URL}/pokemon/${pokemon}`);
-// 	const data = await response.json();
-// 	dispatch({type: 'individualPokemonLoaded', payload: data});
-// 	return data
-// };
+export type EndPointRequest = keyof Omit<PokemonDataTypes, 'pokemonCount' | 'allPokemonNamesAndIds'> | 'pokemonForm';
 
-
-
-
-// export const useIndividualPokemon = (pokemon) => {
-// 	const [pokemonData, setPokemonData] = useState({});
-// 	const {dispatch} = usePokemonData();
-
-// 	useEffect(() => {
-// 		let ignore = false;
-		
-// 		const getIndividualPokemon = async () => {
-// 			//pass in id or name
-// 			dispatch({type: 'dataLoading'});
-// 			const response = await fetch(`${BASE_URL}/pokemon/${pokemon}`);
-// 			const data = await response.json();
-// 			if (!ignore) {
-// 				dispatch({type: 'individualPokemonLoaded', payload: data});
-// 			} else {
-// 				// logic to revert this code : dispatch({type: 'dataLoading'});
-// 			}
-// 			setPokemonData(data);
-// 			getIndividualPokemon();
-// 		};
-// 		return () => {
-// 			ignore = true
-// 		};
-// 	}, [pokemon, dispatch]);
-
-// 	return pokemonData
-// }
-
-export const getEndpointData = async (dataType: string) => {
-	const response = await fetch(`${BASE_URL}/${dataType}?limit=99999`);
-	const data: EndPointData.Root  = await response.json();
+export const getEndpointData = async (dataType: EndPointRequest) => {
+	const response = await fetch(`${BASE_URL}/${toEndPointString(dataType)}?limit=99999`);
+	const data: EndPointData.Root = await response.json();
 	return data;
 };
 
-export const getDataToFetch = (cachedData: {[nameOrId: string | number]: {} | undefined}, dataToDisplay: (number | string)[]) => dataToDisplay.filter(data => !cachedData[data]);
+type CachedEntries = Pick<PokemonDataTypes, 'pokemon' | 'pokemonSpecies' | 'ability' | 'move' | 'machine' | 'evolutionChain' | 'item'>;
+type CachedEntry = CachedEntries[keyof CachedEntries];
 
-export async function getData(dataType: string, dataToFetch: (string | number)[], resultKey: string): Promise<{}>;
-export async function getData(dataType: string, dataToFetch: string | number, resultKey?: string): Promise<{}>;
-export async function getData(dataType: string, dataToFetch: (string | number)[] | string | number, resultKey?: string) {
+export const getDataToFetch = <T extends string | number>(cachedData: CachedEntry, dataToDisplay: T[]) => dataToDisplay.filter(data => !cachedData[data]);
+
+
+// CachedEvolutionChain and CachedEvolutionChain[number] is the modified version, not the original response from the API.
+type PokemonDataResponseType = {
+	[K in keyof PokemonDataTypes]: K extends 'evolutionChain' ? {[chainId: string | number]: EvolutionChainResponse.Root} : PokemonDataTypes[K]
+};
+
+type GetReturnedDataType<T extends EndPointRequest, K> = K extends (number | string)[] ? T extends keyof PokemonDataResponseType ? PokemonDataResponseType[T] : {[name: string]: PokemonForm.Root} : T extends keyof PokemonDataResponseType ? PokemonDataResponseType[T][number] : PokemonForm.Root;
+
+// can we simplify the function, let it only take string or string[]
+export async function getData<T extends EndPointRequest, K extends number | string>(dataType: T, dataToFetch: K): Promise<GetReturnedDataType<T, K>>;
+export async function getData<T extends EndPointRequest, K extends number | string>(dataType: T, dataToFetch: K[], resultKey: GetStringOrNumberKey<GetReturnedDataType<T, undefined>>): Promise<GetReturnedDataType<T, K[]>>;
+export async function getData<T extends EndPointRequest, K extends number | string>(dataType: T, dataToFetch: K | K[], resultKey?: GetStringOrNumberKey<GetReturnedDataType<T, undefined>>): Promise<GetReturnedDataType<T, K>> {
 	let request: (number | string)[] = [];
 	if (Array.isArray(dataToFetch)) {
 		request = dataToFetch.map(element => {
 			if (typeof element === "string" && element.includes(BASE_URL)) {
-				return getIdFromURL(element)!;
+				return getIdFromURL(element);
 			} else {
 				return element;
 			};
 		});
 	} else {
 		if (typeof dataToFetch === 'string' && dataToFetch.includes(BASE_URL)) {
-			request = [getIdFromURL(dataToFetch)!];
+			request = [getIdFromURL(dataToFetch)];
 		} else {
 			request = [dataToFetch];
 		};
 	};
 
-	const dataResponses = await Promise.all(request.map(entry => fetch(`${BASE_URL}/${dataType}/${entry}`)));
-	const finalData = await Promise.all(dataResponses.map(response => response.json()));
+	const dataResponses = await Promise.all(request.map(entry => fetch(`${BASE_URL}/${toEndPointString(dataType)}/${entry}`)));
+	const finalData: Array<GetReturnedDataType<T, undefined>> = await Promise.all(dataResponses.map(response => response.json()));
 
-	if (Array.isArray(dataToFetch) && resultKey) {
-		const obj: {[nameOrId: string | number]: {}} = {};
-		for (let i of finalData) {
-			obj[transformToKeyName(String(i[resultKey]))] = i;
-		};
-		return obj;
-	} else {
-		if (resultKey) {
-			return {[transformToKeyName(finalData[0][resultKey])] : finalData[0]};
+	if (resultKey) {
+		const returnedData: GetReturnedDataType<EndPointRequest, []> = {};
+		if (Array.isArray(dataToFetch)) {
+			for (let i of finalData) {
+				const key = transformToKeyName(String(i[resultKey]));
+				returnedData[key] = i
+			};
 		} else {
-			return finalData[0];
+			const key = transformToKeyName(String(finalData[0][resultKey]));
+			returnedData[key] = finalData[0]
 		}
-	};
-};
-
-export function getAbilitiesToDisplay(pokemonData: Pokemons[keyof Pokemons]): string[];
-export function getAbilitiesToDisplay(pokemonData: (Pokemons[keyof Pokemons] | undefined)[]): undefined | string[];
-export function getAbilitiesToDisplay(pokemonData: Pokemons[keyof Pokemons] | (Pokemons[keyof Pokemons] | undefined)[]) {
-	let data = Array.isArray(pokemonData) ? pokemonData : [pokemonData];
-
-	if (data.includes(undefined)) {
-		return undefined;
+		return returnedData as any
 	} else {
-		return [
-			...Object.values(data).reduce<Set<string>>((pre, cur) => {
-				cur!.abilities.forEach(entry => pre.add(transformToKeyName(entry.ability.name)));
-				return pre;
-			}, new Set())
-		];
+		return finalData[0] as any
 	};
+	// reference: https://stackoverflow.com/questions/69783310/type-is-assignable-to-the-constraint-of-type-t-but-t-could-be-instantiated#:~:text=a%20type%20assertion-,to%20any,-(I%20could%20have
 };
 
+async function test () {
+	// type A<T> = ReturnType<typeof getData>
+	// let a: GetReturnedDataType<'pokemonForm', 1>
+
+	// let fetchedData: Awaited<ReturnType<typeof getData>>;
+
+	// infer ReturnType
 
 
+	const fetchedData = await getData('evolutionChain', [1,2,3,4], 'id');
 
-export const getAbilities = async (pokemonData, cachedAbilities) => {
+}
+
+export function getAbilitiesToDisplay(pokemonData: Pokemon.Root | Pokemon.Root[]): string[] {
+	const data = Array.isArray(pokemonData) ? pokemonData : [pokemonData];
+	return [
+		...Object.values(data as Pokemon.Root[]).reduce<Set<string>>((pre, cur) => {
+			cur.abilities.forEach(entry => pre.add(transformToKeyName(entry.ability.name)));
+			return pre;
+		}, new Set())
+	];
+};
+
+export const getAbilities = async (pokemonData: Parameters<typeof getAbilitiesToDisplay>['0'], cachedAbilities: CachedAbility) => {
 	const abilitiesToDisplay = getAbilitiesToDisplay(pokemonData);
 	const abilitiesToFetch = getDataToFetch(cachedAbilities, abilitiesToDisplay).map(ability => transformToDash(ability));
 	if (abilitiesToFetch.length) {
@@ -129,7 +107,11 @@ export const getAbilities = async (pokemonData, cachedAbilities) => {
 	};
 };
 
-export const sortPokemons = (allPokemons: Pokemons, sortOption: SortOptions, allPokemonNamesAndIds: PokemonNamesAndIds, request: number[]) => {
+export type GetSortField<T extends SortOption> = T extends `${infer A}Asc` ? A : SortOption extends `${infer B}Desc` ? B : never;
+type SortField = GetSortField<SortOption>;
+type Stat = Exclude<SortField, "number" | "height" | "name" | "weight" >
+
+const sortPokemons = (allPokemons: CachedPokemon, sortOption: SortOption, allPokemonNamesAndIds: CachedAllPokemonNamesAndIds, request: number[]) => {
 	const sortPokemonsByName = () => {
 		let sortedNames: string[];
 		const sort = sortOption.includes('Asc') ? 'asc' : 'desc';
@@ -143,7 +125,7 @@ export const sortPokemons = (allPokemons: Pokemons, sortOption: SortOptions, all
 	};
 
 	const sortPokemonsByWeightOrHeight = (sortBy: 'weight' | 'height') => {
-		let sortedPokemons: PokemonData.Root[];
+		let sortedPokemons: Pokemon.Root[];
 		const sort = sortOption.includes('Asc') ? 'asc' : 'desc';
 		if (sort === 'asc') {
 			sortedPokemons = Object.values(allPokemons).sort((a, b) => a[sortBy] - b[sortBy]);
@@ -154,14 +136,15 @@ export const sortPokemons = (allPokemons: Pokemons, sortOption: SortOptions, all
 			.filter(id => request.includes(id));
 	};
 
-	const sortPokemonsByStat = (stat: string) => {
-		let sortedPokemons: PokemonData.Root[];
-
-		const getBaseStat = (pokemon: PokemonData.Root) => {
-			if (stat.includes('total')) {
-				return pokemon.stats.reduce((pre, cur) => pre + cur.base_stat, 0);
+	const sortPokemonsByStat = (stat: Stat) => {
+		let sortedPokemons: Pokemon.Root[];
+		const getBaseStat = (pokemon: Pokemon.Root) => {
+			if (stat === 'total') {
+				const total = pokemon.stats.reduce((pre, cur) => pre + cur.base_stat, 0);
+				return total;
 			} else {
-				return pokemon.stats.find(entry => entry.stat.name === stat)!.base_stat;
+				const statVal = pokemon.stats.find(entry => entry.stat.name === stat)!.base_stat;
+				return statVal;
 			};
 		};
 		const sort = sortOption.includes('Asc') ? 'asc' : 'desc';
@@ -194,27 +177,28 @@ export const sortPokemons = (allPokemons: Pokemons, sortOption: SortOptions, all
 			return sortPokemonsByWeightOrHeight('weight');
 		}
 		default : {
-			let stat: string;
+			let stat: Stat;
 			if (sortOption.includes('Asc')) {
-				stat = sortOption.slice(0, sortOption.indexOf('Asc'));
+				stat = sortOption.slice(0, sortOption.indexOf('Asc')) as Stat;
 			} else {
-				stat = sortOption.slice(0, sortOption.indexOf('Desc'));
+				stat = sortOption.slice(0, sortOption.indexOf('Desc')) as Stat;
 			};
 			return sortPokemonsByStat(stat);
 		};
 	};
 };
 
-export const getPokemons = async (cachedPokemons: Pokemons, allPokemonNamesAndIds: PokemonNamesAndIds, dispatch: AppDispatch, request: number[], sortOption: SortOptions) => {
-	// the dataLoading dispatches in this function will not cause extra re-render in getInitialData thunk.(I think it's because of Immer and we update the status in a mutational way.)
+export const getPokemons = async (cachedPokemons: CachedPokemon, allPokemonNamesAndIds: CachedAllPokemonNamesAndIds, dispatch: AppDispatch, request: number[], sortOption: SortOption) => {
+	// the dataLoading dispatches in this function will not cause extra re-render in getInitialData thunk.
 	let sortedRequest: number[],
-		pokemonsToFetch: ReturnType<typeof getDataToFetch> | undefined,
-		fetchedPokemons: Pokemons | undefined,
+		pokemonsToFetch: ReturnType<typeof getDataToFetch>,
+		fetchedPokemons: GetReturnedDataType<'pokemon', typeof request> | undefined,
 		pokemonsToDisplay: number[],
 		nextRequest: number[] | null,
-		allPokemons: Pokemons = {...cachedPokemons};
-	
-	if (!(sortOption.includes('number') || sortOption.includes('name'))) {
+		allPokemons = {...cachedPokemons};
+	const isSortByNameOrId = (sortOption.includes('number') || sortOption.includes('name'))
+	// when sort by options other than number or name, it requires all the pokemon data in intersection to make some comparison.
+	if (!isSortByNameOrId) {
 		pokemonsToFetch = getDataToFetch(cachedPokemons, request);
 		if (pokemonsToFetch.length) {
 			dispatch(dataLoading());
@@ -227,8 +211,8 @@ export const getPokemons = async (cachedPokemons: Pokemons, allPokemonNamesAndId
 	pokemonsToDisplay = sortedRequest.splice(0, 24);
 	nextRequest = sortedRequest.length ? sortedRequest : null;
 
-	// when sortBy is neither weight nor height.
-	if (!pokemonsToFetch) {
+	// when sortBy number or name.
+	if (isSortByNameOrId) {
 		pokemonsToFetch = getDataToFetch(cachedPokemons, pokemonsToDisplay);
 		if (pokemonsToFetch.length) {
 			dispatch(dataLoading());
@@ -238,29 +222,29 @@ export const getPokemons = async (cachedPokemons: Pokemons, allPokemonNamesAndId
 	return {fetchedPokemons, pokemonsToDisplay, nextRequest}
 };
 
-export const getFormData = async pokemons => {
-	const formsToFetch = [];
-	Object.values(pokemons).forEach(pokemon => {
+const getFormData = async (cachedPokemons: CachedPokemon) => {
+	const formsToFetch: number[] = [];
+
+	Object.values(cachedPokemons).forEach(pokemon => {
 		if (!pokemon.is_default) {
-			formsToFetch.push(pokemon.forms[0].url);
+			formsToFetch.push(getIdFromURL(pokemon.forms[0].url));
 		};
 	});
-	const formData = await getData('pokemon-form', formsToFetch, 'name');
+	const formData = await getData('pokemonForm', formsToFetch, 'name');
 	return formData
 };
 
-export const getChainData = async(chainUrl, cachedPokemons, cachedSpecies) => {
-	let chainData, pokemonsToFetch, fetchedPokemons, fetchedSpecies = {};
+const getChainData = async(chainId: number, cachedPokemons: CachedPokemon, cachedSpecies: CachedPokemonSpecies) => {
 	const getEvolutionChains = async () => {
-		const evolutionChainResponse = await getData('evolution-chain', chainUrl)
+		const evolutionChainResponse = await getData('evolutionChain', chainId);
 
 		// get chains, details
-		let evolutionDetails = {};
-		let chainIds = [];
+		let evolutionDetails: EvolutionChain.Root['details'] = {};
+		let chainIds: {[depth: string]: number}[] = [];
 		let index = 0;
 		let depth = 1;
 		chainIds[index] = {};
-		const getIdsFromChain = chains => {
+		const getIdsFromChain = (chains: EvolutionChainResponse.Chain) => {
 			// get details
 			if (chains.evolution_details.length) {
 				evolutionDetails[getIdFromURL(chains.species.url)] = chains.evolution_details;
@@ -271,7 +255,7 @@ export const getChainData = async(chainUrl, cachedPokemons, cachedSpecies) => {
 				depth ++;
 				chains.evolves_to.forEach((chain, index, array) => {
 					getIdsFromChain(chain);
-					// the last chain in each depth
+					// the last chain of each depth
 					if (index === array.length - 1) {
 						depth --;
 					};
@@ -290,11 +274,11 @@ export const getChainData = async(chainUrl, cachedPokemons, cachedSpecies) => {
 		};
 		getIdsFromChain(evolutionChainResponse.chain);
 		chainIds.pop();
-
 		// sort chains
 		const sortedChains = chainIds.map(chain => {
+			// sort based on depth
 			const sortedKeys = Object.keys(chain).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
-			const sortedChain = sortedKeys.reduce((previousReturn, currentElement) => {
+			const sortedChain = sortedKeys.reduce<typeof chain>((previousReturn, currentElement) => {
 				previousReturn[currentElement] = chain[currentElement];
 				return previousReturn;
 			}, {});
@@ -302,96 +286,95 @@ export const getChainData = async(chainUrl, cachedPokemons, cachedSpecies) => {
 		});
 		return {sortedChains, evolutionDetails};
 	};
-	chainData = await getEvolutionChains();
+
+	const chainData = await getEvolutionChains();
 
 	// get all pokemons' pokemon/species data from the chain(s), including non-default-pokemon's pokemon data.(this is for evolutionChain to correctly display chain of different form)
 	const pokemonsInChain = new Set(chainData.sortedChains.flat());
-	// if (pokemonsInChain.size > 1) {
-		const speciesToFetch = getDataToFetch(cachedSpecies, [...pokemonsInChain]);
-		fetchedSpecies = await getData('pokemon-species', speciesToFetch, 'id');
-		
-		let allFormIds = [];
-		[...pokemonsInChain].forEach(pokemonId => {
-			(cachedSpecies[pokemonId] || fetchedSpecies[pokemonId]).varieties.forEach(variety => {
-				allFormIds.push(getIdFromURL(variety.pokemon.url));
-			});
+
+	const speciesToFetch = getDataToFetch(cachedSpecies, [...pokemonsInChain]);
+
+	//toEndPointString
+	const fetchedSpecies = await getData('pokemonSpecies', speciesToFetch, 'id');
+	
+	let allFormIds: number[] = [];
+	[...pokemonsInChain].forEach(pokemonId => {
+		(cachedSpecies[pokemonId] || fetchedSpecies[pokemonId]).varieties.forEach(variety => {
+			allFormIds.push(getIdFromURL(variety.pokemon.url));
 		});
-		pokemonsToFetch = getDataToFetch(cachedPokemons, allFormIds);
-		fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
-		const formData = await getFormData(fetchedPokemons);
-		Object.values(formData).forEach(entry => {
-			fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
-		});
-	// } else {
-	// 	pokemonsToFetch = getDataToFetch(cachedPokemons, [...pokemonsInChain]);
-	// 	fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
-	// };
+	});
+	const pokemonsToFetch = getDataToFetch(cachedPokemons, allFormIds);
+
+	const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
+	const formData = await getFormData(fetchedPokemons);
+	Object.values(formData).forEach(entry => {
+		fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
+	});
 
 	return [chainData, fetchedPokemons, fetchedSpecies];
 };
 
-export const getItemsFromChain = chainData => {
-	if (!chainData) {
-		return undefined
-	} else {
-		const requiredItems = [];
-		Object.values(chainData.details).forEach(pokemon => {
-			let selectedDetail = pokemon.find(detail => detail.trigger.name === 'use-item') || pokemon[0];
-			const item = selectedDetail['item']?.name || selectedDetail['held_item']?.name;
+export const getItemsFromChain = (chainDetails: EvolutionChain.Root['details']) => {
+	const requiredItems: string[] = [];
+	Object.values(chainDetails).forEach(evolutionDetails=> {
+		evolutionDetails.forEach(detail => {
+			const item: undefined | string = detail['item']?.name || detail['held_item']?.name;
 			if (item) {
 				requiredItems.push(item);
 			};
-		});
-		return requiredItems;
-	}
+		})
+	});
+	return requiredItems;
 };
 
-export async function getAllSpecies<T extends PokemonSpecies>(cachedSpecies: T, pokemonCount: number): Promise<T> {
+export async function getAllSpecies(cachedSpecies: CachedPokemonSpecies, pokemonCount: number) {
 	const range: number[] = [];
 	for (let i = 1; i <= pokemonCount; i ++) {
 		range.push(i);
 	};
 	const speciesDataToFetch = getDataToFetch(cachedSpecies, range);
-	const fetchedSpecies = await getData('pokemon-species', speciesDataToFetch, 'id');
-	return fetchedSpecies as T;
-}
+	const fetchedSpecies = await getData('pokemonSpecies', speciesDataToFetch, 'id');
+	return fetchedSpecies;
+};
 
+type Request = GetRequiredData.Request;
 
-type Requests =  RequiredDataTypes.RequiredDataRequest;
-
-// we can actually refactor a lot of the code in api.ts, for example getRequiredData now only take one requestPokemonIds insted of multiple...
-
-
-export const getRequiredData = async(pokeData: RootState['pokeData'], disaptch: AppDispatch | undefined, requestPokemonIds: (string | number | undefined)[], requests: RequiredDataTypes.RequiredDataParamTypes['requests'], language: string) => {
+export const getRequiredData = async(pokeData: RootState['pokeData'], requestPokemonIds: (number| string)[], requests: Request[], language: LanguageOption, disaptch: AppDispatch | undefined) => {
 	
 	const cachedData: {
-		[key in Requests]?: {[nameOrId: string | number]:{} }[]
+		[K in Request]?: (PokemonDataTypes[K][number] | undefined)[]
 	} = {};
 
-
-	// pokemons/pokemonSpecies/abilities: object/undefined
-	// evolutionChains: an object or undefined.
+	// I think I can't really know what data will be return ahead of time based on "requests", because cached ones will not be return.
 	const fetchedData: {
-		pokemons?: Pokemons,
-		pokemonSpecies?: PokemonSpecies,
-		abilities?: PokemonAbilities,
-		stat?: PokemonStats,
-		version?: PokemonVersion
-		evolutionChains?: any
-		items?: PokemonItem,
-		move_damage_clas?: PokemonMoveDamageClass
+		[K in Request]?: K extends 'evolutionChain' ? {
+			chainData: CachedEvolutionChain,
+			fetchedPokemons: CachedPokemon,
+			fetchedSpecies: CachedPokemonSpecies,
+		} : PokemonDataTypes[K]
 	} = {};
 
-	function getCachedData(dataType: 'pokemons', ids: (string | number)[]): (PokemonData.Root | undefined)[];
-	function getCachedData(dataType: 'pokemonSpecies', ids: (string | number)[]): (SpeciesData.Root | undefined)[];
-	function getCachedData(dataType: 'pokemons' | 'pokemonSpecies', ids: (string | number)[]): (PokemonData.Root | SpeciesData.Root | undefined)[] {
+	// even no data in fetchedPokemon/species in chainData, I still return an empty object, maybe change it to not returing anything?
+
+
+	// getCachedData:
+	// pokemons: cachedPokemon[id] * all
+	// species: default ids --> cachedSpecies[id] * can't assure they all share the same species(changeVIewmode)
+	// evolutionChain: default id --> species --> evolutionChain[chainId]
+	// ability: all ids --> abilities[ability]
+	// items: chainId --> itesm[item]
+	// moveDamageClass / stat / version
+
+	function getCachedData(dataType: 'pokemon', ids: (string | number)[]): (Pokemon.Root | undefined)[];
+	function getCachedData(dataType: 'pokemonSpecies', ids: (string | number)[]): (PokemonSpecies.Root | undefined)[];
+	function getCachedData(dataType: 'pokemon' | 'pokemonSpecies', ids: (string | number)[]): (Pokemon.Root | PokemonSpecies.Root | undefined)[] {
 		const fetchedEntry = fetchedData[dataType]
 		return fetchedEntry ? [...cachedData[dataType] as [], ...Object.values(fetchedEntry)].filter(data => data) : cachedData[dataType]?.every(Boolean) ? [...<[]>cachedData[dataType]] : ids.map(id => pokeData[dataType][id]);
 	};
 
 	// the species data will all be the same
-	const getCachedSpeciesData = (): (SpeciesData.Root | undefined)[] => {
-		const pokemonData = getCachedData('pokemons', requestPokemonIds);
+	const getCachedSpeciesData = (): (PokemonSpecies.Root | undefined)[] => {
+		const pokemonData = getCachedData('pokemon', requestPokemonIds);
 		
 		const speciesIds = pokemonData.reduce((pre: number[], cur) => {
 			const speciesId = getIdFromURL(cur?.species?.url);
@@ -400,63 +383,71 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], disaptch: 
 			};
 			return pre;
 		}, [])
-		const speciesData =  getCachedData('pokemonSpecies', speciesIds) as SpeciesData.Root[];
+		const speciesData =  getCachedData('pokemonSpecies', speciesIds) as PokemonSpecies.Root[];
 		return speciesData;
 	};
 	const initialSpeciesData = getCachedSpeciesData();
 
 	// in our use cases, all requestPokemons will have the same evolution chain, so we can just randomly grab one.
 	const randomSpecies = initialSpeciesData.find(data => data);
-	const chainData = randomSpecies ? pokeData['evolutionChains'][getIdFromURL(randomSpecies.evolution_chain.url)] : undefined;
+	const chainData = randomSpecies ? pokeData['evolutionChain'][getIdFromURL(randomSpecies.evolution_chain.url)] : undefined;
 
 	// some data relies on other data, so if one of the following data is present in the requests, they have to be fetched before other data.
-	// pokemons, pokemonSpecies, evolutionChains
+	// pokemon, pokemonSpecies, evolutionChain
 	const sortedRequests = requests.sort((a, b) => b.indexOf('p') - a.indexOf('p'));
-	if (requests.includes('evolutionChains')) {
-		const indexOfChain = requests.indexOf('evolutionChains');
+	if (requests.includes('evolutionChain')) {
+		const indexOfChain = requests.indexOf('evolutionChain');
 		const indexOfInsertion = requests.findLastIndex(req => req.startsWith('p')) + 1;
 		sortedRequests.splice(indexOfChain, 1);
-		sortedRequests.splice(indexOfInsertion, 0, 'evolutionChains');
+		sortedRequests.splice(indexOfInsertion, 0, 'evolutionChain');
 	};
 
 	// each entry in cachedData is an array of object/undefined
 	sortedRequests.forEach(req => {
 		switch(req) {
-			case 'pokemons' : {
-				cachedData[req] = getCachedData('pokemons', requestPokemonIds);
+			case 'pokemon' : {
+				cachedData[req] = getCachedData('pokemon', requestPokemonIds);
 				break;
 			}
 			case 'pokemonSpecies' : {
 				cachedData[req] = initialSpeciesData;
 				break;
 			}
-			case 'evolutionChains' : 
+			case 'evolutionChain' : 
 				cachedData[req] = [chainData];
 				break;
-			case 'items' : {
-				const requiredItems = !chainData ? [undefined] : getItemsFromChain(chainData);
+			case 'item' : {
+				const requiredItems = !chainData ? [undefined] : getItemsFromChain(chainData.details);
 				cachedData[req] = requiredItems.map(item => pokeData[req][transformToKeyName(item)]);
 				break;
 			}
-			case 'abilities' : {
-				const pokemonData = getCachedData('pokemons', requestPokemonIds);
-				const abilitiesToDisplay = getAbilitiesToDisplay(pokemonData);
-				cachedData[req] = abilitiesToDisplay ? abilitiesToDisplay.map(ability => pokeData[req][ability]) : [undefined];
+			case 'ability' : {
+				const pokemonData = getCachedData('pokemon', requestPokemonIds);
+				if (pokemonData.includes(undefined)) {
+					cachedData[req] = [undefined];
+				} else {
+					const abilitiesToDisplay = getAbilitiesToDisplay(pokemonData);
+					cachedData[req] = abilitiesToDisplay.map(ability => pokeData[req][ability]);
+				};
 				break;
 			};
 			default :
-				// stat, version, move_damage_class, the structure of their cached data doesn't really matter, only fetch them once when language change.
+				// stat, version, moveDamageClass, the structure of their cached data doesn't really matter, only fetch them once when language change.
 				cachedData[req] = Object.keys(pokeData[transformToKeyName(req)]).length ? Object.values(pokeData[transformToKeyName(req)]) : [undefined];
 		};
 	});
+
+
+	console.log(cachedData)
+	console.log(requests)
 	// some data is only required when language is not 'en';
 	const langCondition = sortedRequests.reduce((pre, cur) => {
 		switch (cur) {
 			case 'version' :
 			case 'stat' :
-			case 'move-damage-class' :
-			case 'items' :
-			case 'abilities' : 
+			case 'moveDamageClass' :
+			case 'item' :
+			case 'ability' : 
 				pre[cur] = 'en';
 				break;
 			default : 
@@ -483,14 +474,14 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], disaptch: 
 	// };
 
 	// fetchedData will be:
-	// pokemons/pokemonSpecies/abilities: object/undefined
-	// evolutionChains: an object or undefined.
+	// pokemon/pokemonSpecies/ability: object/undefined
+	// evolutionChain: an object or undefined.
 	for (let req of sortedRequests) {
 		// does each await call waits before the previous one's done?
 		// can we remove await expression and at the end do a Promise.all(fetchedData)?
 		if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
 			switch(req) {
-				case 'pokemons' : {
+				case 'pokemon' : {
 					const pokemonsToFetch = getDataToFetch(pokeData[req], requestPokemonIds);
 					if (pokemonsToFetch.length) {
 						const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
@@ -512,24 +503,24 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], disaptch: 
 					break;
 				};
 				case 'pokemonSpecies' : {
-					const pokemonData = getCachedData('pokemons', requestPokemonIds);
+					const pokemonData = getCachedData('pokemon', requestPokemonIds);
 					const speciesIds = Object.values(pokemonData).map(data => getIdFromURL(data.species.url));
 					const dataToFetch = getDataToFetch(pokeData[req], speciesIds);
 					if (dataToFetch.length) {
-						fetchedData[req] = await getData('pokemon-species', dataToFetch, 'id');
+						fetchedData[req] = await getData(req, dataToFetch, 'id');
 					};
 					break;
 				};
-				case 'abilities' : {
-					const pokemonData = getCachedData('pokemons', requestPokemonIds);
+				case 'ability' : {
+					const pokemonData = getCachedData('pokemon', requestPokemonIds);
 					fetchedData[req] = await getAbilities(pokemonData, pokeData[req]);
 					break;
 				};
-				case 'evolutionChains' : {
+				case 'evolutionChain' : {
 					const speciesData = getCachedSpeciesData();
 					const chainToFetch = getDataToFetch(pokeData[req], [getIdFromURL(speciesData[0].evolution_chain.url)]);
 					if (chainToFetch.length) {
-						const cachedPokemons = {...pokeData.pokemons, ...fetchedData['pokemons']};
+						const cachedPokemons = {...pokeData.pokemon, ...fetchedData['pokemon']};
 						const cachedSpecies = {...pokeData.pokemonSpecies, ...fetchedData['pokemonSpecies']};
 
 						const [{sortedChains: chains, evolutionDetails: details}, fetchedPokemons, fetchedSpecies] = await getChainData(chainToFetch[0], cachedPokemons, cachedSpecies);
@@ -542,10 +533,12 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], disaptch: 
 					};
 					break;
 				};
-				case 'items' : {
+				case 'item' : {
 					const speciesData = getCachedSpeciesData();
-					const chainData = pokeData.evolutionChains[getIdFromURL(speciesData[0].evolution_chain.url)] || fetchedData['evolutionChains'].chainData[getIdFromURL(speciesData[0].evolution_chain.url)];
-					const requiredItems = getItemsFromChain(chainData);
+					const chainData = pokeData.evolutionChain[getIdFromURL(speciesData[0].evolution_chain.url)] || fetchedData['evolutionChain'].chainData[getIdFromURL(speciesData[0].evolution_chain.url)];
+					// is it possible that by this time chainData is undefined?
+					// if so, go back to modify getItemsFromChain's paramater type
+					const requiredItems = getItemsFromChain(chainData.details);
 					const itemToFetch = getDataToFetch(pokeData[req], requiredItems.map(item => transformToKeyName(item)));
 					if (itemToFetch.length) {
 						fetchedData[req] = await getData('item', requiredItems, 'name');
@@ -553,7 +546,7 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], disaptch: 
 					break;
 				};
 				default : {
-					// stat, version, move_damage_class
+					// stat, version, moveDamageClass
 					const dataResponse = await getEndpointData(req);
 					const dataToFetch = dataResponse.results.map(data => data.url);
 					fetchedData[req] = await getData(req, dataToFetch, 'name');
@@ -561,7 +554,7 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], disaptch: 
 			};
 		};
 	};
-
+	console.log(fetchedData)
 	return fetchedData;
 };
 
@@ -586,8 +579,8 @@ export function usePrefetchOnNavigation() {
 	const pokeData = useAppSelector(state => state.pokeData);
 	const language = useAppSelector(selectLanguage);
 
-	const prefetch = (requestPokemonIds: number[], requests: Requests[], lang: LanguageOptions = language) => {
-		unresolvedDataRef.current = getRequiredData(pokeData, undefined, requestPokemonIds, requests, lang);
+	const prefetch = (requestPokemonIds: number[], requests: Requests[], lang: LanguageOption = language) => {
+		unresolvedDataRef.current = getRequiredData(pokeData, requestPokemonIds, requests, lang);
 	};
 
 	return [unresolvedDataRef, prefetch];
@@ -597,7 +590,7 @@ export function useNavigateToPokemon() {
 	const navigateNoUpdates = useNavigateNoUpdates();
 	const dispatch = useAppDispatch();
 	
-	const navigateToPokemon = useCallback(async (requestPokemonIds: number[], requests: Requests[], lang?: LanguageOptions, unresolvedData?: ReturnType<typeof getRequiredData>) => {
+	const navigateToPokemon = useCallback(async (requestPokemonIds: number[], requests: Requests[], lang?: LanguageOption, unresolvedData?: ReturnType<typeof getRequiredData>) => {
 		if (unresolvedData) {
 			dispatch(dataLoading());
 			const fetchedData = await unresolvedData;

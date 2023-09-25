@@ -96,7 +96,7 @@ Thoughts:
 				};
 			})
 
-			const matches = pokemonData.moves.filter(move => move.version_group_details.some(test));
+			const matches = pokemonData.move.filter(move => move.version_group_details.some(test));
 			const results = matches.map(move => ({...move, version_group_details: move.version_group_details.filter(test)}));
 			return results;
 		};

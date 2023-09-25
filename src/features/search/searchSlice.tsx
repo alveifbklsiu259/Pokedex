@@ -80,7 +80,7 @@ export const searchPokemon = createAppAsyncThunk('search/searchPokemon', async({
 	}[] = [];
 	// when searching in error page, selectedGenerations will be undefined.
 	if (!selectedGenerations || Object.keys(selectedGenerations).length === 0) {
-		pokemonRange = Object.values(pokeData.generations).map(gen => gen.pokemon_species).flat();
+		pokemonRange = Object.values(pokeData.generation).map(gen => gen.pokemon_species).flat();
 	} else {
 		pokemonRange = Object.values(selectedGenerations).flat();
 	};
@@ -107,7 +107,7 @@ export const searchPokemon = createAppAsyncThunk('search/searchPokemon', async({
 
 			// can we be more specific , use literal type here?
 			const typeMatchingArray = selectedTypes.reduce((pre: number[][], cur) => {
-				pre.push(pokeData.types[cur].pokemon.map(entry => getIdFromURL(entry.pokemon.url)));
+				pre.push(pokeData.type[cur].pokemon.map(entry => getIdFromURL(entry.pokemon.url)));
 				return pre;
 			}, []);
 			for (let i = 0; i < typeMatchingArray.length; i ++) {
@@ -115,13 +115,13 @@ export const searchPokemon = createAppAsyncThunk('search/searchPokemon', async({
 			};
 		} else if (matchMethod === 'part') {
 			const typeMatchingPokemonIds = selectedTypes.reduce((pre: number[], cur) => {
-				pokeData.types[cur].pokemon.forEach(entry => pre.push(getIdFromURL(entry.pokemon.url)));
+				pokeData.type[cur].pokemon.forEach(entry => pre.push(getIdFromURL(entry.pokemon.url)));
 				return pre;
 			}, []);
 			intersection = intersection.filter(id => typeMatchingPokemonIds.includes(id));
 		};
 	};
-	const {fetchedPokemons, pokemonsToDisplay, nextRequest} = await getPokemons(pokeData.pokemons, allNamesAndIds, dispatch, intersection, dispalyData.sortBy);
+	const {fetchedPokemons, pokemonsToDisplay, nextRequest} = await getPokemons(pokeData.pokemon, allNamesAndIds, dispatch, intersection, dispalyData.sortBy);
 	return {intersection, searchParam, selectedGenerations, selectedTypes, fetchedPokemons, nextRequest, pokemonsToDisplay};
 });
 

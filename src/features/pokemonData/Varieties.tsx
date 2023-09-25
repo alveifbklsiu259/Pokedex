@@ -24,7 +24,7 @@ const Varieties = memo<VarietiesProps>(function Varieties({pokeId}) {
 						<li className={pokemon.name === variety.pokemon.name ? 'active' : ''}>
 							<button 
 								className='text-capitalize' 
-								onClick={() => navigateToPokemon([getIdFromURL(variety.pokemon.url)], ['abilities'])}
+								onClick={() => navigateToPokemon([getIdFromURL(variety.pokemon.url)], ['ability'])}
 							>
 								{getFormName(speciesData, language, pokemons[getIdFromURL(variety.pokemon.url)])}
 							</button>
@@ -79,7 +79,7 @@ export default Varieties;
 // 						<li className={pokemon.name === variety.pokemon.name ? 'active' : ''}>
 // 							<PrefetchOnNavigation
 // 								requestPokemonIds={getRequestPokemonIds(variety)}
-// 								requests={['pokemons', 'abilities']}
+// 								requests={['pokemons', 'ability']}
 // 								customClass='text-capitalize'
 // 							>
 // 								<button>{getVarietyName(variety)}</button>
@@ -122,7 +122,7 @@ export default Varieties;
 // 		const allFormIds = speciesData.varieties.map(entry => getIdFromURL(entry.pokemon.url));
 // 		allFormIds.splice(allFormIds.indexOf(targetFormId), 1);
 // 		const requestPokemonIds = [targetFormId, ...allFormIds];
-// 		navigateToPokemon(requestPokemonIds, ['pokemons', 'abilities']);
+// 		navigateToPokemon(requestPokemonIds, ['pokemons', 'ability']);
 // 	};
 	
 // 	const getVarietyName = ({pokemon: poke, is_default}) => {

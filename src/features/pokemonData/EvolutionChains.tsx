@@ -5,9 +5,9 @@ import { useNavigateToPokemon } from "../../api";
 import { selectChainDataByChainId, selectGenerations, selectPokemons, selectSpecies } from "./pokemonDataSlice";
 import { getIdFromURL } from "../../util";
 import { useAppSelector } from "../../app/hooks";
-import type { PokemonData } from "../../../typeModule";
+import type { Pokemon } from "../../../typeModule";
 
-type NonDefaultFormPokemonData = Required<PokemonData.Root>
+type NonDefaultFormPokemonData = Required<Pokemon.Root>
 
 type EvolutionChainsProps = {
 	chainId: number
@@ -214,7 +214,7 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 				{evolutionChains[0].map((pokemonId, index, array) => (
 					<React.Fragment key={pokemonId}>
 						<li>
-							<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon([pokemonId], ['pokemonSpecies', 'abilities'])}} >
+							<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon([pokemonId], ['pokemonSpecies', 'ability'])}} >
 								<BasicInfo pokeId={String(pokemonId)} />
 							</div>
 						</li>
@@ -243,7 +243,7 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 									chain.map((pokemonId, index, array) => (
 										<React.Fragment key={pokemonId}>
 											<li className="multiplePath">
-												<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon([pokemonId], ['pokemonSpecies', 'abilities'])}} >
+												<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon([pokemonId], ['pokemonSpecies', 'ability'])}} >
 													<BasicInfo pokeId={String(pokemonId)} />
 												</div>
 											</li>
