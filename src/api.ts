@@ -1,14 +1,14 @@
 import { useCallback, useRef } from 'react';
 import { useNavigateNoUpdates } from "./components/RouterUtils";
 import { getIdFromURL, transformToKeyName, transformToDash, toEndPointString } from "./util";
-import { getRequiredDataThunk, type GetRequiredData, type CachedAbility, type CachedPokemon, type CachedPokemonSpecies, type CachedStat, type CachedMoveDamageClass, type CachedVersion, type CachedItem, type CachedAllPokemonNamesAndIds, getPokemonsOnScroll, PokemonDataTypes, CachedEvolutionChain} from "./features/pokemonData/pokemonDataSlice";
+import { getRequiredDataThunk, type GetRequiredData, type CachedAbility, type CachedPokemon, type CachedPokemonSpecies, type CachedAllPokemonNamesAndIds, PokemonDataTypes} from "./features/pokemonData/pokemonDataSlice";
 import { dataLoading, selectLanguage, type LanguageOption, type SortOption } from './features/display/displaySlice';
 import type { AppDispatch, RootState } from './app/store';
 
 /* maybe these two are not necessay? may have defined types in slice files
 e.g
 let a: CachedPokemon[keyof CachedPokemon]; */
-import type { Pokemon, PokemonSpecies, EndPointData, PokemonForm, GetStringOrNumberKey, EvolutionChain, EvolutionChainResponse } from '../typeModule';
+import type { Pokemon, PokemonSpecies, EndPointData, PokemonForm, GetStringOrNumberKey, EvolutionChain, EvolutionChainResponse, NonNullableArray } from '../typeModule';
 import { useAppSelector, useAppDispatch } from './app/hooks';
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
@@ -69,9 +69,9 @@ export async function getData<T extends EndPointRequest, K extends number | stri
 			const key = transformToKeyName(String(finalData[0][resultKey]));
 			returnedData[key] = finalData[0]
 		}
-		return returnedData as any
+		return returnedData as any;
 	} else {
-		return finalData[0] as any
+		return finalData[0] as any;
 	};
 	// reference: https://stackoverflow.com/questions/69783310/type-is-assignable-to-the-constraint-of-type-t-but-t-could-be-instantiated#:~:text=a%20type%20assertion-,to%20any,-(I%20could%20have
 };
@@ -224,14 +224,16 @@ export const getPokemons = async (cachedPokemons: CachedPokemon, allPokemonNames
 
 const getFormData = async (cachedPokemons: CachedPokemon) => {
 	const formsToFetch: number[] = [];
-
 	Object.values(cachedPokemons).forEach(pokemon => {
 		if (!pokemon.is_default) {
-			formsToFetch.push(getIdFromURL(pokemon.forms[0].url));
+			// some newly added pokemon in the API may lack forms data.
+			if (pokemon.forms[0]?.url) {
+				formsToFetch.push(getIdFromURL(pokemon.forms[0].url));
+			}
 		};
 	});
 	const formData = await getData('pokemonForm', formsToFetch, 'name');
-	return formData
+	return formData;
 };
 
 const getChainData = async(chainId: number, cachedPokemons: CachedPokemon, cachedSpecies: CachedPokemonSpecies) => {
@@ -289,15 +291,18 @@ const getChainData = async(chainId: number, cachedPokemons: CachedPokemon, cache
 
 	const chainData = await getEvolutionChains();
 
-	// get all pokemons' pokemon/species data from the chain(s), including non-default-pokemon's pokemon data.(this is for evolutionChain to correctly display chain of different form)
-	const pokemonsInChain = new Set(chainData.sortedChains.flat());
+	type EmptyObj = Record<string, never>;
 
-	const speciesToFetch = getDataToFetch(cachedSpecies, [...pokemonsInChain]);
-
-	//toEndPointString
-	const fetchedSpecies = await getData('pokemonSpecies', speciesToFetch, 'id');
+	let fetchedPokemons: GetReturnedDataType<'pokemon', []> | EmptyObj = {};
+	let fetchedSpecies: GetReturnedDataType<'pokemonSpecies', []> | EmptyObj = {};
 	
-	let allFormIds: number[] = [];
+	// get all pokemons' pokemon/species data from the chain(s), including non-default-pokemon's pokemon data(for evolutionChain to correctly display chain of different form).
+	const pokemonsInChain = new Set(chainData.sortedChains.flat());
+	const speciesToFetch = getDataToFetch(cachedSpecies, [...pokemonsInChain]);
+	if (speciesToFetch.length) {
+		fetchedSpecies = await getData('pokemonSpecies', speciesToFetch, 'id');
+	};
+	const allFormIds: number[] = [];
 	[...pokemonsInChain].forEach(pokemonId => {
 		(cachedSpecies[pokemonId] || fetchedSpecies[pokemonId]).varieties.forEach(variety => {
 			allFormIds.push(getIdFromURL(variety.pokemon.url));
@@ -305,13 +310,14 @@ const getChainData = async(chainId: number, cachedPokemons: CachedPokemon, cache
 	});
 	const pokemonsToFetch = getDataToFetch(cachedPokemons, allFormIds);
 
-	const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
-	const formData = await getFormData(fetchedPokemons);
-	Object.values(formData).forEach(entry => {
-		fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
-	});
-
-	return [chainData, fetchedPokemons, fetchedSpecies];
+	if (pokemonsToFetch.length) {
+		fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
+		const formData = await getFormData(fetchedPokemons);
+		Object.values(formData).forEach(entry => {
+			fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
+		});
+	}
+	return [chainData, fetchedPokemons, fetchedSpecies] as const;
 };
 
 export const getItemsFromChain = (chainDetails: EvolutionChain.Root['details']) => {
@@ -338,62 +344,37 @@ export async function getAllSpecies(cachedSpecies: CachedPokemonSpecies, pokemon
 };
 
 type Request = GetRequiredData.Request;
+type FetchedData = GetRequiredData.FetchedData;
 
-export const getRequiredData = async(pokeData: RootState['pokeData'], requestPokemonIds: (number| string)[], requests: Request[], language: LanguageOption, disaptch: AppDispatch | undefined) => {
-	
+export const getRequiredData = async(pokeData: RootState['pokeData'], requestPokemonIds: (number | string)[], requests: Request[], language: LanguageOption, disaptch?: AppDispatch): Promise<FetchedData> => {
 	const cachedData: {
 		[K in Request]?: (PokemonDataTypes[K][number] | undefined)[]
 	} = {};
 
-	// I think I can't really know what data will be return ahead of time based on "requests", because cached ones will not be return.
-	const fetchedData: {
-		[K in Request]?: K extends 'evolutionChain' ? {
-			chainData: CachedEvolutionChain,
-			fetchedPokemons: CachedPokemon,
-			fetchedSpecies: CachedPokemonSpecies,
-		} : PokemonDataTypes[K]
-	} = {};
+	const fetchedData: FetchedData = {};
+	const requestIds = requestPokemonIds.map(id => Number(id));
 
-	// even no data in fetchedPokemon/species in chainData, I still return an empty object, maybe change it to not returing anything?
-
-
-	// getCachedData:
-	// pokemons: cachedPokemon[id] * all
-	// species: default ids --> cachedSpecies[id] * can't assure they all share the same species(changeVIewmode)
-	// evolutionChain: default id --> species --> evolutionChain[chainId]
-	// ability: all ids --> abilities[ability]
-	// items: chainId --> itesm[item]
-	// moveDamageClass / stat / version
-
-	function getCachedData(dataType: 'pokemon', ids: (string | number)[]): (Pokemon.Root | undefined)[];
-	function getCachedData(dataType: 'pokemonSpecies', ids: (string | number)[]): (PokemonSpecies.Root | undefined)[];
-	function getCachedData(dataType: 'pokemon' | 'pokemonSpecies', ids: (string | number)[]): (Pokemon.Root | PokemonSpecies.Root | undefined)[] {
-		const fetchedEntry = fetchedData[dataType]
-		return fetchedEntry ? [...cachedData[dataType] as [], ...Object.values(fetchedEntry)].filter(data => data) : cachedData[dataType]?.every(Boolean) ? [...<[]>cachedData[dataType]] : ids.map(id => pokeData[dataType][id]);
-	};
-
-	// the species data will all be the same
-	const getCachedSpeciesData = (): (PokemonSpecies.Root | undefined)[] => {
-		const pokemonData = getCachedData('pokemon', requestPokemonIds);
-		
-		const speciesIds = pokemonData.reduce((pre: number[], cur) => {
-			const speciesId = getIdFromURL(cur?.species?.url);
-			if (!pre.includes(speciesId)) {
-				pre.push(speciesId);
+	const getCachedPokemonOrSpecies = <T extends 'pokemon' | 'pokemonSpecies'>(dataType: T): NonNullable<typeof cachedData[T]> => {
+		const fetchedEntry = fetchedData[dataType];
+		const ids = requestIds.map(id => {
+			if (dataType === 'pokemonSpecies') {
+				const pokemonData = getCachedPokemonOrSpecies('pokemon').find(entry => entry?.id === id);
+				return pokeData[dataType][id] ? id : getIdFromURL(pokemonData?.species?.url) || id ;
+			} else {
+				return id;
 			};
-			return pre;
-		}, [])
-		const speciesData =  getCachedData('pokemonSpecies', speciesIds) as PokemonSpecies.Root[];
-		return speciesData;
+		});
+		return ids.map(id => pokeData[dataType][id] || fetchedEntry?.[id]) as NonNullable<typeof cachedData[T]>;
 	};
-	const initialSpeciesData = getCachedSpeciesData();
 
-	// in our use cases, all requestPokemons will have the same evolution chain, so we can just randomly grab one.
-	const randomSpecies = initialSpeciesData.find(data => data);
+	const chacedPokemonData = getCachedPokemonOrSpecies('pokemon');
+	const cachedSpeciesData = getCachedPokemonOrSpecies('pokemonSpecies');
+
+	// In our use cases, when requesting evolutionChain/item, requestIds will only contain the ids of the pokemons who share the same evolution chain, so we can just randomly grab one species data and check the chain data.
+	const randomSpecies = cachedSpeciesData.find(data => data);
 	const chainData = randomSpecies ? pokeData['evolutionChain'][getIdFromURL(randomSpecies.evolution_chain.url)] : undefined;
 
-	// some data relies on other data, so if one of the following data is present in the requests, they have to be fetched before other data.
-	// pokemon, pokemonSpecies, evolutionChain
+	// some data relies on other data, so if one of the following data is present in the requests, they have to be fetched before other data. e.g. pokemon > pokemonSpecies > evolutionChain > others.
 	const sortedRequests = requests.sort((a, b) => b.indexOf('p') - a.indexOf('p'));
 	if (requests.includes('evolutionChain')) {
 		const indexOfChain = requests.indexOf('evolutionChain');
@@ -402,46 +383,50 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], requestPok
 		sortedRequests.splice(indexOfInsertion, 0, 'evolutionChain');
 	};
 
-	// each entry in cachedData is an array of object/undefined
 	sortedRequests.forEach(req => {
 		switch(req) {
-			case 'pokemon' : {
-				cachedData[req] = getCachedData('pokemon', requestPokemonIds);
+			case 'pokemon': {
+				cachedData[req] = chacedPokemonData;
 				break;
 			}
-			case 'pokemonSpecies' : {
-				cachedData[req] = initialSpeciesData;
+			case 'pokemonSpecies': {
+				cachedData[req] = cachedSpeciesData;
 				break;
 			}
-			case 'evolutionChain' : 
+			case 'evolutionChain':
 				cachedData[req] = [chainData];
 				break;
-			case 'item' : {
-				const requiredItems = !chainData ? [undefined] : getItemsFromChain(chainData.details);
-				cachedData[req] = requiredItems.map(item => pokeData[req][transformToKeyName(item)]);
+			case 'item': {
+				const requiredItems = chainData ? getItemsFromChain(chainData.details) : undefined;
+				if (requiredItems) {
+					cachedData[req] = requiredItems.map(item => pokeData[req][transformToKeyName(item)])
+				} else {
+					cachedData[req] = [undefined];
+				}
 				break;
 			}
-			case 'ability' : {
-				const pokemonData = getCachedData('pokemon', requestPokemonIds);
-				if (pokemonData.includes(undefined)) {
+			case 'ability': {
+				if (chacedPokemonData.includes(undefined)) {
 					cachedData[req] = [undefined];
 				} else {
-					const abilitiesToDisplay = getAbilitiesToDisplay(pokemonData);
+					const abilitiesToDisplay = getAbilitiesToDisplay(chacedPokemonData as NonNullableArray<typeof chacedPokemonData>);
 					cachedData[req] = abilitiesToDisplay.map(ability => pokeData[req][ability]);
 				};
 				break;
 			};
-			default :
+			default:
 				// stat, version, moveDamageClass, the structure of their cached data doesn't really matter, only fetch them once when language change.
-				cachedData[req] = Object.keys(pokeData[transformToKeyName(req)]).length ? Object.values(pokeData[transformToKeyName(req)]) : [undefined];
+				const cachedEntry = pokeData[req];
+				cachedData[req] = Object.keys(cachedEntry).length ? Object.values(cachedEntry) : [undefined];
 		};
 	});
 
-
-	console.log(cachedData)
-	console.log(requests)
 	// some data is only required when language is not 'en';
-	const langCondition = sortedRequests.reduce((pre, cur) => {
+	type LanguageCondition= {
+		[K in Request]?: K extends 'pokemon' | 'pokemonSpecies' | 'evolutionChain' ? null : 'en'
+	}
+
+	const langCondition = sortedRequests.reduce<LanguageCondition>((pre, cur) => {
 		switch (cur) {
 			case 'version' :
 			case 'stat' :
@@ -456,45 +441,28 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], requestPok
 		return pre;
 	}, {});
 
+	const isFetchNeeded = (req: Request) => cachedData[req]!.includes(undefined) && langCondition[req] !== language;
+
 	for (let req of sortedRequests) {
-		if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
+		if (isFetchNeeded(req)) {
 			if (disaptch) {
 				disaptch(dataLoading());
 			};
 			break;
 		};
 	};
-	// check the last one.. and return {}
-	
-	// for (let req of sortedRequests) {
-	// 	if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
-	// 		disaptch(dataLoading());
-	// 		break;
-	// 	};
-	// };
 
-	// fetchedData will be:
-	// pokemon/pokemonSpecies/ability: object/undefined
-	// evolutionChain: an object or undefined.
 	for (let req of sortedRequests) {
 		// does each await call waits before the previous one's done?
-		// can we remove await expression and at the end do a Promise.all(fetchedData)?
-		if (cachedData[req].includes(undefined) && langCondition[req] !== language) {
+		// can we remove await expression and at the end do a Promise.all(fetchedData)? (how to make it concurrent if the above statement is true)
+		if (isFetchNeeded(req)) {
 			switch(req) {
-				case 'pokemon' : {
-					const pokemonsToFetch = getDataToFetch(pokeData[req], requestPokemonIds);
+				case 'pokemon': {
+					const pokemonsToFetch = getDataToFetch(pokeData[req], requestIds);
 					if (pokemonsToFetch.length) {
 						const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
 						// also get formData
 						const formData = await getFormData(fetchedPokemons);
-						
-						
-						// we can't know chain by now
-
-
-						
-						// changeLanguage
-						
 						Object.values(formData).forEach(entry => {
 							fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
 						});
@@ -502,23 +470,24 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], requestPok
 					};
 					break;
 				};
-				case 'pokemonSpecies' : {
-					const pokemonData = getCachedData('pokemon', requestPokemonIds);
-					const speciesIds = Object.values(pokemonData).map(data => getIdFromURL(data.species.url));
+				case 'pokemonSpecies': {
+					const pokemonData = getCachedPokemonOrSpecies('pokemon');
+					const speciesIds = Object.values(pokemonData as NonNullableArray<typeof pokemonData>).map(data => getIdFromURL(data.species.url));
+					
 					const dataToFetch = getDataToFetch(pokeData[req], speciesIds);
 					if (dataToFetch.length) {
 						fetchedData[req] = await getData(req, dataToFetch, 'id');
 					};
 					break;
 				};
-				case 'ability' : {
-					const pokemonData = getCachedData('pokemon', requestPokemonIds);
-					fetchedData[req] = await getAbilities(pokemonData, pokeData[req]);
+				case 'ability': {
+					const pokemonData = getCachedPokemonOrSpecies('pokemon');
+					fetchedData[req] = await getAbilities(pokemonData as NonNullableArray<typeof pokemonData>, pokeData[req]);
 					break;
 				};
 				case 'evolutionChain' : {
-					const speciesData = getCachedSpeciesData();
-					const chainToFetch = getDataToFetch(pokeData[req], [getIdFromURL(speciesData[0].evolution_chain.url)]);
+					const speciesData = getCachedPokemonOrSpecies('pokemonSpecies');
+					const chainToFetch = getDataToFetch(pokeData[req], [getIdFromURL((speciesData as NonNullableArray<typeof speciesData>)[0].evolution_chain.url)]);
 					if (chainToFetch.length) {
 						const cachedPokemons = {...pokeData.pokemon, ...fetchedData['pokemon']};
 						const cachedSpecies = {...pokeData.pokemonSpecies, ...fetchedData['pokemonSpecies']};
@@ -533,11 +502,9 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], requestPok
 					};
 					break;
 				};
-				case 'item' : {
-					const speciesData = getCachedSpeciesData();
-					const chainData = pokeData.evolutionChain[getIdFromURL(speciesData[0].evolution_chain.url)] || fetchedData['evolutionChain'].chainData[getIdFromURL(speciesData[0].evolution_chain.url)];
-					// is it possible that by this time chainData is undefined?
-					// if so, go back to modify getItemsFromChain's paramater type
+				case 'item': {
+					const speciesData = getCachedPokemonOrSpecies('pokemonSpecies');
+					const chainData = pokeData.evolutionChain[getIdFromURL((speciesData as NonNullableArray<typeof speciesData>)[0].evolution_chain.url)] || fetchedData['evolutionChain']!.chainData[getIdFromURL((speciesData as NonNullableArray<typeof speciesData>)[0].evolution_chain.url)];
 					const requiredItems = getItemsFromChain(chainData.details);
 					const itemToFetch = getDataToFetch(pokeData[req], requiredItems.map(item => transformToKeyName(item)));
 					if (itemToFetch.length) {
@@ -545,30 +512,29 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], requestPok
 					};
 					break;
 				};
-				default : {
+				default: {
 					// stat, version, moveDamageClass
 					const dataResponse = await getEndpointData(req);
 					const dataToFetch = dataResponse.results.map(data => data.url);
-					fetchedData[req] = await getData(req, dataToFetch, 'name');
+					// no idea why TypeScript is not okay about this...
+					fetchedData[req] = await getData(req, dataToFetch, 'name') as any;
 				};
 			};
 		};
 	};
-	console.log(fetchedData)
 	return fetchedData;
 };
-
 
 // or maybe prefetch when in sight?
 // export const prefetchOnHover = () => {
 	
 // 	// prefetch
-// 	const fetchedData = getRequiredData(pokeData, dispatch, requestPokemonIds, requests, lang);
+// 	const fetchedData = getRequiredData(pokeData, dispatch, requestIds, requests, lang);
 
 
 // 	//navigate
 // 	const data = await fetchedData
-// 	navigateNoUpdates(`/pokemons/${requestPokemonIds[0]}`);
+// 	navigateNoUpdates(`/pokemons/${requestIds[0]}`);
 // 	dispatch(getRequiredDataThunk.fulfilled({fetchedData: data}));
 
 // 	// or we could pass a promise down to getRequiredDataThunk and if this promise is passed, we don't make request
@@ -579,24 +545,24 @@ export function usePrefetchOnNavigation() {
 	const pokeData = useAppSelector(state => state.pokeData);
 	const language = useAppSelector(selectLanguage);
 
-	const prefetch = (requestPokemonIds: number[], requests: Requests[], lang: LanguageOption = language) => {
+	const prefetch = (requestPokemonIds: number[], requests: Request[], lang: LanguageOption = language) => {
 		unresolvedDataRef.current = getRequiredData(pokeData, requestPokemonIds, requests, lang);
 	};
-
-	return [unresolvedDataRef, prefetch];
+	return [unresolvedDataRef, prefetch] as const;
 };
 
 export function useNavigateToPokemon() {
 	const navigateNoUpdates = useNavigateNoUpdates();
 	const dispatch = useAppDispatch();
 	
-	const navigateToPokemon = useCallback(async (requestPokemonIds: number[], requests: Requests[], lang?: LanguageOption, unresolvedData?: ReturnType<typeof getRequiredData>) => {
+	const navigateToPokemon = useCallback(async (requestPokemonIds: number[], requests: Request[], lang?: LanguageOption, unresolvedData?: ReturnType<typeof getRequiredData>) => {
 		if (unresolvedData) {
 			dispatch(dataLoading());
 			const fetchedData = await unresolvedData;
-			dispatch(getRequiredDataThunk.fulfilled({fetchedData}));
+			// what's the point of passing in the latter two params, why TS require them even though it still work without them?
+			dispatch(getRequiredDataThunk.fulfilled({fetchedData}, 'pokeData/getRequiredData', {requestPokemonIds: [], requests: []}));
 		} else {
-			dispatch(getRequiredDataThunk({requestPokemonIds, requests, lang}));
+			dispatch(getRequiredDataThunk({requestPokemonIds, requests, language: lang}));
 		};
 		navigateNoUpdates(`/pokemons/${requestPokemonIds[0]}`);
 	}, [dispatch, navigateNoUpdates]);

@@ -9,8 +9,8 @@ type BasicInfoProps = {
 }
 
 const BasicInfo = memo<BasicInfoProps>(function BasicInfo({pokeId}) {
-	const pokemon = useAppSelector(state => selectPokemonById(state, pokeId));
-	const speciesData = useAppSelector(state => selectSpeciesById(state, pokeId));
+	const pokemon = useAppSelector(state => selectPokemonById(state, pokeId))!;
+	const speciesData = useAppSelector(state => selectSpeciesById(state, pokeId))!;
 	const language = useAppSelector(selectLanguage);
 	const types = useAppSelector(selectTypes)
 	const nationalNumber = getIdFromURL(pokemon.species.url);

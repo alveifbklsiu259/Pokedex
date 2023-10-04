@@ -1,15 +1,6 @@
-import type { Ability, Pokemon, PokemonSpecies } from "../typeModule";
+import type { Pokemon, PokemonSpecies } from "../typeModule";
 import type { LanguageOption } from "./features/display/displaySlice";
-import type { PokemonDataTypes } from "./features/pokemonData/pokemonDataSlice";
 import type { EndPointRequest } from "./api";
-
-
-type NameInstance = PokemonSpecies.Name
-
-type NameEntries = {
-	names: NameInstance[],
-	form_names?: NameInstance[]
-} | undefined
 
 export function getIdFromURL(url: undefined): undefined;
 export function getIdFromURL(url: string): number;
@@ -34,86 +25,88 @@ export function transformToDash (name: string | undefined): string | undefined {
 	return name ? name.replaceAll('_', '-') : undefined;
 };
 
-type GetNameByLanguage = {
-	(defaultName: string, language: LanguageOption, entries: NameEntries): string
-}
+type NameInstance = PokemonSpecies.Name
 
+type NameEntries = {
+	names: NameInstance[],
+	form_names?: NameInstance[]
+} | undefined
+
+type GetNameByLanguage = {
+	(defaultName: string, language: LanguageOption, entries: NameEntries | undefined): string
+}
 export const getNameByLanguage: GetNameByLanguage = (defaultName, language, entries) => {
 	if (!entries) {
 		return defaultName;
 	} else {
-		const getMatchName = (lang: string) => (entries['form_names'] || entries.names).find(entry => entry.language.name === transformToDash(lang))?.name;
+		const getMatchName = (lang: typeof language | 'ja-Hrkt') => (entries['form_names'] || entries.names).find(entry => entry.language.name === transformToDash(lang))?.name;
 		return getMatchName(language) ? getMatchName(language)! : language === 'ja' ? getMatchName('ja-Hrkt') || defaultName : defaultName;
 	};
 };
 
 export const getFormName = (speciesData: PokemonSpecies.Root, language: LanguageOption, pokemonData: Pokemon.Root) => {
-	let pokemonName = getNameByLanguage(pokemonData.name, language, speciesData)!;
+	let pokemonName = getNameByLanguage(pokemonData.name, language, speciesData);
+	let formName: string;
+
 	if (!pokemonData.is_default) {
-		let formName: ReturnType<typeof getNameByLanguage>;
 		if (pokemonData.formData) {
 			formName = getNameByLanguage(pokemonData.formData.form_name, language, pokemonData.formData);
-			if (formName) {
-				if (formName.includes(pokemonName)) {
-					pokemonName = formName;
-				} else {
-					pokemonName = pokemonName.concat(`(${formName})`);
-				};
-			};
+		} else {
+			formName = pokemonData.name;
+		};
+		
+		if (formName.toLowerCase().includes(pokemonName.toLowerCase())) {
+			pokemonName = formName;
+		} else {
+			pokemonName = pokemonName.concat(`(${formName})`);
 		};
 	};
 	return pokemonName;
 };
 
-type FlavorTextInstance = Ability.FlavorTextEntry;
-type EffectInstance = Ability.EffectEntry;
+type Version = {
+	name: string,
+	url: string
+}
 
-// export const getTextByLanguage = (language: LanguageOption, entries: TextEntries, dataType: 'effect' | 'flavor_text', version? : string | undefined): string=> {
-// 	let result: string = '';
+type BaseEntry = {
+	language: {
+		name: string,
+		url: string
+	},
+};
 
-// 	const getResult = (language: LanguageOption): string | undefined => {
-// 		const ignoreVersion = entries?.find(entry => entry?.language?.name === transformToDash(language))?.[dataType as keyof TextEntries[number]];
-// 		if (version) {
-// 			return entries.find(entry => entry.language.name === transformToDash(language) && entry?.version_group?.name === version)?.[dataType as keyof TextEntries[number]] || ignoreVersion;
-// 		} else {
-// 			return ignoreVersion;
-// 		};
-// 	};
-// 	result = getResult(language) || getResult('en');
+type FlavorTextInstance = BaseEntry & {
+	flavor_text: string,
+	version?: Version
+	version_group?: Version
+}
 
-// 	if (language === 'ja' || language === 'zh_Hant' || language === 'zh_Hans') {
-// 		result = result?.replace(/　|\n/g, '');
-// 	};
+type EffectInstance = BaseEntry & {
+	effect: string
+}
 
-// 	return result || 'No Data To Show';
-// };
-
-
-
-
-export function getTextByLanguage(language: LanguageOption, entries: FlavorTextInstance[], dataType: 'flavor_text'): string;
-export function getTextByLanguage(language: LanguageOption, entries: EffectInstance[], dataType: 'effect'): string;
-export function getTextByLanguage(language: LanguageOption, entries: (FlavorTextInstance | EffectInstance)[], dataType: 'flavor_text' | 'effect', version?: string): string;
-export function getTextByLanguage(language: LanguageOption, entries: (FlavorTextInstance | EffectInstance)[], dataType: 'flavor_text' | 'effect', version? : string): string {
+export function getTextByLanguage<T extends FlavorTextInstance>(language: LanguageOption, entries: T[], dataType: Extract<keyof T, 'flavor_text'>, version?: string): string;
+export function getTextByLanguage<T extends EffectInstance>(language: LanguageOption, entries: T[], dataType: Extract<keyof T, 'effect'>): string;
+export function getTextByLanguage<T extends FlavorTextInstance | EffectInstance>(language: LanguageOption, entries: T[], dataType: Extract<keyof T, 'flavor_text' | 'effect'>, version?: string): string {
 	let result: string = '';
-	const getResult = (language: LanguageOption): string | undefined => {
-		const ignoreVersion = entries.find(entry => entry.language.name === transformToDash(language))?.[dataType as keyof (FlavorTextInstance | EffectInstance)];
+	const getText = (language: LanguageOption): string | undefined => {
+		const ignoreVersion = entries.find(entry => entry.language.name === transformToDash(language))?.[dataType] as string | undefined;
 		
 		if (version) {
-			return entries.find(entry => entry.language.name === transformToDash(language) && entry?.version_group?.name === version)?.[dataType as keyof (FlavorTextInstance | EffectInstance)] || ignoreVersion;
+			return (entries).find(entry => entry.language.name === transformToDash(language) && (entry as FlavorTextInstance)?.version_group?.name === version)?.[dataType] as string | undefined || ignoreVersion;
 		} else {
 			return ignoreVersion;
 		};
 	};
-	result = getResult(language) || getResult('en');
+	result = getText(language) || getText('en') || 'No Data To Show';
 
 	if (language === 'ja' || language === 'zh_Hant' || language === 'zh_Hans') {
 		result = result?.replace(/　|\n/g, '');
 	};
 
-	return result || 'No Data To Show';
+	return result;
 };
-
 
 export function toEndPointString(str: EndPointRequest) {
 	let endPointString: string = '';

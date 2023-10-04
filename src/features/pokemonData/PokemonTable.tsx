@@ -157,7 +157,7 @@ export default function PokemonTable({tableInfoRef}: PokemonTableProps) {
 			// this is basically the same as dispatch(sortPokemons(...)), but if we just do that, it'll cause multiple re-renders(both sortPokemons and getRequiredDataThunk(thunk dispatched in navigateToPokemon) have state updates in both pending and fulfilled reducer functions), and since there's no fetching needed when sorting pokemons, we can manually make these dispatches batched together(even with tableInfoChanged and the getRequiredDataThunk's pending reducer function).
 			const {fetchedPokemons, nextRequest, pokemonsToDisplay} = await getPokemons(pokemons, allPokemonNamesAndIds, dispatch, intersection, nextSortBy);
 			dispatch(sortByChange(nextSortBy));
-			dispatch(sortPokemons.fulfilled({fetchedPokemons, nextRequest, pokemonsToDisplay}));
+			dispatch(sortPokemons.fulfilled({fetchedPokemons, nextRequest, pokemonsToDisplay}, 'display/sortPokemons', nextSortBy));
 		};
 		// this doesn't need to be stored in tableInfo anymore.
 		// delete tableInfoRef.current.sortBy;

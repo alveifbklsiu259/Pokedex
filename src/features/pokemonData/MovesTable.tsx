@@ -18,8 +18,7 @@ interface MoveEffectProps extends ExpanderComponentProps<MovesData> {
 const MoveEffect: React.FC<MoveEffectProps> = ({data, previousSelectedVersion}: MoveEffectProps) => {
 	const language = useSelector(selectLanguage);
 
-	// why it's data['effect'][0]? what's about the 0 here?
-	const effect = getTextByLanguage(language, data.effect, 'effect', previousSelectedVersion);
+	const effect = getTextByLanguage(language, data.effect, 'effect');
 	const flavorText = getTextByLanguage(language, data.flavorText, 'flavor_text', previousSelectedVersion);
 
 	return (
@@ -90,7 +89,7 @@ export default function MovesTable({columnData, movesData, selectedVersion, chan
 			expandableRows
 			expandOnRowClicked
 			expandableRowsHideExpander
-			// // @ts-ignore
+			// @ts-ignore
 			expandableRowsComponent={MoveEffect}
 			expandableRowsComponentProps={expandableRowsComponentProps}
 			title={`Moves Learn by ${capitalize(filteredMethod)}`}

@@ -5,9 +5,9 @@ import { GetRequiredData, getInitialData, getPokemonsOnScroll, getRequiredDataTh
 import { searchPokemon } from "../search/searchSlice";
 import type { RootState } from "../../app/store";
 import { createAppAsyncThunk } from "../../app/hooks";
-import type { TableInfoRefProps } from "./ViewMode";
 import { dropdownOptions } from "./Sort";
 import { languageOptions } from "./LanguageMenu";
+import { TableInfoRefTypes } from "../pokemonData/Pokemons";
 
 export type SortOption = typeof dropdownOptions[number]['value'];
 export type LanguageOption = keyof typeof languageOptions;
@@ -54,7 +54,7 @@ const displaySlice = createSlice({
 		backToRoot: state => {
 			state.status = 'idle';
 		},
-		tableInfoChanged: (state, action: PayloadAction<TableInfoRefProps & {selectedPokemonId: null | number}>) => {
+		tableInfoChanged: (state, action: PayloadAction<TableInfoRefTypes & {selectedPokemonId: null | number}>) => {
 			state.tableInfo = {...state.tableInfo, ...action.payload};
 		},
 		error: state => {
@@ -127,31 +127,37 @@ type ChangeLanguageParamTypes = {
 
 export const changeLanguage = createAppAsyncThunk('display/changeLanguage', async({option: language, pokeId}: ChangeLanguageParamTypes, {dispatch, getState, rejectWithValue}) => {
 	const pokeData = getState().pokeData;
-	console.log(pokeData)
 	const dispalyData = getState().display;
 	// I didn't disable the button from being clicked when status === 'loading', because it would cause LanguageMenu to re-render when status changes, by adding the below condition we can basically achieve the same thing.
 	// another workaround is to extract the button to a separate component, and listens for the status in the button component, the button component will re-render when status changes, but it would be quite cheap to re-render.
 	
 	if (dispalyData.status === 'idle') {
 		let fetchedSpecies: Awaited<ReturnType<typeof getAllSpecies>> | undefined;
-		let newPokeId: typeof pokeId | number = pokeId;
+		let urlParam = pokeId;
 		const hasAllSpecies = Object.keys(pokeData.pokemonSpecies).length === pokeData.pokemonCount;
 		
 		// user may directly search pokemon in url bar using pokemon name
-		if (pokeId && isNaN(Number(pokeId))) {
-			newPokeId = pokeData.allPokemonNamesAndIds[pokeId.toLowerCase()] || Object.values(pokeData.pokemon).find(pokemon => pokemon.name.toLowerCase() === pokeId.toLowerCase())?.id || pokeId;
+		if (urlParam && isNaN(Number(urlParam))) {
+			// in this branch, pokeData.pokemon[urlParam] will definitely be an object, any impossible name will be caught early when rendering Pokemon component.
+			const pokemonId = Object.values(pokeData.pokemon).find(pokemon => pokemon.name.toLowerCase() === urlParam!.toLowerCase())!.id
+			// allPokemonNamesAndIds may not store english names.
+			urlParam = String(pokeData.allPokemonNamesAndIds[urlParam.toLowerCase()]) || String(pokemonId);
 		};
-		const requests: GetRequiredData.Request[] = newPokeId ? ['pokemon', 'ability', 'item', 'version', 'moveDamageClass', 'stat'] : ['version', 'moveDamageClass', 'stat'];
-		const requestPokemonIds = newPokeId ? pokeData.pokemonSpecies[getIdFromURL(pokeData.pokemon[newPokeId].species.url)].varieties.map(variety => getIdFromURL(variety.pokemon.url)) : [undefined];
-	
+		const requests: GetRequiredData.Request[] = urlParam ? ['pokemon', 'ability', 'item', 'version', 'moveDamageClass', 'stat'] : ['version', 'moveDamageClass', 'stat'];
+		const requestPokemonIds = urlParam ? pokeData.pokemonSpecies[getIdFromURL(pokeData.pokemon[urlParam].species.url)].varieties.map(variety => getIdFromURL(variety.pokemon.url)) : [];
+
 		if (!hasAllSpecies) {
 			// the reason why I decide to dispatch dataLoading here instead of passing the dispatch down to getAllSpecies like some other functions(getRequiredData, getPokemons) is because that it requires some effors to check if the fecth is needed, but right here I already know that.
 			dispatch(dataLoading());
 			fetchedSpecies = await getAllSpecies(pokeData.pokemonSpecies, pokeData.pokemonCount as number);
 		};
 		const fetchedData = await getRequiredData(pokeData, requestPokemonIds, requests, language, dispatch);
-		const newNamesIds: CachedAllPokemonNamesAndIds = Object.values({...pokeData.pokemonSpecies, ...fetchedSpecies}).reduce((pre: CachedAllPokemonNamesAndIds, cur) => {
-			pre[getNameByLanguage(cur.name, language, cur)!] = cur.id;
+		const newNamesIds: CachedAllPokemonNamesAndIds = Object.values({...pokeData.pokemonSpecies, ...fetchedSpecies}).reduce<CachedAllPokemonNamesAndIds>((pre, cur) => {
+			// some newly added pokemon in the API may only contain english name, in this case, exclude it.
+			const nameByLanguage = getNameByLanguage(cur.name, language, cur).toLowerCase();
+			if ((language !== 'en' && nameByLanguage !== cur.name) || language === 'en') {
+				pre[nameByLanguage] = cur.id;
+			};
 			return pre;
 		}, {});
 		return {fetchedData, fetchedSpecies, newNamesIds, language};
@@ -200,11 +206,11 @@ export const changeViewMode = createAppAsyncThunk('display/changeViewMode', asyn
 export default displaySlice.reducer;
 export const {dataLoading, backToRoot, tableInfoChanged, error, scrolling, sortByChange} = displaySlice.actions;
 
-export const selectLanguage =(state: RootState) => state.display.language;
-export const selectSortBy =(state: RootState) => state.display.sortBy;
-export const selectViewMode =(state: RootState) => state.display.viewMode;
-export const selectStatus =(state: RootState) => state.display.status;
-export const selectDisplay =(state: RootState) => state.display.display;
-export const selectNextRequest =(state: RootState) => state.display.nextRequest;
-export const selectIntersection =(state: RootState) => state.display.intersection;
-export const selectTableInfo =(state: RootState) => state.display.tableInfo;
+export const selectLanguage = (state: RootState) => state.display.language;
+export const selectSortBy = (state: RootState) => state.display.sortBy;
+export const selectViewMode = (state: RootState) => state.display.viewMode;
+export const selectStatus = (state: RootState) => state.display.status;
+export const selectDisplay = (state: RootState) => state.display.display;
+export const selectNextRequest = (state: RootState) => state.display.nextRequest;
+export const selectIntersection = (state: RootState) => state.display.intersection;
+export const selectTableInfo = (state: RootState) => state.display.tableInfo;

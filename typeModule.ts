@@ -63,6 +63,36 @@ type GetArrayElementType<T extends unknown[]> = T[number];
 // the intellisense is okay about it, but is this valid?
 type C = [...any] // any[]
 
+export type NonNullableArray<T extends any[]> = {
+	// [K in keyof T]: T[K] & {}
+	[K in keyof T]: NonNullable<T[K]>;
+};
+
+
+
+
+
+
+
+
+// questions:
+// why this does not work?
+
+// function test1 <T extends string | undefined>(param: T): T {
+// 	if (param) {
+// 		return param
+// 	} else {
+// 		return undefined
+// 	}
+// };
+
+
+
+
+
+
+
+
 
 
 

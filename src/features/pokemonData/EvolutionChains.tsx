@@ -15,7 +15,7 @@ type EvolutionChainsProps = {
 
 const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({chainId}) {
 	const navigateToPokemon = useNavigateToPokemon();
-	const chainData = useAppSelector(state => selectChainDataByChainId(state, chainId))!;
+	const chainData = useAppSelector(state => selectChainDataByChainId(state, chainId));
 	const pokemons = useAppSelector(selectPokemons);
 	const species = useAppSelector(selectSpecies);
 	const generations = useAppSelector(selectGenerations);
@@ -214,7 +214,7 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 				{evolutionChains[0].map((pokemonId, index, array) => (
 					<React.Fragment key={pokemonId}>
 						<li>
-							<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon([pokemonId], ['pokemonSpecies', 'ability'])}} >
+							<div className="chainInfoContainer" onClick={() => {navigateToPokemon([pokemonId], ['pokemonSpecies', 'ability'])}} >
 								<BasicInfo pokeId={String(pokemonId)} />
 							</div>
 						</li>
@@ -243,7 +243,7 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 									chain.map((pokemonId, index, array) => (
 										<React.Fragment key={pokemonId}>
 											<li className="multiplePath">
-												<div style={{cursor: 'pointer'}} onClick={() => {navigateToPokemon([pokemonId], ['pokemonSpecies', 'ability'])}} >
+												<div className="chainInfoContainer" onClick={() => {navigateToPokemon([pokemonId], ['pokemonSpecies', 'ability'])}} >
 													<BasicInfo pokeId={String(pokemonId)} />
 												</div>
 											</li>

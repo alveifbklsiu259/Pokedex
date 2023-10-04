@@ -34,7 +34,7 @@ const Abilities = memo<AbilitiesProps>(function Abilities({pokemon}) {
 
 		setIsModalShown(true);
 		if (!abilities[abilityKey]) {
-			fetchedAbility = await getData('ability', ability, 'name');
+			fetchedAbility = await getData('ability', [ability], 'name');
 			// for some reason redux's state update and local state update will not be batched if in the current component it's listening for the redux state that's gonna be updated and there's any await expression before the state updates, I just found out that flushSynch will help solve this problem, so use it to batch the state updates.
 			flushSync(() => {
 				dispatch(abilityLoaded(fetchedAbility!));

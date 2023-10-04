@@ -78,13 +78,13 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 	const language = useAppSelector(selectLanguage);
 	const types = useAppSelector(selectTypes);
 	const cachedVersions = useAppSelector(selectVersions);
-	const chainData = useAppSelector(state => selectChainDataByChainId(state, chainId))!;
+	const chainData = useAppSelector(state => selectChainDataByChainId(state, chainId));
 	const cachedMoves = useAppSelector(selectMoves);
 	const movesDamageClass = useAppSelector(selectMoveDamageClass);
 	const machines = useAppSelector(selectMachines);
 	const cachedGenerations = useAppSelector(selectGenerations);
 	const generations = useMemo(() => Object.values(cachedGenerations), [cachedGenerations]);
-	const speciesData = useAppSelector(state => selectSpeciesById(state, pokeId));
+	const speciesData = useAppSelector(state => selectSpeciesById(state, pokeId))!;
 	const pokemons = useAppSelector(selectPokemons);
 	let pokemon = pokemons[pokeId];
 	let debutGeneration = speciesData.generation.name;
@@ -146,13 +146,16 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 		const chainDetails = [...rangeIds].map(id => chainData.details[id]);
 		const findHeighestEvoLevel = (chainDetails:ChainDetails | ChainDetails[number]) => {
 			chainDetails.forEach(entry => {
-				if (entry instanceof Array) {
-					findHeighestEvoLevel(entry);
-				} else {
-					if (entry.min_level !== null && entry.min_level > maxEvoLevel!) {
-						maxEvoLevel = entry.min_level;
+				// some newly added pokemon in the API may lack evolution-chain's detail data.
+				if (entry !== undefined) {
+					if (entry instanceof Array) {
+						findHeighestEvoLevel(entry);
+					} else {
+						if (entry.min_level !== null && entry.min_level > maxEvoLevel!) {
+							maxEvoLevel = entry.min_level;
+						};
 					};
-				};
+				}
 			});
 		};
 		findHeighestEvoLevel(chainDetails);

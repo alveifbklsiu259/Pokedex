@@ -1,8 +1,7 @@
-/// <reference path="../../../typeModule.ts" />
 import type { Pokemon, PokemonSpecies, Type, Move, Stat, MoveDamageClass, Version, Generation, Item, EvolutionChain, Ability } from "../../../typeModule";
 import type { AppDispatch, RootState } from "../../app/store";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import { createSlice, createAsyncThunk, current, isAnyOf } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, isAnyOf } from "@reduxjs/toolkit";
 import { transformToKeyName, getIdFromURL } from "../../util";
 import { getEndpointData, getPokemons, getData, getDataToFetch, getRequiredData } from "../../api";
 import { changeViewMode, changeLanguage, sortPokemons, scrolling, type LanguageOption } from "../display/displaySlice";
@@ -197,11 +196,11 @@ const pokemonDataSlice = createSlice({
 			.addMatcher(isAnyOf(getRequiredDataThunk.fulfilled, changeViewMode.fulfilled, changeLanguage.fulfilled), (state, action) => {
 				const {fetchedData} = action.payload;
 				if (fetchedData) {
-					const keys = Object.keys(fetchedData);
+					const keys = Object.keys(fetchedData) as unknown as Array<keyof typeof fetchedData>;
 					keys.forEach(key => {
 						switch(key) {
 							case 'evolutionChain' : {
-								const {chainData, fetchedPokemons, fetchedSpecies} = fetchedData[key];
+								const {chainData, fetchedPokemons, fetchedSpecies} = fetchedData[key]!;
 								state[key] = {...state[key], ...chainData};
 								if (Object.keys(fetchedPokemons).length) {
 									state.pokemon = {...state.pokemon, ...fetchedPokemons}
@@ -212,10 +211,7 @@ const pokemonDataSlice = createSlice({
 								break;
 							}
 							default : 
-
-							// const a: keyof typeof state = transformToKeyName(key) as keyof typeof state
-							const keyname = transformToKeyName(key) as keyof typeof state 
-							state[keyname] = {...state[keyname] as {} , ...fetchedData[key]};
+							state[key] = {...state[key], ...fetchedData[key]!} as any;
 						};
 					});
 				};
@@ -307,18 +303,33 @@ export namespace GetRequiredData {
 		requests: Request[],
 		language: LanguageOption;
 		disaptch?: AppDispatch;
-	}
+	};
+	export type FetchedData = {
+		[K in Request]?: K extends 'evolutionChain' ? {
+			chainData: CachedEvolutionChain,
+			fetchedPokemons: CachedPokemon,
+			fetchedSpecies: CachedPokemonSpecies,
+		} : PokemonDataTypes[K]
+	};
 };
 
-// refactor type
+type GetRequiredDataThunkParams = {
+	requestPokemonIds: (number| string)[],
+	requests: GetRequiredData.Request[],
+	language?: LanguageOption
+}
 
+type GetRequiredDataThunkReturnedType = {
+	fetchedData: Awaited<ReturnType<typeof getRequiredData>>
+};
 
-export const getRequiredDataThunk = createAsyncThunk<Awaited<ReturnType<typeof getRequiredData>>, GetRequiredData.Params, {state: RootState, dispatch: AppDispatch}>('pokeData/getRequiredData', async({requestPokemonIds, requests, lang}, {dispatch, getState}) => {
+export const getRequiredDataThunk = createAsyncThunk<GetRequiredDataThunkReturnedType, GetRequiredDataThunkParams, {state: RootState, dispatch: AppDispatch}>('pokeData/getRequiredData', async({requestPokemonIds, requests, language}, {dispatch, getState}) => {
 	const pokeData = getState().pokeData;
 	const displayData = getState().display;
 	// if language is not provided, use the current language.
-	const language = lang || displayData.language;
-	const fetchedData = await getRequiredData(pokeData, requestPokemonIds, requests, language, dispatch);
+	const lang = language || displayData.language;
+
+	const fetchedData = await getRequiredData(pokeData, requestPokemonIds, requests, lang, dispatch);
 	return {fetchedData};
 });
 
@@ -335,47 +346,28 @@ export const selectVersions = (state: RootState) => state.pokeData.version;
 export const selectMoves = (state: RootState) => state.pokeData.move;
 export const selectMoveDamageClass = (state: RootState) => state.pokeData.moveDamageClass;
 export const selectMachines = (state: RootState) => state.pokeData.machine;
-export const selectPokemonById = (state: RootState, id: number | string) => state.pokeData.pokemon[id];
-export const selectSpeciesById = (state: RootState, id: number | string) => {
+export const selectPokemonById = (state: RootState, id: number | string): Pokemon.Root | undefined => state.pokeData.pokemon[id];
+export const selectSpeciesById = (state: RootState, id: number | string): PokemonSpecies.Root | undefined => {
 	const speciesId = getIdFromURL(state.pokeData.pokemon[id]?.species?.url);
 	return state.pokeData.pokemonSpecies[speciesId];
 };
-export const selectChainDataByChainId = (state: RootState, chainId: number): EvolutionChain.Root | undefined => state.pokeData.evolutionChain?.[chainId];
+export function selectChainDataByChainId<T extends number | undefined>(state: RootState, chainId: T): T extends number ? EvolutionChain.Root : undefined;
+export function selectChainDataByChainId(state: RootState, chainId: number | undefined): EvolutionChain.Root | undefined {
+	if (chainId) {
+		return state.pokeData.evolutionChain[chainId];
+	} else {
+		return undefined;
+	};
+};
 
-
-// handle API error, e.g.:
-/* 
-	1011
-	Moves.tsx:152 Uncaught TypeError: Cannot read properties of undefined (reading 'min_level')
-    at Moves.tsx:152:1
-*/
-
-/* 
-	1017 inifinite spinner
-*/
-
-/* 
-	1012 1013 evolution chain, their images don't show, but the size are not the same, why?
-*/
-
-
-// what does cross reference mean, I imported stuff from displaySlice in pokemonDataSlice, and vice versa, why it still works without error?
 
 // turn on strcitnullcheck and noimplicitany
-// when using ReturnType<T>, do we pass the argumenet to the function?
-// change language, when the initial language is en, we can still change to en, which is not what i want, also the hover effect will override the selected effect
-// search modal should be bigger in height when on pc,
-// we should handle the case that some data hasn't been cached, e.g.
-// cachedData[xxx] should probably return undefined.
-// const machine = machine[lookupName]?.version_groups?.[selectedVersion];
-// Move.tsx, No Data problem
+// prefetch is not working on mobile
+
 // when passing props down to another React component, you'll have to describe the shape of the props again in the child component, what if the props passed down is an object with tons of properties, is there other workaround than re-creating the shape again? (e.g. pass the props also?)
-
-
 
 // To do:
 // 1. check performance of each component.
-// 2. separate slices.
 // 3. use shallowEqual, createSelector, createEntityAdapter, RTKQ.
 // 4. see if it's possible to rewrite selectors.
 // maybe prefetch pokemon on scrolling

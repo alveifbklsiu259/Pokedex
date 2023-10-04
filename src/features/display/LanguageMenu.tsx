@@ -118,8 +118,9 @@ const Item = memo(function Item({option, handleClose}: ItemProprs) {
 					opacity: 1
 				}
 			}}
-			selected={option === language ? true : false}
+			selected={option === language}
 			onClick={handleChangeLanguage}
+			disabled={option === language}
 		>
 			{languageOptions[option]}
 		</MenuItem>

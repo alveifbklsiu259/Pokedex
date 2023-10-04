@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { createAppAsyncThunk } from "../../app/hooks";
 import { getPokemons } from "../../api";
-import { getIdFromURL } from "../../util";
+import { getIdFromURL, getNameByLanguage } from "../../util";
 import type { RootState } from "../../app/store";
 
 export type SelectedGenerations = {
@@ -84,17 +84,27 @@ export const searchPokemon = createAppAsyncThunk('search/searchPokemon', async({
 	} else {
 		pokemonRange = Object.values(selectedGenerations).flat();
 	};
+
 	// handle search param
 	const trimmedText = searchParam.trim();
+
 	let searchResult: typeof pokemonRange = [];
 	if (trimmedText === '') {
 		// no input or only contains white space(s)
 		searchResult = pokemonRange;
 	} else if (isNaN(Number(trimmedText))) {
-		// sort by name
-		searchResult = pokemonRange.filter(pokemon => pokemon.name.toLowerCase().includes(trimmedText.toLowerCase()));
+		// search by name
+		const language = dispalyData.language;
+		searchResult = pokemonRange.filter(pokemon => {
+			if (language === 'en') {
+				return pokemon.name.toLowerCase().includes(trimmedText.toLowerCase())
+			} else {
+				const speciesData = pokeData.pokemonSpecies[getIdFromURL(pokemon.url)]
+				return getNameByLanguage(pokemon.name.toLowerCase(), language, speciesData).toLocaleLowerCase().includes(trimmedText.toLowerCase());
+			};
+		});
 	} else {
-		// sort by id
+		// search by id
 		searchResult = pokemonRange.filter(pokemon => String(getIdFromURL(pokemon.url)).padStart(4 ,'0').includes(String(trimmedText)));
 	};
 

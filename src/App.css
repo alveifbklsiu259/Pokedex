@@ -453,6 +453,11 @@ h1 {
     min-height: 80px;
 }
 
+.chainInfoContainer {
+    cursor: pointer;
+    height: 100%;
+}
+
 .gtTwo {
     display: flex;
     flex-direction: column;

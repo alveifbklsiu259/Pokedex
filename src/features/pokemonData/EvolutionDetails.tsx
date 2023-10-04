@@ -4,6 +4,7 @@ import { selectLanguage } from "../display/displaySlice";
 import Modal from "../../components/Modal";
 import { transformToKeyName, getNameByLanguage } from "../../util";
 import { useAppSelector } from "../../app/hooks";
+import { EvolutionChainResponse } from "../../../typeModule";
 
 const textsForOtherRequirements = {
 	gender: 'Gender',
@@ -39,8 +40,8 @@ const EvolutionDetails = memo<EvolutionDetailsProps>(function EvolutionDetails({
 	const language = useAppSelector(selectLanguage);
 	const items = useAppSelector(selectItems);
 	const [isModalShown, setIsModalShown] = useState(false);
-	// some evolution detail data is missing from the API, e.g. 489, 490...
-	const chainDetails = useAppSelector(state => selectChainDataByChainId(state, chainId))?.details?.[defaultFormId];
+	// some evolution detail data is missing In the API, e.g. 489, 490...
+	const chainDetails: EvolutionChainResponse.EvolutionDetail[] | undefined = useAppSelector(state => selectChainDataByChainId(state, chainId))?.details?.[defaultFormId];
 	// some pokemon can evolve by different triggers.
 	let selectedDetail = chainDetails?.[0];
 	if (isChainDefault === false && chainDetails && chainDetails?.length > 1) {

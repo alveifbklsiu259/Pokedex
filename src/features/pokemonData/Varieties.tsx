@@ -11,11 +11,11 @@ type VarietiesProps = {
 
 const Varieties = memo<VarietiesProps>(function Varieties({pokeId}) {
 	const navigateToPokemon = useNavigateToPokemon();
-	const pokemon = useAppSelector(state => selectPokemonById(state, pokeId));
-	const speciesData = useAppSelector(state => selectSpeciesById(state, pokeId));
+	const pokemon = useAppSelector(state => selectPokemonById(state, pokeId))!;
+	const speciesData = useAppSelector(state => selectSpeciesById(state, pokeId))!;
 	const language = useAppSelector(selectLanguage);
 	const pokemons = useAppSelector(selectPokemons);
-	
+
 	return (
 		<div className='col-12 varieties'>
 			<ul>

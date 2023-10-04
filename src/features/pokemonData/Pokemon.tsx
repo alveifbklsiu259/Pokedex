@@ -27,16 +27,17 @@ export default function Pokemon() {
 	const status = useAppSelector(selectStatus);
 	const namesAndIds = useAppSelector(selectAllIdsAndNames);
 	const pokemonCount = useAppSelector(selectPokemonCount);
-	const pokemons = useAppSelector(selectPokemons)
+	
 
 	// enable searching pokemon name in url bar in English.
 	let urlParam = pokeId;
 	if (isNaN(Number(pokeId))) {
-		// if we can't find the corresponding id, use what it is.
-		// namesAndIds will always have the english names
+		/*	namesAndIds will always have the english names.
+			if we can't find the corresponding id, use what it is. */
 		const id = namesAndIds[pokeId.toLowerCase()];
 		urlParam = id ? String(id) : pokeId;
 	};
+	
 	const pokemon = useAppSelector(state => selectPokemonById(state, urlParam));
 	const speciesData = useAppSelector(state => selectSpeciesById(state, urlParam));
 	const chainId = getIdFromURL(speciesData?.evolution_chain?.url);
@@ -60,20 +61,19 @@ export default function Pokemon() {
 		};
 	}, [dispatch, isDataReady, urlParam, status]);
 
-	const nationalNumber = getIdFromURL(pokemon?.species?.url);
-	const nextPokemonId = nationalNumber === pokemonCount ? 1 : nationalNumber + 1;
-	const previousPokemonId = nationalNumber === 1 ? pokemonCount! : nationalNumber - 1;
-
 	const rootLink = useMemo(() => <div onClick={() => navigateNoUpdates('/')} className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</div>, [navigateNoUpdates]);
 	let content;
 	if (status === 'idle' && isDataReady) {
+		const nationalNumber = getIdFromURL(pokemon!.species?.url);
+		const nextPokemonId = nationalNumber === pokemonCount ? 1 : nationalNumber + 1;
+		const previousPokemonId = nationalNumber === 1 ? pokemonCount! : nationalNumber - 1;
 		content = (
 			<>
 				<RelatedPokemon pokemonId={previousPokemonId} order='previous'/>
 				<RelatedPokemon pokemonId={nextPokemonId} order='next'/>
-				<div className={`container p-0 ${speciesData.varieties.length > 1 ? "marginWithVarieties" : 'marginWithoutVarieties'} `}>
+				<div className={`container p-0 ${speciesData!.varieties.length > 1 ? "marginWithVarieties" : 'marginWithoutVarieties'} `}>
 					<div className="row justify-content-center">
-						{speciesData.varieties.length > 1 && (
+						{speciesData!.varieties.length > 1 && (
 							<Varieties pokeId={urlParam} />
 						)}
 						<div className='basicInfoContainer row col-8 col-sm-6 justify-content-center'>
@@ -81,11 +81,11 @@ export default function Pokemon() {
 						</div>
 						<Detail pokeId={urlParam} />
 						<Stats pokeId={urlParam} />
-						<EvolutionChains chainId={chainId} />
+						<EvolutionChains chainId={chainId!} />
 						<Moves
 							pokeId={urlParam}
-							chainId={chainId}
-							key={pokemon.id}
+							chainId={chainId!}
+							key={pokemon!.id}
 						/>
 						<div className="row justify-content-center">
 							{rootLink}
@@ -123,8 +123,7 @@ type RelatedPokemonProps = {
 const RelatedPokemon = memo<RelatedPokemonProps>(function RelatedPokemon ({pokemonId, order}) {
 	return (
 		<PrefetchOnNavigation
-			requestPokemonIds={[pokemonId]}
-			requests={['pokemon', 'pokemonSpecies', 'evolutionChain', 'ability', 'item']}
+			requestPokemonIds={pokemonId}
 			customClass={`navigation ${order} `}
 		>
 			<span>{String(pokemonId).padStart(4, '0')}</span>

@@ -28,8 +28,8 @@ type DetailProps = {
 
 const Detail = memo<DetailProps>(function Detail({pokeId}) {
 	const language = useAppSelector(selectLanguage);
-	const pokemon = useAppSelector(state => selectPokemonById(state, pokeId));
-	const speciesData = useAppSelector(state => selectSpeciesById(state, pokeId));
+	const pokemon = useAppSelector(state => selectPokemonById(state, pokeId))!;
+	const speciesData = useAppSelector(state => selectSpeciesById(state, pokeId))!;
 
 	const flavorText = getTextByLanguage(language, speciesData.flavor_text_entries, 'flavor_text');
 	return (

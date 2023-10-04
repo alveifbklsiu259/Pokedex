@@ -9,7 +9,7 @@ type StatsProps = {
 }
 
 const Stats = memo<StatsProps>(function Stats({pokeId}) {
-	const pokemon = useAppSelector(state => selectPokemonById(state, pokeId));
+	const pokemon = useAppSelector(state => selectPokemonById(state, pokeId))!;
 	const stat = useAppSelector(selectStat);
 	const language = useAppSelector(selectLanguage);
 	return (
