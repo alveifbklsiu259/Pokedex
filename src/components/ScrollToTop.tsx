@@ -1,21 +1,10 @@
-import { useEffect, useRef, useState, memo } from "react";
+import { useEffect, useRef, useState, memo, useCallback } from "react";
 
 const ScrollToTop = memo(function ScrollToTop() {
 	const [isBtnShown, setIsBtnShown] = useState(false);
 	const lastScrollTop = useRef(document.documentElement.scrollTop);
 
-	useEffect(() => {
-		window.addEventListener('scroll', showBtn);
-		return () => window.removeEventListener('scroll', showBtn);
-	}, []);
-
-	const scrollToTop = () => {
-		if (isBtnShown) {
-			window.scrollTo(0, 0);
-		};
-	};
-
-	const showBtn = () => {
+	const showBtn = useCallback(() => {
 		const currentScrollTop = document.documentElement.scrollTop;
 		if (currentScrollTop < lastScrollTop.current && currentScrollTop > 300) {
 			// scroll up
@@ -25,11 +14,22 @@ const ScrollToTop = memo(function ScrollToTop() {
 			setIsBtnShown(false);
 		};
 		lastScrollTop.current = currentScrollTop;
+	}, [lastScrollTop, setIsBtnShown]);
+
+	useEffect(() => {
+		window.addEventListener('scroll', showBtn);
+		return () => window.removeEventListener('scroll', showBtn);
+	}, [showBtn]);
+
+	const handleScrollToTop = () => {
+		if (isBtnShown) {
+			window.scrollTo(0, 0);
+		};
 	};
 
 	return (
 		<>
-			<i onClick={scrollToTop} className={`fa-solid fa-angle-up fa-bounce upBtn ${!isBtnShown ? 'upBtnHide' : ''}`}></i>
+			<i onClick={handleScrollToTop} className={`fa-solid fa-angle-up fa-bounce upBtn ${!isBtnShown ? 'upBtnHide' : ''}`}></i>
 		</>
 	)
 });

@@ -2,25 +2,17 @@ import type { Pokemon, PokemonSpecies } from "../typeModule";
 import type { LanguageOption } from "./features/display/displaySlice";
 import type { EndPointRequest } from "./api";
 
-export function getIdFromURL(url: undefined): undefined;
-export function getIdFromURL(url: string): number;
-export function getIdFromURL(url: string | undefined): number | undefined;
+export function getIdFromURL<T extends string | undefined>(url: T): T extends string ? number : undefined;
 export function getIdFromURL(url: string | undefined): number | undefined {
 	return url ? Number(url.slice(url.lastIndexOf('/', url.lastIndexOf('/') - 1) + 1, url.lastIndexOf('/'))) : undefined;
 };
 
-export function transformToKeyName(name: string): string;
-export function transformToKeyName(name: undefined): undefined;
+export function transformToKeyName<T extends string | undefined>(name: T): T extends string ? string : undefined;
 export function transformToKeyName(name: string | undefined): string | undefined {
 	return name ? name.replaceAll('-', '_') : undefined;
 };
 
-// export function transformToKeyName2<T extends string | undefined>(name: T): T {
-// 	return name ? name.replaceAll('-', '_') as T : undefined as T
-// }
-
-export function transformToDash(name: string): string;
-export function transformToDash(name: undefined): undefined;
+export function transformToDash<T extends string | undefined>(name: T): T extends string ? string : undefined;
 export function transformToDash (name: string | undefined): string | undefined {
 	return name ? name.replaceAll('_', '-') : undefined;
 };
@@ -86,9 +78,7 @@ type EffectInstance = BaseEntry & {
 	effect: string
 }
 
-export function getTextByLanguage<T extends FlavorTextInstance>(language: LanguageOption, entries: T[], dataType: Extract<keyof T, 'flavor_text'>, version?: string): string;
-export function getTextByLanguage<T extends EffectInstance>(language: LanguageOption, entries: T[], dataType: Extract<keyof T, 'effect'>): string;
-export function getTextByLanguage<T extends FlavorTextInstance | EffectInstance>(language: LanguageOption, entries: T[], dataType: Extract<keyof T, 'flavor_text' | 'effect'>, version?: string): string {
+export function getTextByLanguage<T extends FlavorTextInstance | EffectInstance>(language: LanguageOption, entries: T[], dataType: Extract<keyof T, 'flavor_text' | 'effect'>, version?: T extends FlavorTextInstance ? string : never): string {
 	let result: string = '';
 	const getText = (language: LanguageOption): string | undefined => {
 		const ignoreVersion = entries.find(entry => entry.language.name === transformToDash(language))?.[dataType] as string | undefined;

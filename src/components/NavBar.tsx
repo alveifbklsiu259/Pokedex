@@ -91,6 +91,6 @@ const BackToRootBtn = memo(function BackToRootBtn() {
 	};
 
 	return (
-		<button className={`nav-btn ${status === 'loading' ? 'nav-btn-not-allowed' : ''}`} disabled={status === 'loading'} onClick={handleBackToRoot}>Pokédex</button>
+		<button className={`nav-btn ${status === 'loading' ? 'nav-btn-not-allowed' : ''}`} disabled={status === 'loading'} onClick={handleBackToRoot}>Pokedex</button>
 	)
 });

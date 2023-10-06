@@ -5,11 +5,11 @@ import { GetRequiredData, getInitialData, getPokemonsOnScroll, getRequiredDataTh
 import { searchPokemon } from "../search/searchSlice";
 import type { RootState } from "../../app/store";
 import { createAppAsyncThunk } from "../../app/hooks";
-import { dropdownOptions } from "./Sort";
+import { sortOptions } from "./Sort";
 import { languageOptions } from "./LanguageMenu";
 import { TableInfoRefTypes } from "../pokemonData/Pokemons";
 
-export type SortOption = typeof dropdownOptions[number]['value'];
+export type SortOption = typeof sortOptions[number]['value'];
 export type LanguageOption = keyof typeof languageOptions;
 
 export type DisplayType = {
@@ -69,8 +69,8 @@ const displaySlice = createSlice({
 	},
 	extraReducers: builder => {
 		builder
-			.addCase(changeLanguage.fulfilled, (state, {payload}) => {
-				const {language} = payload;
+			.addCase(changeLanguage.fulfilled, (state, action) => {
+				const {language} = action.payload;
 				state.language = language;
 			})
 			.addCase(sortPokemons.pending, (state, action) => {
@@ -121,7 +121,7 @@ const displaySlice = createSlice({
 });
 
 type ChangeLanguageParamTypes = {
-	option: DisplayType['language'],
+	option: LanguageOption,
 	pokeId: string | undefined
 };
 
@@ -134,14 +134,13 @@ export const changeLanguage = createAppAsyncThunk('display/changeLanguage', asyn
 	if (dispalyData.status === 'idle') {
 		let fetchedSpecies: Awaited<ReturnType<typeof getAllSpecies>> | undefined;
 		let urlParam = pokeId;
-		const hasAllSpecies = Object.keys(pokeData.pokemonSpecies).length === pokeData.pokemonCount;
+		const hasAllSpecies = Object.keys(pokeData.pokemonSpecies).length === pokeData.pokemonCount!;
 		
 		// user may directly search pokemon in url bar using pokemon name
 		if (urlParam && isNaN(Number(urlParam))) {
 			// in this branch, pokeData.pokemon[urlParam] will definitely be an object, any impossible name will be caught early when rendering Pokemon component.
-			const pokemonId = Object.values(pokeData.pokemon).find(pokemon => pokemon.name.toLowerCase() === urlParam!.toLowerCase())!.id
 			// allPokemonNamesAndIds may not store english names.
-			urlParam = String(pokeData.allPokemonNamesAndIds[urlParam.toLowerCase()]) || String(pokemonId);
+			urlParam = String(pokeData.allPokemonNamesAndIds[urlParam.toLowerCase()]) || String(Object.values(pokeData.pokemon).find(pokemon => pokemon.name.toLowerCase() === urlParam!.toLowerCase())!.id);
 		};
 		const requests: GetRequiredData.Request[] = urlParam ? ['pokemon', 'ability', 'item', 'version', 'moveDamageClass', 'stat'] : ['version', 'moveDamageClass', 'stat'];
 		const requestPokemonIds = urlParam ? pokeData.pokemonSpecies[getIdFromURL(pokeData.pokemon[urlParam].species.url)].varieties.map(variety => getIdFromURL(variety.pokemon.url)) : [];
@@ -149,9 +148,10 @@ export const changeLanguage = createAppAsyncThunk('display/changeLanguage', asyn
 		if (!hasAllSpecies) {
 			// the reason why I decide to dispatch dataLoading here instead of passing the dispatch down to getAllSpecies like some other functions(getRequiredData, getPokemons) is because that it requires some effors to check if the fecth is needed, but right here I already know that.
 			dispatch(dataLoading());
-			fetchedSpecies = await getAllSpecies(pokeData.pokemonSpecies, pokeData.pokemonCount as number);
+			fetchedSpecies = await getAllSpecies(pokeData.pokemonSpecies, pokeData.pokemonCount!);
 		};
 		const fetchedData = await getRequiredData(pokeData, requestPokemonIds, requests, language, dispatch);
+		
 		const newNamesIds: CachedAllPokemonNamesAndIds = Object.values({...pokeData.pokemonSpecies, ...fetchedSpecies}).reduce<CachedAllPokemonNamesAndIds>((pre, cur) => {
 			// some newly added pokemon in the API may only contain english name, in this case, exclude it.
 			const nameByLanguage = getNameByLanguage(cur.name, language, cur).toLowerCase();
@@ -191,7 +191,7 @@ export const changeViewMode = createAppAsyncThunk('display/changeViewMode', asyn
 
 	let fetchedData: Awaited<ReturnType<typeof getRequiredData>> | undefined;
 	if (displayData.status === 'idle') {
-		// prevent multiple fetches, I don't want to listen for status in the ViewMode component, else when scrolling, ViewMode will re-render.
+		// prevent multiple fetches, I don't want to listen for status in the ViewMode component, else when scrolling ViewMode will re-render.
 		const isAllSpeciesCached = Object.keys(pokeData.pokemonSpecies).length === pokeData.pokemonCount;
 		const isAllPokemonsCached = isAllSpeciesCached ? Object.keys(pokeData.pokemonSpecies).every(id => pokeData.pokemon[id]) : false;
 		if (!isAllSpeciesCached || !isAllPokemonsCached) {

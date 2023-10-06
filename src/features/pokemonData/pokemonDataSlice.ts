@@ -1,29 +1,23 @@
-import type { Pokemon, PokemonSpecies, Type, Move, Stat, MoveDamageClass, Version, Generation, Item, EvolutionChain, Ability } from "../../../typeModule";
+import { createSlice, isAnyOf, type PayloadAction } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "../../app/store";
-import type { PayloadAction } from "@reduxjs/toolkit";
-import { createSlice, createAsyncThunk, isAnyOf } from "@reduxjs/toolkit";
-import { transformToKeyName, getIdFromURL } from "../../util";
-import { getEndpointData, getPokemons, getData, getDataToFetch, getRequiredData } from "../../api";
+import { getIdFromURL } from "../../util";
+import { getEndpointData, getPokemons, getData, getRequiredData, GetReturnedDataType } from "../../api";
 import { changeViewMode, changeLanguage, sortPokemons, scrolling, type LanguageOption } from "../display/displaySlice";
 import { searchPokemon } from "../search/searchSlice";
+import type { Pokemon, PokemonSpecies, Type, Move, Stat, MoveDamageClass, Version, Generation, Item, EvolutionChain, Ability } from "../../../typeModule";
+import { createAppAsyncThunk } from "../../app/hooks";
 
 export type CachedPokemon = {
 	[id: string | number]: Pokemon.Root
-}
+};
+
 export type CachedPokemonSpecies = {
 	[id: string | number]: PokemonSpecies.Root
-}
+};
+
 export type CachedAbility = {
 	[name: string]: Ability.Root
-}
-
-type CachedType = {
-	[name: string]: Type.Root
-}
-
-type CachedMove = {
-	[name: string]: Move.Root
-}
+};
 
 export type CachedMachine = {
 	[name: string]: {
@@ -31,35 +25,43 @@ export type CachedMachine = {
 			[name: string]: string
 		}
 	}
-}
+};
 
 export type CachedStat = {
 	[name: string]: Stat.Root
-}
+};
 
 export type CachedAllPokemonNamesAndIds = {
 	[name: string]: number
-}
+};
 
 export type CachedMoveDamageClass = {
 	[name: string]: MoveDamageClass.Root;
-}
+};
 
 export type CachedVersion = {
 	[name: string]: Version.Root
-}
-
-type CachedGeneration = {
-	[name: string]: Generation.Root
-}
+};
 
 export type CachedItem = {
 	[name: string]: Item.Root
-}
+};
 
 export type CachedEvolutionChain = {
 	[id: string | number]: EvolutionChain.Root
-}
+};
+
+type CachedGeneration = {
+	[name: string]: Generation.Root
+};
+
+type CachedType = {
+	[name: string]: Type.Root
+};
+
+type CachedMove = {
+	[name: string]: Move.Root
+};
 
 export type PokemonDataTypes = {
 	pokemon: CachedPokemon,
@@ -76,7 +78,7 @@ export type PokemonDataTypes = {
 	evolutionChain: CachedEvolutionChain
 	item: CachedItem
 	allPokemonNamesAndIds: CachedAllPokemonNamesAndIds
-}
+};
 
 const initialState: PokemonDataTypes = {
 	pokemon: {},
@@ -96,28 +98,14 @@ const initialState: PokemonDataTypes = {
 };
 
 const pokemonDataSlice = createSlice({
-	// The string from the name option is used as the first part of each action type, and the key name of each reducer function is used as the second part.
 	name: 'pokeData',
 	initialState,
 	reducers : {
 		abilityLoaded: (state, action: PayloadAction<CachedAbility>) => {
 			state.ability = {...state.ability, ...action.payload};
 		},
-		//The "prepare callback" function can take multiple arguments, generate random values like unique IDs, and run whatever other synchronous logic is needed to decide what values go into the action object. It should then return an object with the payload field inside. (The return object may also contain a meta field, which can be used to add extra descriptive values to the action, and an error field, which should be a boolean indicating whether this action represents some kind of an error.)
-		movesLoaded: {
-			prepare(fetchedMoves: Move.Root[]) {
-				return {
-					payload: fetchedMoves.reduce((pre: {[name: string]: Move.Root}, cur) => {
-						pre[transformToKeyName(cur.name)!] = cur;
-						return pre;
-					}, {}),
-					meta: {},
-					error: {}
-				};
-			},
-			reducer(state, action: PayloadAction<CachedMove>) {
-				state.move = {...state.move, ...action.payload};
-			}
+		movesLoaded: (state, action: PayloadAction<CachedMove>) => {
+			state.move = {...state.move, ...action.payload};
 		},
 		machineDataLoaded: (state, action: PayloadAction<CachedMachine>) => {
 			const newEntities = Object.keys(action.payload).reduce<CachedMachine>((pre, cur) => {
@@ -128,52 +116,6 @@ const pokemonDataSlice = createSlice({
 			}, {});
 			state.machine = {...state.machine, ...newEntities};
 		},
-		// pokemonCountLoaded: (state, action) => {
-		// 	state.pokemonCount = action.payload;
-		// },
-		// pokemonNamesAndIdsLoaded: (state, action) => {
-		// 	state.allPokemonNamesAndIds = action.payload;
-		// },
-		// intersectionChanged: (state, action) => {
-		// 	state.intersection = action.payload;
-		// },
-		// generationsLoaded: (state, action) => {
-		// 	state.generation = action.payload;
-		// },
-		// typesLoaded: (state, action) => {
-		// 	state.type = action.payload;
-		// },
-		// pokemonsLoaded: (state, action) => {
-		// 	state.pokemon = {...state.pokemon, ...action.payload.data};
-		// 	state.nextRequest = action.payload.nextRequest === 'unchanged' ? state.nextRequest : action.payload.nextRequest;
-		// },
-		// displayChanged: (state, action) => {
-		// 	state.display = action.payload;
-		// },
-		// nextRequestChanged: (state, action) => {
-		// 	state.nextRequest = action.payload;
-		// },
-		// languageChanged: (state, action) => {
-		// 	state.language = action.payload;
-		// },
-		// pokemonSpeciesLoaded: (state, action) => {
-		// 	state.pokemonSpecies = {...state.pokemonSpecies, ...action.payload};
-		// },
-		// versionLoaded: (state, action) => {
-		// 	state.version = action.payload;
-		// },
-		// moveDamageClassLoaded: (state, action) => {
-		// 	state.moveDamageClass = action.payload;
-		// },
-		// statLoaded: (state, action) => {
-		// 	state.stat = action.payload;
-		// },
-		// itemLoaded: (state, action) => {
-		// 	state.item = {...state.item, ...action.payload};
-		// },
-		// evolutionChainsLoaded: (state, action) => {
-		// 	state.evolutionChain = {...state.evolutionChain, ...action.payload};
-		// },
 	},
 	extraReducers: builder => {
 		builder
@@ -232,9 +174,6 @@ const pokemonDataSlice = createSlice({
 });
 
 export default pokemonDataSlice.reducer;
-
-// export const {pokemonCountLoaded, pokemonNamesAndIdsLoaded, intersectionChanged, generationsLoaded, typesLoaded, pokemonsLoaded, displayChanged, nextRequestChanged, languageChanged, pokemonSpeciesLoaded, versionLoaded, moveDamageClassLoaded, statLoaded, itemLoaded, abilityLoaded, evolutionChainsLoaded, movesLoaded, machineDataLoaded, tablePageChanged, sortByChange} = pokemonDataSlice.actions;
-
 export const {abilityLoaded, movesLoaded, machineDataLoaded} = pokemonDataSlice.actions;
 
 type ReturnedInitialDataTypes = {
@@ -246,15 +185,17 @@ type ReturnedInitialDataTypes = {
 	fetchedPokemons: CachedPokemon;
 	nextRequest: number[] | null;
 	pokemonsToDisplay: number[]
-}
+};
 
-export const getInitialData = createAsyncThunk<ReturnedInitialDataTypes, undefined, {state: RootState, dispatch: AppDispatch }>('pokeData/getInitialData', async(_, {dispatch, getState}) => {
+/* alternatively, createAsyncThunk takes a generic type of three params, returnType, paramType, thunkAPIType, e.g.
+const getInitialData = createAsyncThunk<ReturnedInitialDataTypes, undefined, {state: RootState, dispatch: AppDispatch }> */
+export const getInitialData = createAppAsyncThunk('pokeData/getInitialData', async(_, {dispatch, getState}): Promise<ReturnedInitialDataTypes> => {
 	const dispalyData = getState().display;
 	let generationData: CachedGeneration, typeData: CachedType, pokemonsNamesAndId: CachedAllPokemonNamesAndIds = {}, intersection: number[] = [];
 	// get pokemon count, all names and ids
 	const speciesResponse = await getEndpointData('pokemonSpecies');
 	for (let pokemon of speciesResponse.results) {
-		pokemonsNamesAndId[pokemon.name] = getIdFromURL(pokemon.url) as number;
+		pokemonsNamesAndId[pokemon.name] = getIdFromURL(pokemon.url);
 	};
 	// set the range
 	for (let i = 1; i <= speciesResponse.count; i++) {
@@ -269,30 +210,31 @@ export const getInitialData = createAsyncThunk<ReturnedInitialDataTypes, undefin
 	typeData = await getData('type', typeResponse.results.map(entry => entry.name), 'name');
 
 	const {fetchedPokemons, nextRequest, pokemonsToDisplay} = await getPokemons({}, pokemonsNamesAndId, dispatch, intersection, dispalyData.sortBy);
-	return {pokemonCount: speciesResponse.count, pokemonsNamesAndId, intersection, generationData, typeData, fetchedPokemons, nextRequest, pokemonsToDisplay} as ReturnedInitialDataTypes;
+	return {pokemonCount: speciesResponse.count, pokemonsNamesAndId, intersection, generationData, typeData, fetchedPokemons: fetchedPokemons!, nextRequest, pokemonsToDisplay}
 });
 
 type ReturnedScrollDataTypes = {
-	fetchedPokemons: CachedPokemon,
+	fetchedPokemons: CachedPokemon | undefined,
 	nextRequest: null | number[],
 	pokemonsToDisplay: number[]
 };
 
-export const getPokemonsOnScroll = createAsyncThunk<ReturnedScrollDataTypes, undefined, {state: RootState}>('pokeData/getPokemonsOnScroll', async(_, {dispatch ,getState}) => {
-	const pokeData = getState().pokeData;
+type GetPokemonsOnScrollParams = {
+	unresolvedData: Promise<CachedPokemon> | null;
+};
+
+export const getPokemonsOnScroll = createAppAsyncThunk('pokeData/getPokemonsOnScroll', async({unresolvedData}: GetPokemonsOnScrollParams, {dispatch ,getState}): Promise<ReturnedScrollDataTypes> => {
 	const dispalyData = getState().display;
-	const request = dispalyData.nextRequest ? [...dispalyData.nextRequest] : null;
+	const request = dispalyData.nextRequest?.length ? [...dispalyData.nextRequest] : null;
 	const pokemonsToDisplay = request ? request.splice(0, 24) : [];
-	const nextRequest = request || null;
-	const cachedPokemons = pokeData.pokemon;
 	const displayedPokemons = dispalyData.display;
-	const pokemonsToFetch = getDataToFetch(cachedPokemons, pokemonsToDisplay);
-	// prevent extra re-render if no fetching needed.
-	if (pokemonsToFetch.length) {
+	let fetchedPokemons: GetReturnedDataType<'pokemon', []> | undefined;
+	
+	if (unresolvedData) {
 		dispatch(scrolling());
+		fetchedPokemons = await unresolvedData;
 	};
-	const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id') as CachedPokemon;
-	return {fetchedPokemons, nextRequest, pokemonsToDisplay: [...displayedPokemons, ...pokemonsToDisplay]} as ReturnedScrollDataTypes
+	return {fetchedPokemons, nextRequest: request, pokemonsToDisplay: [...displayedPokemons, ...pokemonsToDisplay]};
 });
 
 export namespace GetRequiredData {
@@ -314,16 +256,16 @@ export namespace GetRequiredData {
 };
 
 type GetRequiredDataThunkParams = {
-	requestPokemonIds: (number| string)[],
+	requestPokemonIds: (number | string)[],
 	requests: GetRequiredData.Request[],
 	language?: LanguageOption
 }
 
 type GetRequiredDataThunkReturnedType = {
-	fetchedData: Awaited<ReturnType<typeof getRequiredData>>
+	fetchedData: GetRequiredData.FetchedData
 };
 
-export const getRequiredDataThunk = createAsyncThunk<GetRequiredDataThunkReturnedType, GetRequiredDataThunkParams, {state: RootState, dispatch: AppDispatch}>('pokeData/getRequiredData', async({requestPokemonIds, requests, language}, {dispatch, getState}) => {
+export const getRequiredDataThunk = createAppAsyncThunk('pokeData/getRequiredData', async({requestPokemonIds, requests, language}: GetRequiredDataThunkParams, {dispatch, getState}): Promise<GetRequiredDataThunkReturnedType> => {
 	const pokeData = getState().pokeData;
 	const displayData = getState().display;
 	// if language is not provided, use the current language.
@@ -360,48 +302,16 @@ export function selectChainDataByChainId(state: RootState, chainId: number | und
 	};
 };
 
-
-// turn on strcitnullcheck and noimplicitany
-// prefetch is not working on mobile
-
 // when passing props down to another React component, you'll have to describe the shape of the props again in the child component, what if the props passed down is an object with tons of properties, is there other workaround than re-creating the shape again? (e.g. pass the props also?)
 
 // To do:
 // 1. check performance of each component.
 // 3. use shallowEqual, createSelector, createEntityAdapter, RTKQ.
-// 4. see if it's possible to rewrite selectors.
+
 // maybe prefetch pokemon on scrolling
 // html title...
 // show navbar when visiting undefined route, e.g. localhost:3000/ddd
 
-
-
-
-
-// selector
-// check this performance issue, and see if we have the same problem?
-// https://redux.js.org/tutorials/essentials/part-6-performance-normalization#:~:text=Let%27s%20say%20we-,have,-fetched%20some%20notifications
-
-
-//  is this possible?
-// const selectors = Object.keys(initialState).reduce((pre, cur) => {
-// 	pre[`select${cur.charAt(0).toUpperCase() + cur.slice(1)}`] = state => state.pokeData[cur];
-// 	return pre;
-// }, {});
-
-// export{...selectors};
-
-
-// cache input 
-// see if i can batch dispatches between getInitialData and getRequiredData
-// handling direct changes in url
-// the below code is not enough, other data needs to be fetched.
-// const lang = window.sessionStorage.getItem('pokedexLang');
-// if (lang !== 'en') {
-// 	dispatch({type: 'languageChanged', payload: lang});
-// }
-// or can we directly set lange to sessionStorage, so we don't have to dispatch languageChange, but we still have to fetch other data
-// if (initialState.language !== 'en') {get generation/species...}
 
 
 // optimize: reorder table, change viewMode (pokemons will re-renders twice because of sortPokemons's pending + sortPokemons's fulfilled + changeViewMode's pending) (but this will not be trigger that often.)

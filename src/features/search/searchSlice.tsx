@@ -1,8 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { createAppAsyncThunk } from "../../app/hooks";
+import type { RootState } from "../../app/store";
 import { getPokemons } from "../../api";
 import { getIdFromURL, getNameByLanguage } from "../../util";
-import type { RootState } from "../../app/store";
 
 export type SelectedGenerations = {
 	[name: string]: {
@@ -34,6 +34,7 @@ const searchSlice = createSlice({
 	initialState,
 	reducers: {
 		advancedSearchReset: state => {
+			// can't just use shallowEqual since advancedSearch contains array/object, it would work if we have a selectAdvancedSearchTypes select thogh, but not selectAdvancedSearchGenerations since it also contains object.
 			if (state.advancedSearch.types.length) {
 				state.advancedSearch.types = [];
 			};
@@ -42,13 +43,6 @@ const searchSlice = createSlice({
 			};
 			state.searchParam = '';
 		},
-		// searchParamChanged: (state, action) => {
-		// 	state.searchParam = action.payload;
-		// },
-		// advancedSearchChanged: (state, action) => {
-		// 	const {field, data} = action.payload;
-		// 	state.advancedSearch = {...state.advancedSearch, [field]: data};
-		// },
 	},
 	extraReducers: builder => {
 		builder
@@ -88,7 +82,7 @@ export const searchPokemon = createAppAsyncThunk('search/searchPokemon', async({
 	// handle search param
 	const trimmedText = searchParam.trim();
 
-	let searchResult: typeof pokemonRange = [];
+	let searchResult: typeof pokemonRange;
 	if (trimmedText === '') {
 		// no input or only contains white space(s)
 		searchResult = pokemonRange;
@@ -114,21 +108,19 @@ export const searchPokemon = createAppAsyncThunk('search/searchPokemon', async({
 	// handle types
 	if (selectedTypes?.length) {
 		if (matchMethod === 'all') {
-
-			// can we be more specific , use literal type here?
-			const typeMatchingArray = selectedTypes.reduce((pre: number[][], cur) => {
+			const matchedTypeArray = selectedTypes.reduce<number[][]>((pre, cur) => {
 				pre.push(pokeData.type[cur].pokemon.map(entry => getIdFromURL(entry.pokemon.url)));
 				return pre;
 			}, []);
-			for (let i = 0; i < typeMatchingArray.length; i ++) {
-				intersection = intersection.filter(pokemon => typeMatchingArray[i].includes(pokemon));
+			for (let i = 0; i < matchedTypeArray.length; i ++) {
+				intersection = intersection.filter(pokemon => matchedTypeArray[i].includes(pokemon));
 			};
 		} else if (matchMethod === 'part') {
-			const typeMatchingPokemonIds = selectedTypes.reduce((pre: number[], cur) => {
+			const matchedTypeIds = selectedTypes.reduce<number[]>((pre, cur) => {
 				pokeData.type[cur].pokemon.forEach(entry => pre.push(getIdFromURL(entry.pokemon.url)));
 				return pre;
 			}, []);
-			intersection = intersection.filter(id => typeMatchingPokemonIds.includes(id));
+			intersection = intersection.filter(id => matchedTypeIds.includes(id));
 		};
 	};
 	const {fetchedPokemons, pokemonsToDisplay, nextRequest} = await getPokemons(pokeData.pokemon, allNamesAndIds, dispatch, intersection, dispalyData.sortBy);
@@ -136,8 +128,6 @@ export const searchPokemon = createAppAsyncThunk('search/searchPokemon', async({
 });
 
 export default searchSlice.reducer;
-
 export const {advancedSearchReset} = searchSlice.actions;
-
 export const selectSearchParam = (state: RootState) => state.search.searchParam;
 export const selectAdvancedSearch = (state: RootState) => state.search.advancedSearch;

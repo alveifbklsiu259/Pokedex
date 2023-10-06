@@ -205,7 +205,7 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 	let content;
 	if (evolutionChains.length === 1 && evolutionChains[0].length === 1) {
 		content = (
-			<p className="text-center">This Pokémon does not evolve.</p>
+			<p className="text-center">This Pokemon does not evolve.</p>
 		)
 	} else if (evolutionChains.length === 1) {
 		// single path

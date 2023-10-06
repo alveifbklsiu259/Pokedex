@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { selectSortBy, tableInfoChanged, sortPokemons } from './displaySlice';
 import { useAppDispatch } from '../../app/hooks';
 
-export const dropdownOptions = [
+export const sortOptions = [
 	{text:'Number(low - high)', value: 'numberAsc'},
 	{text:'Number(high - low)', value: 'numberDesc'},
 	{text:'Name(A - Z)', value: 'nameAsc'},
@@ -46,13 +46,13 @@ const Sort = memo(function Sort() {
 		<>
 			<div className="sort dropdown dropdown-center text-end mb-4">
 				<button className="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-					Sort By {dropdownOptions.filter(option => option.value === sortBy)[0].text}
+					Sort By {sortOptions.filter(option => option.value === sortBy)[0].text}
 				</button>
 				<ul className="dropdown-menu dropdown-menu-dark ">
-					{dropdownOptions.map(option => (
+					{sortOptions.map(option => (
 						<li 
 							key={option.value} 
-							onClick={() => handleClick(option.value as typeof sortBy)} 
+							onClick={() => handleClick(option.value)}
 							className={`dropdown-item ${sortBy === option.value ? 'active' : ''}`}
 						>
 							<button className="w-100">{option.text}</button>

@@ -1,6 +1,6 @@
 import React, { useEffect, memo, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { selectPokemonById, selectSpeciesById, selectChainDataByChainId, selectAllIdsAndNames, selectPokemonCount, getRequiredDataThunk, selectPokemons } from "./pokemonDataSlice";
+import { selectPokemonById, selectSpeciesById, selectChainDataByChainId, selectAllIdsAndNames, selectPokemonCount, getRequiredDataThunk } from "./pokemonDataSlice";
 import { selectStatus, error } from "../display/displaySlice";
 import BasicInfo from "./BasicInfo";
 import Detail from "./Detail";

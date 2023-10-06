@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { selectGenerations } from '../pokemonData/pokemonDataSlice';
 import pokeBall from '../../assets/ball.svg';
 import type { SelectedGenerations } from './searchSlice';
-import type { Generation } from '../../../typeModule';
+import type { Generation as GenerationType } from '../../../typeModule';
 
 type FilterGenerationProps = {
 	selectedGenerations: SelectedGenerations,
@@ -42,8 +42,8 @@ const FilterGeneration = memo<FilterGenerationProps>(function FilterGeneration (
 });
 
 type GenerationProps = {
-	generation: Generation.Root,
-	onSelectGeneration: (generation: Generation.Root) => void,
+	generation: GenerationType.Root,
+	onSelectGeneration: (generation: GenerationType.Root) => void,
 	isGenerationSelected: boolean
 }
 

@@ -1,14 +1,10 @@
 import { useCallback, useRef } from 'react';
 import { useNavigateNoUpdates } from "./components/RouterUtils";
 import { getIdFromURL, transformToKeyName, transformToDash, toEndPointString } from "./util";
-import { getRequiredDataThunk, type GetRequiredData, type CachedAbility, type CachedPokemon, type CachedPokemonSpecies, type CachedAllPokemonNamesAndIds, PokemonDataTypes} from "./features/pokemonData/pokemonDataSlice";
+import { getRequiredDataThunk, type GetRequiredData, type CachedAbility, type CachedPokemon, type CachedPokemonSpecies, type CachedAllPokemonNamesAndIds, type PokemonDataTypes} from "./features/pokemonData/pokemonDataSlice";
 import { dataLoading, selectLanguage, type LanguageOption, type SortOption } from './features/display/displaySlice';
 import type { AppDispatch, RootState } from './app/store';
-
-/* maybe these two are not necessay? may have defined types in slice files
-e.g
-let a: CachedPokemon[keyof CachedPokemon]; */
-import type { Pokemon, PokemonSpecies, EndPointData, PokemonForm, GetStringOrNumberKey, EvolutionChain, EvolutionChainResponse, NonNullableArray } from '../typeModule';
+import type { Pokemon, EndPointData, PokemonForm, GetStringOrNumberKey, EvolutionChain, EvolutionChainResponse, NonNullableArray } from '../typeModule';
 import { useAppSelector, useAppDispatch } from './app/hooks';
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
@@ -22,22 +18,22 @@ export const getEndpointData = async (dataType: EndPointRequest) => {
 };
 
 type CachedEntries = Pick<PokemonDataTypes, 'pokemon' | 'pokemonSpecies' | 'ability' | 'move' | 'machine' | 'evolutionChain' | 'item'>;
-type CachedEntry = CachedEntries[keyof CachedEntries];
+type CachedData = CachedEntries[keyof CachedEntries];
 
-export const getDataToFetch = <T extends string | number>(cachedData: CachedEntry, dataToDisplay: T[]) => dataToDisplay.filter(data => !cachedData[data]);
-
+export const getDataToFetch = <T extends string | number>(cachedData: CachedData, dataToDisplay: T[]): T[] => dataToDisplay.filter(data => !cachedData[data]);
 
 // CachedEvolutionChain and CachedEvolutionChain[number] is the modified version, not the original response from the API.
 type PokemonDataResponseType = {
 	[K in keyof PokemonDataTypes]: K extends 'evolutionChain' ? {[chainId: string | number]: EvolutionChainResponse.Root} : PokemonDataTypes[K]
 };
 
-type GetReturnedDataType<T extends EndPointRequest, K> = K extends (number | string)[] ? T extends keyof PokemonDataResponseType ? PokemonDataResponseType[T] : {[name: string]: PokemonForm.Root} : T extends keyof PokemonDataResponseType ? PokemonDataResponseType[T][number] : PokemonForm.Root;
+type GetKeysOfUnion<T> = T extends any ? GetStringOrNumberKey<Required<T>> : never;
+export type GetReturnedDataType<T extends EndPointRequest, K> = K extends (number | string)[] ? T extends keyof PokemonDataResponseType ? PokemonDataResponseType[T] : {[name: string]: PokemonForm.Root} : T extends keyof PokemonDataResponseType ? PokemonDataResponseType[T][number] : PokemonForm.Root;
 
-// can we simplify the function, let it only take string or string[]
-export async function getData<T extends EndPointRequest, K extends number | string>(dataType: T, dataToFetch: K): Promise<GetReturnedDataType<T, K>>;
-export async function getData<T extends EndPointRequest, K extends number | string>(dataType: T, dataToFetch: K[], resultKey: GetStringOrNumberKey<GetReturnedDataType<T, undefined>>): Promise<GetReturnedDataType<T, K[]>>;
-export async function getData<T extends EndPointRequest, K extends number | string>(dataType: T, dataToFetch: K | K[], resultKey?: GetStringOrNumberKey<GetReturnedDataType<T, undefined>>): Promise<GetReturnedDataType<T, K>> {
+export async function getData<T extends EndPointRequest, S extends number | string>(dataType: T, dataToFetch: S): Promise<GetReturnedDataType<T, S>>;
+export async function getData<T extends EndPointRequest, S extends number | string, K extends GetStringOrNumberKey<Required<GetReturnedDataType<T, undefined>>>>(dataType: T, dataToFetch: S[], resultKey: K): Promise<GetReturnedDataType<T, S[]>>;
+export async function getData<T extends EndPointRequest, S extends number | string, K extends GetStringOrNumberKey<Required<GetReturnedDataType<T, undefined>>>>(dataType: T, dataToFetch: S | S[], resultKey?: K): Promise<GetReturnedDataType<T, S>>;
+export async function getData(dataType: EndPointRequest, dataToFetch: (number | string) | (number | string)[], resultKey?: GetKeysOfUnion<GetReturnedDataType<EndPointRequest, undefined>>): Promise<GetReturnedDataType<EndPointRequest, (number | string) | (number | string)[]>> {
 	let request: (number | string)[] = [];
 	if (Array.isArray(dataToFetch)) {
 		request = dataToFetch.map(element => {
@@ -56,50 +52,38 @@ export async function getData<T extends EndPointRequest, K extends number | stri
 	};
 
 	const dataResponses = await Promise.all(request.map(entry => fetch(`${BASE_URL}/${toEndPointString(dataType)}/${entry}`)));
-	const finalData: Array<GetReturnedDataType<T, undefined>> = await Promise.all(dataResponses.map(response => response.json()));
+	const finalData: Array<GetReturnedDataType<EndPointRequest, undefined>> = await Promise.all(dataResponses.map(response => response.json()));
 
 	if (resultKey) {
 		const returnedData: GetReturnedDataType<EndPointRequest, []> = {};
 		if (Array.isArray(dataToFetch)) {
 			for (let i of finalData) {
-				const key = transformToKeyName(String(i[resultKey]));
-				returnedData[key] = i
+				const key = transformToKeyName(String(i[resultKey as keyof typeof i]));
+				returnedData[key] = i;
 			};
 		} else {
-			const key = transformToKeyName(String(finalData[0][resultKey]));
-			returnedData[key] = finalData[0]
-		}
-		return returnedData as any;
+			const data = finalData[0];
+			const key = transformToKeyName(String(data[resultKey as keyof typeof data]));
+			returnedData[key] = data;
+		};
+		return returnedData;
 	} else {
-		return finalData[0] as any;
+		return finalData[0];
 	};
 	// reference: https://stackoverflow.com/questions/69783310/type-is-assignable-to-the-constraint-of-type-t-but-t-could-be-instantiated#:~:text=a%20type%20assertion-,to%20any,-(I%20could%20have
 };
 
-async function test () {
-	// type A<T> = ReturnType<typeof getData>
-	// let a: GetReturnedDataType<'pokemonForm', 1>
-
-	// let fetchedData: Awaited<ReturnType<typeof getData>>;
-
-	// infer ReturnType
-
-
-	const fetchedData = await getData('evolutionChain', [1,2,3,4], 'id');
-
-}
-
 export function getAbilitiesToDisplay(pokemonData: Pokemon.Root | Pokemon.Root[]): string[] {
 	const data = Array.isArray(pokemonData) ? pokemonData : [pokemonData];
 	return [
-		...Object.values(data as Pokemon.Root[]).reduce<Set<string>>((pre, cur) => {
+		...Object.values(data).reduce<Set<string>>((pre, cur) => {
 			cur.abilities.forEach(entry => pre.add(transformToKeyName(entry.ability.name)));
 			return pre;
 		}, new Set())
 	];
 };
 
-export const getAbilities = async (pokemonData: Parameters<typeof getAbilitiesToDisplay>['0'], cachedAbilities: CachedAbility) => {
+export const getAbilities = async (pokemonData: Pokemon.Root | Pokemon.Root[], cachedAbilities: CachedAbility) => {
 	const abilitiesToDisplay = getAbilitiesToDisplay(pokemonData);
 	const abilitiesToFetch = getDataToFetch(cachedAbilities, abilitiesToDisplay).map(ability => transformToDash(ability));
 	if (abilitiesToFetch.length) {
@@ -107,7 +91,7 @@ export const getAbilities = async (pokemonData: Parameters<typeof getAbilitiesTo
 	};
 };
 
-export type GetSortField<T extends SortOption> = T extends `${infer A}Asc` ? A : SortOption extends `${infer B}Desc` ? B : never;
+type GetSortField<T extends SortOption> = T extends `${infer A}Asc` ? A : SortOption extends `${infer B}Desc` ? B : never;
 type SortField = GetSortField<SortOption>;
 type Stat = Exclude<SortField, "number" | "height" | "name" | "weight" >
 
@@ -192,11 +176,11 @@ export const getPokemons = async (cachedPokemons: CachedPokemon, allPokemonNames
 	// the dataLoading dispatches in this function will not cause extra re-render in getInitialData thunk.
 	let sortedRequest: number[],
 		pokemonsToFetch: ReturnType<typeof getDataToFetch>,
-		fetchedPokemons: GetReturnedDataType<'pokemon', typeof request> | undefined,
+		fetchedPokemons: GetReturnedDataType<'pokemon', []> | undefined,
 		pokemonsToDisplay: number[],
 		nextRequest: number[] | null,
 		allPokemons = {...cachedPokemons};
-	const isSortByNameOrId = (sortOption.includes('number') || sortOption.includes('name'))
+	const isSortByNameOrId = (sortOption.includes('number') || sortOption.includes('name'));
 	// when sort by options other than number or name, it requires all the pokemon data in intersection to make some comparison.
 	if (!isSortByNameOrId) {
 		pokemonsToFetch = getDataToFetch(cachedPokemons, request);
@@ -211,7 +195,6 @@ export const getPokemons = async (cachedPokemons: CachedPokemon, allPokemonNames
 	pokemonsToDisplay = sortedRequest.splice(0, 24);
 	nextRequest = sortedRequest.length ? sortedRequest : null;
 
-	// when sortBy number or name.
 	if (isSortByNameOrId) {
 		pokemonsToFetch = getDataToFetch(cachedPokemons, pokemonsToDisplay);
 		if (pokemonsToFetch.length) {
@@ -219,10 +202,10 @@ export const getPokemons = async (cachedPokemons: CachedPokemon, allPokemonNames
 			fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
 		};
 	};
-	return {fetchedPokemons, pokemonsToDisplay, nextRequest}
+	return {fetchedPokemons, pokemonsToDisplay, nextRequest};
 };
 
-const getFormData = async (cachedPokemons: CachedPokemon) => {
+const addFormData = async (cachedPokemons: CachedPokemon, fetchedPokemons: CachedPokemon) => {
 	const formsToFetch: number[] = [];
 	Object.values(cachedPokemons).forEach(pokemon => {
 		if (!pokemon.is_default) {
@@ -232,8 +215,13 @@ const getFormData = async (cachedPokemons: CachedPokemon) => {
 			}
 		};
 	});
-	const formData = await getData('pokemonForm', formsToFetch, 'name');
-	return formData;
+	if (formsToFetch.length) {
+		const formData = await getData('pokemonForm', formsToFetch, 'name');
+		Object.values(formData).forEach(entry => {
+			fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
+		});
+	};
+	return fetchedPokemons;
 };
 
 const getChainData = async(chainId: number, cachedPokemons: CachedPokemon, cachedSpecies: CachedPokemonSpecies) => {
@@ -312,10 +300,7 @@ const getChainData = async(chainId: number, cachedPokemons: CachedPokemon, cache
 
 	if (pokemonsToFetch.length) {
 		fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
-		const formData = await getFormData(fetchedPokemons);
-		Object.values(formData).forEach(entry => {
-			fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
-		});
+		fetchedPokemons = await addFormData(fetchedPokemons, fetchedPokemons);
 	}
 	return [chainData, fetchedPokemons, fetchedSpecies] as const;
 };
@@ -405,7 +390,7 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], requestPok
 				}
 				break;
 			}
-			case 'ability': {
+			case 'ability': 
 				if (chacedPokemonData.includes(undefined)) {
 					cachedData[req] = [undefined];
 				} else {
@@ -413,7 +398,6 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], requestPok
 					cachedData[req] = abilitiesToDisplay.map(ability => pokeData[req][ability]);
 				};
 				break;
-			};
 			default:
 				// stat, version, moveDamageClass, the structure of their cached data doesn't really matter, only fetch them once when language change.
 				const cachedEntry = pokeData[req];
@@ -453,19 +437,15 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], requestPok
 	};
 
 	for (let req of sortedRequests) {
-		// does each await call waits before the previous one's done?
-		// can we remove await expression and at the end do a Promise.all(fetchedData)? (how to make it concurrent if the above statement is true)
 		if (isFetchNeeded(req)) {
 			switch(req) {
+				// at the end of each case, we can be sure that all requestIds will have the relevant data.
 				case 'pokemon': {
 					const pokemonsToFetch = getDataToFetch(pokeData[req], requestIds);
 					if (pokemonsToFetch.length) {
-						const fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
+						let fetchedPokemons = await getData('pokemon', pokemonsToFetch, 'id');
 						// also get formData
-						const formData = await getFormData(fetchedPokemons);
-						Object.values(formData).forEach(entry => {
-							fetchedPokemons[getIdFromURL(entry.pokemon.url)].formData = entry;
-						});
+						fetchedPokemons = await addFormData(fetchedPokemons, fetchedPokemons);
 						fetchedData[req] = fetchedPokemons;
 					};
 					break;
@@ -516,7 +496,6 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], requestPok
 					// stat, version, moveDamageClass
 					const dataResponse = await getEndpointData(req);
 					const dataToFetch = dataResponse.results.map(data => data.url);
-					// no idea why TypeScript is not okay about this...
 					fetchedData[req] = await getData(req, dataToFetch, 'name') as any;
 				};
 			};
@@ -525,41 +504,39 @@ export const getRequiredData = async(pokeData: RootState['pokeData'], requestPok
 	return fetchedData;
 };
 
-// or maybe prefetch when in sight?
-// export const prefetchOnHover = () => {
-	
-// 	// prefetch
-// 	const fetchedData = getRequiredData(pokeData, dispatch, requestIds, requests, lang);
+type PrefetchOnNavigation = ((requestPokemonIds: number[], requests: Request[], lang?: LanguageOption) => void);
+type NavigationUnresolvedDataRef = React.MutableRefObject<Promise<GetRequiredData.FetchedData> | null>;
+type PrefetchOnScroll = ((pokemonsToFetch: number[])=> void);
+type ScrollUnresolvedDataRef = React.MutableRefObject<Promise<CachedPokemon> | null>;
 
-
-// 	//navigate
-// 	const data = await fetchedData
-// 	navigateNoUpdates(`/pokemons/${requestIds[0]}`);
-// 	dispatch(getRequiredDataThunk.fulfilled({fetchedData: data}));
-
-// 	// or we could pass a promise down to getRequiredDataThunk and if this promise is passed, we don't make request
-// }
-
-export function usePrefetchOnNavigation() {
-	const unresolvedDataRef = useRef<ReturnType<typeof getRequiredData> | null>(null);
+export function usePrefetch<T extends 'scroll' | 'navigation'>(action: T): T extends 'navigation' ? [NavigationUnresolvedDataRef, PrefetchOnNavigation] : [ScrollUnresolvedDataRef, PrefetchOnScroll];
+export function usePrefetch(action: 'scroll' | 'navigation'): [NavigationUnresolvedDataRef, PrefetchOnNavigation] | [ScrollUnresolvedDataRef, PrefetchOnScroll] {
+	const unresolvedDataRef = useRef<Promise<GetRequiredData.FetchedData> | Promise<CachedPokemon> | null>(null);
 	const pokeData = useAppSelector(state => state.pokeData);
 	const language = useAppSelector(selectLanguage);
+	// let prefetch: PrefetchOnScroll | PrefetchOnNavigation;
+	let prefetch: typeof action extends 'scroll' ? PrefetchOnScroll : PrefetchOnNavigation;
 
-	const prefetch = (requestPokemonIds: number[], requests: Request[], lang: LanguageOption = language) => {
-		unresolvedDataRef.current = getRequiredData(pokeData, requestPokemonIds, requests, lang);
+	if (action === 'navigation') {
+		prefetch = (requestPokemonIds, requests, lang = language) => {
+			unresolvedDataRef.current = getRequiredData(pokeData, requestPokemonIds, requests, lang);
+		};
+	} else {
+		prefetch = (pokemonsToFetch) => {
+			unresolvedDataRef.current = getData('pokemon', pokemonsToFetch, 'id');
+		};
 	};
-	return [unresolvedDataRef, prefetch] as const;
+	return [unresolvedDataRef, prefetch];
 };
 
 export function useNavigateToPokemon() {
 	const navigateNoUpdates = useNavigateNoUpdates();
 	const dispatch = useAppDispatch();
 	
-	const navigateToPokemon = useCallback(async (requestPokemonIds: number[], requests: Request[], lang?: LanguageOption, unresolvedData?: ReturnType<typeof getRequiredData>) => {
+	const navigateToPokemon = useCallback(async (requestPokemonIds: number[], requests: Request[], lang?: LanguageOption, unresolvedData?: Promise<GetRequiredData.FetchedData>) => {
 		if (unresolvedData) {
 			dispatch(dataLoading());
 			const fetchedData = await unresolvedData;
-			// what's the point of passing in the latter two params, why TS require them even though it still work without them?
 			dispatch(getRequiredDataThunk.fulfilled({fetchedData}, 'pokeData/getRequiredData', {requestPokemonIds: [], requests: []}));
 		} else {
 			dispatch(getRequiredDataThunk({requestPokemonIds, requests, language: lang}));
@@ -569,39 +546,3 @@ export function useNavigateToPokemon() {
 
 	return navigateToPokemon;
 };
-
-
-// can I combine prefetch and navigate to one hook?
-
-// downsides:
-// always loading --> idle even though data is cached (but it's fast)
-// the liink will alway re-render the first click
-
-
-// problem:
-
-// separate sort and fetch(search)
-// since we only fetch the first 24 pokemons, it makes sence to sort the request first, the implementation for search should be:
-// 1. determine the range (intersection), this would be the request
-// 2. sort the request based on sort option
-// 3. check pokemons needed to fetch (change status based on whether we have to get the weight/height info or not, sould be 2 or 3)
-// 4. fetch pokemons
-// dispatch display change / pokemons loaded
-// 5. the subsequent pokemons should be fetched through scroll events, which wold use next request as request
-
-// since we don't want the status to change, results in the Pokemons to re-render(which the content to display will be either Spinner or the pokemon list, and this will remove all children component when status change), we should not make any fetch request when changing sorting option, this sould only applies when we're showing all the pokemons and no next request.
-//----
-//when we're showing all the pokemons and there's no next request, when changing sort option, we should not make any fetch requset and should not change status
-// 1. when nextRequest === null
-// 2. when dispaly === state.intersection
-// 3. when pokemonsToFetch is []
-// ----
-// otherwise the change of sort option would probably reqire new request to some pokemons we haven't cached
-// the implementation of sort would be:
-// 1. determine the range (intersection), this would be the request
-// 2. sort the request based on sort option
-// 3-1. check pokemons needed to fetch if there's still next request (note: next request arr + display arr = intersection arr)
-// 3-2. if no next request, no fetch, if there is, fetch pokemons
-// 4. the subsequent pokemons should be fetched through scroll events, which wold use next request as request
-
-

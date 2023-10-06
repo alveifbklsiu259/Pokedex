@@ -7,6 +7,7 @@ import MovesTable from "./MovesTable";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import type { TableColumn } from "react-data-table-component";
 import type { Pokemon, Machine, Move } from "../../../typeModule";
+import { getData } from "../../api";
 
 export type ColData = {
 	level?: number | React.JSX.Element,
@@ -274,10 +275,8 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 	useEffect(() => {
 		if (movesToFetch.length) {
 			const getMoves = async () => {
-				const dataResponses = await Promise.all(movesToFetch.map(move => fetch(move)));
-				const datas = dataResponses.map(response => response.json());
-				const finalData: (typeof cachedMoves)[number][] = await Promise.all(datas);
-				dispatch(movesLoaded(finalData));
+				const fetchedMoves = await getData('move', movesToFetch, 'name');
+				dispatch(movesLoaded(fetchedMoves));
 			};
 			getMoves();
 		};
@@ -325,7 +324,6 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 					};
 					machineData[keyName].version_groups = {
 						...machineData[keyName].version_groups,
-						// transformToDash?
 						[transformToKeyName(machine.version_group.name)]: machine.item.name
 					};
 				});

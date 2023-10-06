@@ -9,14 +9,15 @@ export default function ErrorPage() {
 	const [searchParam, setSearchParam] = useState('');
 	const dispatch = useAppDispatch();
 
-	const onBackToRoot = () => {
+	const handleBackToRoot = () => {
 		dispatch(backToRoot());
+		// reference: https://github.com/remix-run/react-router/issues/7634#issuecomment-1306650156
 		router.navigate('/', {state: 'resetPosition'});
 	};
 	
 	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		dispatch(searchPokemon({searchParam}))
+		dispatch(searchPokemon({searchParam}));
 		router.navigate('/');
 	};
 
@@ -31,9 +32,9 @@ export default function ErrorPage() {
 					<p className="text-center">The page you're looking for can not be found.</p>
 					<ul className="mt-3">
 						<li>
-							<button onClick={onBackToRoot} className="btn btn-block btn-secondary" >Go back to Pokédex</button>
+							<button onClick={handleBackToRoot} className="btn btn-block btn-secondary" >Go back to Pokedex</button>
 						</li>
-						<li className="my-2">Search a Pokemon below</li>
+						<li className="my-2">Search a Pokemon</li>
 					</ul>
 					<form className="d-flex" onSubmit={handleSubmit}>
 						<div className="flex-fill">

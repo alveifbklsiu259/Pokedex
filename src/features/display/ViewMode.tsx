@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { useAppDispatch } from '../../app/hooks';
-import { selectViewMode, sortPokemons, tableInfoChanged, changeViewMode, type SortOption } from './displaySlice';
+import { selectViewMode, sortPokemons, tableInfoChanged, changeViewMode } from './displaySlice';
 import { selectPokemonCount } from '../pokemonData/pokemonDataSlice';
 import type { TableInfoRefTypes } from '../pokemonData/Pokemons';
 
@@ -29,7 +29,6 @@ const ViewMode = memo(function ViewMode({tableInfoRef}: ViewModeProps) {
 			tableInfoRef.current = {};
 		};
 
-		// can we read pokemonCount in the changeViewMode thunk?
 		if (nextView !== null) {
 			const requestPokemonIds = [];
 			for (let i = 1; i <= pokemonCount; i ++) {

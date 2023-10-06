@@ -15,7 +15,7 @@ export default function RootRoute () {
 			<Outlet />
 		</RouterUtils>
 	)
-}
+};
 
 export function Index() {
 	return (
@@ -26,4 +26,4 @@ export function Index() {
 			</div>
 		</>
 	)
-}
+};

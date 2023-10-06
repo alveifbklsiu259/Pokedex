@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { useAppDispatch } from '../../app/hooks';
-import { selectLanguage, changeLanguage } from './displaySlice';
 import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import { useAppDispatch } from '../../app/hooks';
+import { selectLanguage, changeLanguage } from './displaySlice';
 
 export const languageOptions = {
 	en: 'English',
@@ -16,8 +16,6 @@ export const languageOptions = {
 	fr: 'Français',
 	de: 'Deutsch',
 };
-
-// how to make all the type of each properties in languageOptions its own key?
 
 type AnchorElTypes = null | HTMLButtonElement;
 
@@ -98,7 +96,7 @@ type ItemProprs = {
 	handleClose: () => void;
 }
 
-const Item = memo(function Item({option, handleClose}: ItemProprs) {
+const Item = memo<ItemProprs>(function Item({option, handleClose}) {
 	const dispatch = useAppDispatch();
 	const language = useSelector(selectLanguage);
 	const {pokeId} = useParams();
@@ -119,8 +117,8 @@ const Item = memo(function Item({option, handleClose}: ItemProprs) {
 				}
 			}}
 			selected={option === language}
-			onClick={handleChangeLanguage}
 			disabled={option === language}
+			onClick={handleChangeLanguage}
 		>
 			{languageOptions[option]}
 		</MenuItem>

@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, memo, useCallback, forwardRef, type MutableRefObject, type ForwardedRef } from "react"
+import { useRef, useState, useMemo, memo, useCallback, forwardRef} from "react"
 import { useSelector } from "react-redux";
 import { selectAllIdsAndNames } from "../pokemonData/pokemonDataSlice";
 import DataList from './DataList';

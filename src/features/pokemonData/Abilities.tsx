@@ -49,7 +49,7 @@ const Abilities = memo<AbilitiesProps>(function Abilities({pokemon}) {
 		setIsDetail(!isDetail);
 	};
 
-	let brief, detail;
+	let brief: string | undefined, detail: string | undefined;
 
 	if (abilityData) {
 		brief = getTextByLanguage(language, abilityData.flavor_text_entries, 'flavor_text');

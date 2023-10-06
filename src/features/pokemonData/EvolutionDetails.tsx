@@ -59,7 +59,6 @@ const EvolutionDetails = memo<EvolutionDetailsProps>(function EvolutionDetails({
 
 	const rephrase = (requirements: Requirements, requirement: keyof Requirements) => {
 		let value = requirements[requirement];
-
 		switch(requirement) {
 			case 'gender' : 
 				switch (value) {
@@ -92,7 +91,7 @@ const EvolutionDetails = memo<EvolutionDetailsProps>(function EvolutionDetails({
 			case 'held_item' : 
 				value = (
 					<>
-						{getNameByLanguage(value, language, items[transformToKeyName(value)])}
+						{getNameByLanguage(value, language, items[transformToKeyName(value)!])}
 						<img className="item" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${value}.png`} alt={`${value}`} />
 					</>
 				)
@@ -138,7 +137,7 @@ const EvolutionDetails = memo<EvolutionDetailsProps>(function EvolutionDetails({
 					mainText = (
 						<>
 							<span>
-								{`Use ${getNameByLanguage(requirements["item"], language, items[transformToKeyName(requirements["item"])])}`}
+								{`Use ${getNameByLanguage(requirements["item"], language, items[transformToKeyName(requirements["item"])!])}`}
 							</span>
 							<img className="item" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${requirements["item"]}.png`} alt={`${requirements["item"]}`} />
 						</>
@@ -148,7 +147,7 @@ const EvolutionDetails = memo<EvolutionDetailsProps>(function EvolutionDetails({
 				break;
 			
 			case 'shed' : 
-				mainText = 'Level 20, Empty spot in party, Pokéball in bag';
+				mainText = 'Level 20, Empty spot in party, Pokeball in bag';
 				break;
 			case 'other' :
 				mainText = 'No Data'

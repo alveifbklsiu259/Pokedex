@@ -1,5 +1,4 @@
-
-import type { PropsWithChildren } from 'react'
+import type { PropsWithChildren } from 'react';
 type ModalProps = {
 	customClass: string,
 	isModalShown: boolean,
@@ -31,4 +30,4 @@ export default function Modal({customClass, isModalShown, setIsModalShown, setIs
 			</div>
 		</>
 	)
-}
+};

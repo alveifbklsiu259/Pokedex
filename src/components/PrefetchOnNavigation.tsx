@@ -1,5 +1,5 @@
 import { memo, type PropsWithChildren } from "react";
-import { useNavigateToPokemon, usePrefetchOnNavigation } from "../api";
+import { useNavigateToPokemon, usePrefetch } from "../api";
 import type { GetRequiredData } from "../features/pokemonData/pokemonDataSlice";
 
 type PrefetchOnNavigationPorps = {
@@ -9,7 +9,7 @@ type PrefetchOnNavigationPorps = {
 
 const PrefetchOnNavigation = memo<PropsWithChildren<PrefetchOnNavigationPorps>>(function PrefetchOnNavigation({children, requestPokemonIds, customClass}) {
 	const navigateToPokemon = useNavigateToPokemon();
-	const [unresolvedDataRef, prefetch] = usePrefetchOnNavigation();
+	const [unresolvedDataRef, prefetch] = usePrefetch('navigation');
 	const requests: GetRequiredData.Request[] = ['pokemon', 'pokemonSpecies', 'evolutionChain', 'ability', 'item'];
 
 	const handlePrefetch = () => {
