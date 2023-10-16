@@ -31,10 +31,10 @@ It'd be appreciated if you can spend some time going through my code and let me 
 4. Start dev mode: `npm start`  
 
 ## Demonstration
-live demo: 
+live demo: [https://react-pokedex-app-murex.vercel.app/](https://react-pokedex-app-murex.vercel.app/)
 
 ![Cards](/src/assets/demo_1.jpg)
-![Search](/src/assets/demo_2.jpg)
+![Search](/src/assets/demo_2.png)
 ![Table](/src/assets/demo_3.jpg)
 ![Moves](/src/assets/demo_4.jpg)
 ![Evolutions](/src/assets/demo_5.jpg)
