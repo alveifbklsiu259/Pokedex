@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { ScrollRestoration, Outlet } from "react-router-dom";
 import RouterUtils from "./RouterUtils";
 import Search from "../features/search/Search";
@@ -18,11 +19,13 @@ export default function RootRoute () {
 };
 
 export function Index() {
+	const viewModeRef = useRef<HTMLDivElement>(null);
+
 	return (
 		<>
 			<div className="container mb-5">
-				<Search />
-				<Pokemons />
+				<Search viewModeRef={viewModeRef} />
+				<Pokemons viewModeRef={viewModeRef} />
 			</div>
 		</>
 	)

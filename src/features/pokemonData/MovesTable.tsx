@@ -1,23 +1,20 @@
 import { memo, useState, useMemo } from "react";
-import { useSelector } from "react-redux";
-import DataTable from "react-data-table-component"
-import { Switch, Stack, Typography, capitalize } from "@mui/material"
+import DataTable, { type TableColumn, type ExpanderComponentProps } from "react-data-table-component";
+import { Switch, Stack, Typography, capitalize } from "@mui/material";
 import { selectLanguage } from "../display/displaySlice";
 import Spinner from "../../components/Spinner";
 import { getTextByLanguage } from "../../util";
 import type { ColData, MovesData } from "./Moves";
-import type { TableColumn, ExpanderComponentProps } from "react-data-table-component";
+import { useAppSelector } from "../../app/hooks";
 
-const getMoveIds = (movesData: MovesData[]) => JSON.stringify(Object.values(movesData).map(move => move.id));
+const getSerializedIds = (movesData: MovesData[]) => JSON.stringify(Object.values(movesData).map(move => move.id));
 
 interface MoveEffectProps extends ExpanderComponentProps<MovesData> {
-	// currently, props that extend ExpanderComponentProps must be set to optional.
 	previousSelectedVersion?: string
 }
 
-const MoveEffect: React.FC<MoveEffectProps> = ({data, previousSelectedVersion}: MoveEffectProps) => {
-	const language = useSelector(selectLanguage);
-
+const MoveEffect: React.FC<MoveEffectProps> = ({data, previousSelectedVersion}) => {
+	const language = useAppSelector(selectLanguage);
 	const effect = getTextByLanguage(language, data.effect, 'effect');
 	const flavorText = getTextByLanguage(language, data.flavorText, 'flavor_text', previousSelectedVersion);
 
@@ -72,10 +69,10 @@ export default function MovesTable({columnData, movesData, selectedVersion, chan
 	const cachedSpinner = useMemo(() => <Spinner/>, []);
 	const cachedFilterButton = useMemo(() => <FilterButton isDataReady={isDataReady} changefilteredMethod={changefilteredMethod} />, [isDataReady, changefilteredMethod]);
 
-	const expandableRowsComponentProps= useMemo(()=> ({previousSelectedVersion}), [previousSelectedVersion]);
+	const expandableRowsComponentProps = useMemo(()=> ({previousSelectedVersion}), [previousSelectedVersion]);
 
-	// if the current data is the same as the old one, use the old one to prevent re-render. (caching movesData would probably not work for this since selectedGeneration/selectedVersion changes so often), also use the old selected version(selected verion is only used for move descriptions which don't change often even between different generation).
-	if (getMoveIds(previousData) !== getMoveIds(movesData)) {
+	// if the current data is the same as the previous one, use the previous one to prevent re-render. (caching movesData would probably not work for this since selectedGeneration/selectedVersion changes so often), also use the previous selected version(selected verion is only used for move descriptions which don't change often even between different generation).
+	if (getSerializedIds(previousData) !== getSerializedIds(movesData)) {
 		setPreviousData(movesData);
 		setPreviousSelectedVersion(selectedVersion);
 		return;
@@ -89,8 +86,7 @@ export default function MovesTable({columnData, movesData, selectedVersion, chan
 			expandableRows
 			expandOnRowClicked
 			expandableRowsHideExpander
-			// @ts-ignore
-			expandableRowsComponent={MoveEffect}
+			expandableRowsComponent={MoveEffect as any}
 			expandableRowsComponentProps={expandableRowsComponentProps}
 			title={`Moves Learn by ${capitalize(filteredMethod)}`}
 			subHeader
@@ -100,3 +96,5 @@ export default function MovesTable({columnData, movesData, selectedVersion, chan
 		/>
 	)
 };
+
+// there's some TS problem with expandableRowsComponent, reference: https://react-data-table-component.netlify.app/?path=/docs/expandable-basic--basic#typescript

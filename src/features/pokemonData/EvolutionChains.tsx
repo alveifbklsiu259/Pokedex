@@ -7,7 +7,7 @@ import { getIdFromURL } from "../../util";
 import { useAppSelector } from "../../app/hooks";
 import type { Pokemon } from "../../../typeModule";
 
-type NonDefaultFormPokemonData = Required<Pokemon.Root>
+type NonDefaultFormPokemonData = Required<Pokemon.Root>;
 
 type EvolutionChainsProps = {
 	chainId: number
@@ -22,15 +22,16 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 	let evolutionChains = chainData.chains;
 	const pokemonsInChain = [...new Set(evolutionChains.flat())];
 
-	// since the API doesn't provide evolution relationship between non-default-form, and there isn't really a specific pattern to check their relationship, here's how I'll implement and reason about their relationship:
-	// Note: a pokemon may have multiple evolution chains, a pokemon may have multiple non-battle-forms.
-	// Goal: show every possible chain, including non-default-form, and since only non-battle-form can possibly be an option in a chain, we can treat battle-only-form (g-max, mega...) as default-form, we may add a new chain or replace the current chain. (we'll check chain by chain instead of the entire chains)
-	// 1. check if all pokemons in the chain have non-battle-form, if false, goes to 2, if true, link the forms that have something in common(same form-name or come from same generation) together. e.g pokemon A's form 1 is coming from the same generation as pokemon B's form 2, then they should be linked together. Then Add a new chain of those linked forms. 
-	// 2. check if some pokemons in the chain has non-battle-form, if false, it means all of them only have default-form, then just return the original chain; if ture, check if the pokemons(default) in the the chain are from the same generation, if true, return the original chain (this case happens when a pokemon originally has its evolution chain, then in the newer generation, a new form and new pokemon is added to this pokemon's evolution chain, e.g wooper), if false goes to 3.
-	/* 3. the pokemons in this chain are not all from the same generation, and only some of them has non-battle-form, this may indicate:
-	- the pokemon that does not have non-battle from is a new pokemon added in a newer generation.
-	- the pokemon in the chain that has non-battle-form may appear in the newer generation as the non-battle-form, and evoles to(or from) the said pokemon.
-	in this case, we should return a new chain with non-battle-form and the pokemon that does not have non-battle-form.
+	/* 
+	since the API doesn't provide evolution relationship between non-default-form, and there isn't really a specific pattern to check their relationship, here's how I'll implement and reason about their relationship:
+	Note: a pokemon may have multiple evolution chains, a pokemon may have multiple non-battle-forms.
+	Goal: show every possible chain, including non-default-form, and since only non-battle-form can possibly be an option in a chain, we can treat battle-only-form (g-max, mega...) as default-form, we may add a new chain or replace the current chain. (we'll check chain by chain instead of the entire chains)
+	1. check if all pokemons in the chain have non-battle-form, if false, goes to 2, if true, link the forms that have something in common(same form-name or come from same generation) together. e.g pokemon A's form 1 is coming from the same generation as pokemon B's form 2, then they should be linked together. Then Add a new chain of those linked forms. 
+	2. check if some pokemons in the chain has non-battle-form, if false, it means all of them only have default-form, then just return the original chain; if ture, check if the pokemons(default) in the the chain are from the same generation, if true, return the original chain (this case happens when a pokemon originally has its evolution chain, then in the newer generation, a new form and new pokemon is added to this pokemon's evolution chain, e.g wooper), if false goes to 3.
+	3. the pokemons in this chain are not all from the same generation, and only some of them has non-battle-form, this may indicate:
+		- the pokemon that does not have non-battle from is a new pokemon added in a newer generation.
+		- the pokemon in the chain that has non-battle-form may appear in the newer generation as the non-battle-form, and evoles to(or from) the said pokemon, in this case, we should return a new chain with non-battle-form and the pokemon that does not have non-battle-form. 
+	Note: The result chains may contain incorrect chain (i.e. 999)
 	*/
 
 	if (pokemonsInChain.length > 1) {
@@ -62,10 +63,7 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 		const getCommonData = (chain: number[]) => {
 			const pokeIdsWithoutNbf = chain.filter(id => !nbfs[id].length);
 			const pokeIdsWithNbf = chain.filter(id => nbfs[id].length);
-			const nbfIds = pokeIdsWithNbf.reduce<number[]>((pre, cur) => {
-				nbfs[cur].forEach(form => pre.push(form.id));
-				return pre;
-			}, []);
+			const nbfIds = chain.map(id => nbfs[id].map(nbf => nbf.id)).flat();
 
 			const commonData = {
 				commonGeneration: '',
@@ -73,12 +71,12 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 				idsInCommon: [] as number[]
 			};
 			
-			const generations: string[] = [];
+			const gens: string[] = [];
 			[...pokeIdsWithoutNbf, ...nbfIds].forEach((id, index, ids) => {
 				const versionName = pokemons[id].formData?.version_group?.name;
 				const generation = versionName ? getGenerationByVersion(versionName) : species[id].generation.name;
-				if (!generations.includes(generation)) {
-					generations.push(generation);
+				if (!gens.includes(generation)) {
+					gens.push(generation);
 				} else {
 					commonData.commonGeneration = generation;
 					// the previous id
@@ -109,10 +107,10 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 			return chain.every(id => species[id].generation.name === generation);
 		};
 
-		const hasChain = (appendChain: number[], chains: number[][]) => {
+		const hasChain = (newChain: number[], chains: number[][]) => {
 			let exist = false;
 			chains.forEach(chain => {
-				if (JSON.stringify(chain) === JSON.stringify(appendChain)) {
+				if (JSON.stringify(chain) === JSON.stringify(newChain)) {
 					exist = true;
 				};
 			});
@@ -126,7 +124,7 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 				return commonName ? (isFormMatch && isGenerationMatch) : (isFormMatch || isGenerationMatch);
 			};
 
-			const getMatchIds = (chain: number[]) => {
+			const getMatchedIds = (chain: number[]) => {
 				return chain.map(id => {
 					if (nbfs[id].length && commonGeneration) {
 						return nbfs[id].find(commonTest)?.id || id;
@@ -137,13 +135,13 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 			};
 			
 			if (allHasNbf(currentChain)) {
-				const newChain = getMatchIds(currentChain);
+				const newChain = getMatchedIds(currentChain);
 				newChains.push(currentChain);
 				if (!hasChain(newChain, newChains)) {
 					newChains.push(newChain);
 				};
 			} else if(someHasNbf(currentChain)) {
-				const newChain = getMatchIds(currentChain);
+				const newChain = getMatchedIds(currentChain);
 				
 				if (isDefaultFormFromSameGeneration(currentChain)) {
 					newChains.push(currentChain);
@@ -190,7 +188,7 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 		return getIdFromURL(pokemons[nonDefaultFormId].species.url);
 	};
 
-	const getIsChainDefault = (chain: number[]) => {
+	const isChainDefault = (chain: number[]) => {
 		return !chain.some(id => pokemons[id].is_default === false);
 	};
 
@@ -223,7 +221,7 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 								<EvolutionDetails
 									chainId={chainId}
 									defaultFormId={getDefaultFormId(array[index + 1])}
-									isChainDefault={getIsChainDefault(array)}
+									isChainDefault={isChainDefault(array)}
 								/>
 							</li>
 						)}
@@ -252,7 +250,7 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 													<EvolutionDetails 
 														chainId={chainId} 
 														defaultFormId={getDefaultFormId(array[index + 1])}
-														isChainDefault={getIsChainDefault(array)}
+														isChainDefault={isChainDefault(array)}
 													/>
 												</li>
 											)}
@@ -275,8 +273,3 @@ const EvolutionChains = memo<EvolutionChainsProps>(function EvolutionChains({cha
 	)
 });
 export default EvolutionChains;
-
-	// to do:
-	// check async await forEach
-	// make a to do list for yourself (trak todo/bugs...)
-	// handle chaing language in Error page

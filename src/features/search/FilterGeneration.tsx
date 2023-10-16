@@ -1,9 +1,9 @@
 import { memo, useCallback } from 'react';
-import { useSelector } from "react-redux";
 import { selectGenerations } from '../pokemonData/pokemonDataSlice';
 import pokeBall from '../../assets/ball.svg';
 import type { SelectedGenerations } from './searchSlice';
 import type { Generation as GenerationType } from '../../../typeModule';
+import { useAppSelector } from '../../app/hooks';
 
 type FilterGenerationProps = {
 	selectedGenerations: SelectedGenerations,
@@ -11,8 +11,8 @@ type FilterGenerationProps = {
 }
 
 const FilterGeneration = memo<FilterGenerationProps>(function FilterGeneration ({selectedGenerations, setSelectedGenerations}) {
-	const generations = useSelector(selectGenerations);
-	const handleSelectGeneration = useCallback((generation: typeof generations[keyof typeof generations]) => {
+	const generations = useAppSelector(selectGenerations);
+	const handleSelectGeneration = useCallback((generation: GenerationType.Root) => {
 		setSelectedGenerations(sg => {
 			const update = {...sg};
 			if (update[generation.name]) {

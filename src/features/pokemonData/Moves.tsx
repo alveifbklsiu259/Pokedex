@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { capitalize } from "@mui/material";
+import type { TableColumn } from "react-data-table-component";
 import { selectGenerations, selectPokemons, selectTypes, selectVersions, selectMoves, selectMoveDamageClass, selectMachines, selectSpeciesById, selectChainDataByChainId, movesLoaded, machineDataLoaded, CachedMachine } from "./pokemonDataSlice";
 import { selectLanguage } from "../display/displaySlice";
 import { transformToKeyName, getIdFromURL, getNameByLanguage } from "../../util";
 import MovesTable from "./MovesTable";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import type { TableColumn } from "react-data-table-component";
 import type { Pokemon, Machine, Move } from "../../../typeModule";
 import { getData } from "../../api";
 
@@ -14,7 +14,7 @@ export type ColData = {
 	machine?: React.JSX.Element,
 	type: React.JSX.Element,
 	move: string,
-	cat: string
+	cat: string,
 	power: number | string,
 	acc: string,
 	pp: number
@@ -26,39 +26,37 @@ export type MovesData = ColData & {
 	flavorText: Move.FlavorTextEntry[];
 };
 
+const formatColumnHeader = (data: keyof ColData) => {
+	switch (data) {
+		case 'pp' : 
+			return 'PP'
+		case 'acc' :
+		case 'cat' :
+			return capitalize(data).concat('.');
+		default : 
+			return capitalize(data)
+	};
+};
+
+const sortNumsWithNull = (data: 'power') => (rowA: ColData, rowB: ColData) => {
+	const a = rowA[data] === '—' ? 0 : rowA[data] as number;
+	const b = rowB[data] === '—' ? 0 : rowB[data] as number;
+	return a - b;
+};
+
+// when switching filter method, this function will run again if data is sorted, to avoid error, use optional chaining.
+const sortElement = (data: 'type' | 'machine' | 'level') => (rowA: ColData, rowB: ColData) => {
+	const a: number | string = typeof rowA[data] === 'object' ? (rowA[data] as React.JSX.Element).props['data-value'] : rowA[data];
+	const b: number | string = typeof rowB[data] === 'object' ? (rowB[data] as React.JSX.Element).props['data-value'] : rowB[data];
+	return String(a).localeCompare(String(b), undefined, {numeric: true});
+};
 
 const columnDataCreator = (filteredMethod: 'level-up' | 'machine'): TableColumn<ColData>[] => {
 	const column = [(filteredMethod === 'level-up' ? 'level' : 'machine'), 'move', 'type', 'cat', 'power', 'acc', 'pp'] as const;
-
-	const formatTableHeader = (data: keyof ColData) => {
-		switch (data) {
-			case 'pp' : 
-				return 'PP'
-			case 'acc' :
-			case 'cat' :
-				return capitalize(data).concat('.');
-			default : 
-				return capitalize(data)
-		};
-	};
-
-	const sortNumsWithNull = (data: 'power') => (rowA: ColData, rowB: ColData) => {
-		const a = rowA[data] === '—' ? 0 : rowA[data] as number;
-		const b = rowB[data] === '—' ? 0 : rowB[data] as number;
-		return a - b;
-	};
-
-	// when switching filter method, this function will run again if data is sorted, to avoid error, use optional chaining.
-	const sortElement = (data: 'type' | 'machine' | 'level') => (rowA: ColData, rowB: ColData) => {
-		const a: number | string = typeof rowA[data] === 'object' ? (rowA[data] as React.JSX.Element).props['data-value'] : rowA[data];
-		const b: number | string = typeof rowB[data] === 'object' ? (rowB[data] as React.JSX.Element).props['data-value'] : rowB[data];
-		return String(a).localeCompare(String(b), undefined, {numeric: true});
-	};
-
 	return column.reduce<TableColumn<ColData>[]>((pre, cur) => {
 		pre.push({
 			id: cur,
-			name: formatTableHeader(cur),
+			name: formatColumnHeader(cur),
 			// the declaration file of rdt specifies that the return type of "selector" can only be Primitive, but in my use case, I want to show React.JSX.Element in some of the field.
 			selector: row => row[cur] as any,
 			sortable: true,
@@ -69,12 +67,12 @@ const columnDataCreator = (filteredMethod: 'level-up' | 'machine'): TableColumn<
 	}, []);
 };
 
-type MoveProps = {
+type MovesProps = {
 	pokeId: string,
 	chainId: number
-}
+};
 
-const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
+const Moves = memo<MovesProps>(function Moves({pokeId, chainId}) {
 	const dispatch = useAppDispatch();
 	const language = useAppSelector(selectLanguage);
 	const types = useAppSelector(selectTypes);
@@ -130,10 +128,10 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 		maxEvoLevel = 0;
 
 		// find range.
-		const matchChains = chainData.chains.filter(chain => chain.includes(speciesData.id));
+		const matchedChains = chainData.chains.filter(chain => chain.includes(speciesData.id));
 		const rangeIds = new Set<number>();
 
-		matchChains.forEach(chain => {
+		matchedChains.forEach(chain => {
 			chain.forEach((id, index) => {
 				// the first pokemon in the chain doesn't contain evolution detail.
 				if (index !== 0 && index <= chain.indexOf(speciesData.id)) {
@@ -145,7 +143,7 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 		type ChainDetails = typeof chainData.details[number][];
 		// find max evolution level in the range.
 		const chainDetails = [...rangeIds].map(id => chainData.details[id]);
-		const findHeighestEvoLevel = (chainDetails:ChainDetails | ChainDetails[number]) => {
+		const findHeighestEvoLevel = (chainDetails: ChainDetails | ChainDetails[number]) => {
 			chainDetails.forEach(entry => {
 				// some newly added pokemon in the API may lack evolution-chain's detail data.
 				if (entry !== undefined) {
@@ -183,12 +181,18 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 		return results;
 	}, [pokemon]);
 
-	const filteredMoves = filterMoves(filteredMethod, selectedVersion);
+	const filteredMoves = useMemo(() => filterMoves(filteredMethod, selectedVersion), [filterMoves, filteredMethod, selectedVersion]);
 	const movesLearnedByMachine = useMemo(() => filterMoves('machine', versionOptions), [filterMoves, versionOptions]);
 
 	// all moves for current pokemon.
-	const movesToFetch = useMemo(() => pokemon.moves.filter(entry => !cachedMoves[transformToKeyName(entry.move.name)]).map(entry => entry.move.url), [pokemon, cachedMoves]);
-	const isMachineDataReady = movesLearnedByMachine.every(entry => entry.version_group_details.every(detail => Boolean(machines?.[transformToKeyName(entry.move.name)]?.version_groups?.[transformToKeyName(detail.version_group.name)])));
+	const movesToFetch = useMemo(() => pokemon.moves.filter(entry => !cachedMoves[transformToKeyName(entry.move.name)]).map(entry => getIdFromURL(entry.move.url)), [pokemon, cachedMoves]);
+
+	const checkLearnOnEvo = useCallback((level: number, maxEvoLevel: number | undefined) => {
+		// level-up; data-value attribute is used for sorting, if maxEvoLevel is 0, put it after level 1.
+		const learnOnEvolution = <span data-tag="allowRowEvents" data-value={maxEvoLevel === 0 ? 2 : maxEvoLevel} title="Learned when Evolution" className="learnUponEvolution">Evo.</span>;
+		// there's some incorrect data in the API... (when level === 0, it means that this move is acquired on evolution, then maxEvoLevel should not be undefined.)
+		return level === 0 ? maxEvoLevel === undefined ? 1 : learnOnEvolution : level;
+	}, []);
 
 	const movesDataCreator = (moves: typeof filteredMoves): MovesData[] => {
 		const isFilteredByLevel = filteredMethod === 'level-up';
@@ -196,44 +200,37 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 			const lookupName = transformToKeyName(entry.move.name);
 			const cachedMove = cachedMoves[lookupName];
 			const versionDetails = entry.version_group_details;
-
 			const moveName = capitalize(getNameByLanguage(entry.move.name, language, cachedMoves[transformToKeyName(entry.move.name)]));
 
-			// type
 			const type = cachedMove.type.name;
-			const typeData = <span data-value={type} data-tag="allowRowEvents" className={`type type-${type}`}>{getNameByLanguage(type, language, types[type]).toUpperCase()}</span>;
+			const typeContent = <span data-value={type} data-tag="allowRowEvents" className={`type type-${type}`}>{getNameByLanguage(type, language, types[type]).toUpperCase()}</span>;
 
-			// level-up; data-value attribute is used for sorting, if maxEvoLevel is 0, put it after level 1.
-			const learnOnEvolution = <span data-tag="allowRowEvents" data-value={maxEvoLevel === 0 ? 2 : maxEvoLevel} title="Learned when Evolution" className="learnUponEvolution">Evo.</span>;
-			const checkLearnOnEvo = (level: number) => {
-				// there's some incorrect data in the API... (when level === 0, it means that this move is acquired when evolution)
-				return level === 0 ? maxEvoLevel === undefined ? 1 : learnOnEvolution : level;
-			};
 			// some moves can be learned at different levels.
-			const levelData = versionDetails.length === 1 ? checkLearnOnEvo(versionDetails[0].level_learned_at) : versionDetails.map(detail => checkLearnOnEvo(detail.level_learned_at));
+			const levelContent = versionDetails.length === 1 ? checkLearnOnEvo(versionDetails[0].level_learned_at, maxEvoLevel) : versionDetails.map(detail => checkLearnOnEvo(detail.level_learned_at, maxEvoLevel));
 
 			// category
 			const categoryText = getNameByLanguage(cachedMove.damage_class.name, language, movesDamageClass[cachedMove.damage_class.name]);
 
-			// machine
-			const machine = machines[lookupName]?.version_groups?.[transformToKeyName(selectedVersion)];
-			const machineData = (
-				// value is for sorting
-				<div data-value={machine || 'NO DATA'} className="machineData">
-					{/* || 'No Data' */}
-					<div data-tag="allowRowEvents">{machine?.toUpperCase() || 'NO DATA'}</div>
-					<img data-tag="allowRowEvents" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/tm-${type}.png`} alt={`tm-${type}`} className="machine"/>
-				</div>
-			);
+			let machineContent: undefined | React.JSX.Element;
+			// get machines, chnage pokemon, get machines, check if all correct? also check redux stat change
 
-			const dispalyData = isFilteredByLevel ? levelData : machineData;
-
+			if (!isFilteredByLevel) {
+				const machine = machines[lookupName]?.version_groups?.[transformToKeyName(selectedVersion)];
+				machineContent = (
+					// value is for sorting
+					<div data-value={machine || 'NO DATA'} className="machineData">
+						<div data-tag="allowRowEvents">{machine?.toUpperCase() || 'NO DATA'}</div>
+						<img data-tag="allowRowEvents" src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/tm-${type}.png`} alt={`tm-${type}`} className="machine"/>
+					</div>
+				);
+			};
+			const displayContent = isFilteredByLevel ? levelContent : machineContent;
 			return {
 				// id is used as an key for React Data Table.
 				id: moveName,
-				[isFilteredByLevel ? 'level' : 'machine']: dispalyData,
+				[isFilteredByLevel ? 'level' : 'machine']: displayContent,
 				move: moveName,
-				type: typeData,
+				type: typeContent,
 				cat: categoryText,
 				power: cachedMove.power !== null ? cachedMove.power : '—',
 				acc: cachedMove.accuracy !== null ? `${cachedMove.accuracy}%` : '—',
@@ -242,8 +239,6 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 				flavorText: cachedMove.flavor_text_entries
 			};
 		});
-		
-		// is there anyway to make machin or level optional, not index signature
 
 		data.forEach((move, index) => {
 			// moves that learned at differetn levels
@@ -255,22 +250,19 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 				delete data[index];
 			};
 		});
-		
-		// initial sort
-		return data.flat().sort((a, b) => {
-			const initialSortingEntry = isFilteredByLevel ? 'level': 'machine';
 
-			const rowA = typeof a[initialSortingEntry] === 'object' ? (a[initialSortingEntry] as React.JSX.Element).props['data-value'] : a[initialSortingEntry] as number;
-			const rowB = typeof b[initialSortingEntry] === 'object' ? (b[initialSortingEntry] as React.JSX.Element).props['data-value'] : b[initialSortingEntry] as number;
-			return isFilteredByLevel ? rowA - rowB : rowA?.localeCompare(rowB);
+		//  initial sort, remove empty element
+		return data.flat().sort((a, b) => {
+			const sortField = isFilteredByLevel ? 'level': 'machine';
+
+			const rowA: string | number = typeof a[sortField] === 'object' ? (a[sortField] as React.JSX.Element).props['data-value'] : a[sortField] as number;
+			const rowB: string | number = typeof b[sortField] === 'object' ? (b[sortField] as React.JSX.Element).props['data-value'] : b[sortField] as number;
+			return String(rowA).localeCompare(String(rowB), undefined, {numeric: true});
 		});
 	};
 
 	const columnData = useMemo(() => columnDataCreator(filteredMethod), [filteredMethod]);
 	const movesData = !movesToFetch.length ? movesDataCreator(filteredMoves) : undefined;
-
-	// console.log(columnData)
-	// console.log(movesData?.[0])
 
 	useEffect(() => {
 		if (movesToFetch.length) {
@@ -292,31 +284,27 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 		setSelectedVersion(version);
 	};
 
+	const isMachineDataReady = movesLearnedByMachine.every(entry => machines[transformToKeyName(entry.move.name)]);
+
 	const changefilteredMethod = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
 		setFilteredMethod(e.target.checked ? 'machine' : 'level-up');
 		if (e.target.checked && !isMachineDataReady) {
-			/* We've already fetched all the moves for the curren pokemon in useEffect, now we're getting machine data(TM/HM).
-			   The latest generation may not contain machine data. */
-			const movesLackData: {
-				[name: string]: string
-			}[] = [];
 			const machinesToFetch: string[] = [];
-			let fetchedMachines: Machine.Root[] | undefined = undefined;
+			let fetchedMachines: Machine.Root[] | undefined;
 			const machineData: CachedMachine = {};
 
-			movesLearnedByMachine.forEach(entry => entry.version_group_details.forEach(detail => {
-				const match = cachedMoves[transformToKeyName(entry.move.name)].machines.find(machine => machine.version_group.name === detail.version_group.name);
-				if (match) {
-					machinesToFetch.push(match.machine.url);
-				} else {
-					movesLackData.push({[transformToKeyName(entry.move.name)]: detail.version_group.name});
+			movesLearnedByMachine.forEach(entry => {
+				const keyName = transformToKeyName(entry.move.name);
+				if (!machines[keyName]) {
+					machinesToFetch.push(...cachedMoves[keyName].machines.map(entry => entry.machine.url));
 				};
-			}));
+			})
 
 			if (machinesToFetch.length) {
 				const dataResponses = await Promise.all(machinesToFetch.map(url => fetch(url)));
 				const datas = dataResponses.map(response => response.json());
 				fetchedMachines = await Promise.all(datas);
+
 				fetchedMachines.forEach(machine => {
 					const keyName = transformToKeyName(machine.move.name);
 					if (!machineData[keyName]) {
@@ -327,21 +315,19 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 						[transformToKeyName(machine.version_group.name)]: machine.item.name
 					};
 				});
-			};
-
-			if (movesLackData.length) {
-				movesLackData.forEach(entry => machineData[transformToKeyName(Object.keys(entry)[0])] = {
-					version_groups: {
-						...machineData[transformToKeyName(Object.keys(entry)[0])]?.version_groups, [transformToKeyName(Object.values(entry)[0])]: 'no data'
-					}
+				// some machine data is lacking in the API, but we still have to cache them to correctly check whether machine data ready or not.
+				movesLearnedByMachine.forEach(machine => {
+					const keyName = transformToKeyName(machine.move.name);
+					if (!machineData[keyName]) {
+						machineData[keyName] = {version_groups: {}};
+					};
 				});
 			};
 			dispatch(machineDataLoaded(machineData));
 		};
-	}, [cachedMoves, dispatch, isMachineDataReady, movesLearnedByMachine]);
+	}, [cachedMoves, dispatch, isMachineDataReady, movesLearnedByMachine, machines]);
 	
 	const isDataReady = filteredMethod === 'level-up' ? !!movesData : !!movesData && isMachineDataReady;
-
 	return (
 		<>
 			<div className="moves text-center mt-5">
@@ -367,7 +353,6 @@ const Moves = memo<MoveProps>(function Moves({pokeId, chainId}) {
 						))}
 					</ul>
 				</div>
-				{/*  */}
 				{movesData && (
 					<MovesTable
 						movesData={movesData}

@@ -1,33 +1,32 @@
-import { useRef, useState, useMemo, memo, useCallback, forwardRef} from "react"
-import { useSelector } from "react-redux";
+import { useRef, useState, useMemo, memo, useCallback, forwardRef} from "react";
+import { flushSync } from "react-dom";
 import { selectAllIdsAndNames } from "../pokemonData/pokemonDataSlice";
 import DataList from './DataList';
-import { flushSync } from "react-dom";
+import { useAppSelector } from "../../app/hooks";
 
 type InputProps = {
 	searchParam: string,
 	setSearchParam: React.Dispatch<React.SetStateAction<string>>
-}
+};
 
 const Input = forwardRef(function Input({searchParam, setSearchParam}: InputProps, forwardedInputRef: React.ForwardedRef<HTMLInputElement> | undefined) {
-	const allPokemonNamesAndIds = useSelector(selectAllIdsAndNames);
+	const allPokemonNamesAndIds = useAppSelector(selectAllIdsAndNames);
 	const [isDataListShown, setIsDataListShown] = useState(false);
 	const [hoveredPokemon, setHoveredPokemon] = useState('');
 	const [currentFocus, setCurrentFocus] = useState(-1);
 	const datalistRef = useRef<HTMLDivElement>(null);
 	
-	// we don't have inputRef passed down from ErrorPage.js
+	// there's no inputRef passed down from ErrorPage.js
 	const inputRefForErrorPage = useRef<HTMLInputElement>(null);
-	// we'll not use ref callback in out component
+	// we'll not use ref callback in our component
 	const inputRef = useMemo(() => forwardedInputRef ? forwardedInputRef as React.RefObject<HTMLInputElement> : inputRefForErrorPage, [forwardedInputRef, inputRefForErrorPage]);
-
 
 	const matchList = useMemo(() => {
 		const match = Object.keys(allPokemonNamesAndIds).filter(name => name.toLowerCase().includes(searchParam.toLowerCase()));
 		const sortedByStart = match.filter(name => name.startsWith(searchParam)).sort((a,b) => a.localeCompare(b));
-		const remainderMatches = match.filter(name => !sortedByStart.includes(name)).sort((a,b) => a.localeCompare(b));
-		return searchParam !== '' ? sortedByStart.concat(remainderMatches) : [];
-	}, [allPokemonNamesAndIds, searchParam])
+		const remainder = match.filter(name => !sortedByStart.includes(name)).sort((a,b) => a.localeCompare(b));
+		return searchParam !== '' ? sortedByStart.concat(remainder) : [];
+	}, [allPokemonNamesAndIds, searchParam]);
 
 	const activePokemon = matchList[currentFocus];
 
@@ -40,7 +39,7 @@ const Input = forwardRef(function Input({searchParam, setSearchParam}: InputProp
 	const handleFocus = () => {
 		if (matchList.length === 1 && matchList[0] === searchParam) {
 			setIsDataListShown(false);
-		} else if (searchParam !== '') {
+		} else if (matchList.length > 1) {
 			setIsDataListShown(true);
 		};
 	};
@@ -68,57 +67,52 @@ const Input = forwardRef(function Input({searchParam, setSearchParam}: InputProp
 	};
 
 	const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-		const datalist = datalistRef.current;
+		const datalist = datalistRef.current!;
 		const focusName = (datalist: HTMLDivElement, nextFocus: number) => {
 			setCurrentFocus(nextFocus);
 			// auto focus on screen
 			datalist.scrollTop = (datalist.children[nextFocus] as HTMLElement).offsetTop - datalist.offsetTop;
 		};
-		
-		switch (e.keyCode) {
-			// arrowDown
-			case 40 : {
+
+		switch (e.key) {
+			case 'ArrowDown' : {
 				e.preventDefault();
 				if (matchList.length) {
 					let nextFocus;
 					if (currentFocus + 1 >= matchList.length) {
-						nextFocus = 0
+						nextFocus = 0;
 					} else {
-						nextFocus = currentFocus + 1
+						nextFocus = currentFocus + 1;
 					}
-					focusName(datalist!, nextFocus);
+					focusName(datalist, nextFocus);
 				};
 				break;
 			}
-			// arrowUp
-			case 38 : {
+			case 'ArrowUp' : {
 				e.preventDefault();
 				if (matchList.length) {
 					let nextFocus;
 					if (currentFocus <= 0) {
-						nextFocus = matchList.length - 1
+						nextFocus = matchList.length - 1;
 					} else {
-						nextFocus = currentFocus - 1
+						nextFocus = currentFocus - 1;
 					}
-					focusName(datalist!, nextFocus);
+					focusName(datalist, nextFocus);
 				};
 				break;
 			}
-			// enter
-			case 13 : {
+			case 'Enter' : {
 				if (currentFocus > -1) {
 					e.preventDefault();
-					(datalist!.children[currentFocus] as HTMLElement).click();
+					(datalist.children[currentFocus] as HTMLElement).click();
 				};
-				// submit the form
 				setIsDataListShown(false);
 				break;
 			}
-			// escape
-			case 27 : {
+			case 'Escape' : {
 				setIsDataListShown(false);
 				setSearchParam('');
-				resetFocus(datalist!);
+				resetFocus(datalist);
 				break;
 			}
 			default : 

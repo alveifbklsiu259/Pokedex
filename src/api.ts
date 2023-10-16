@@ -27,13 +27,13 @@ type PokemonDataResponseType = {
 	[K in keyof PokemonDataTypes]: K extends 'evolutionChain' ? {[chainId: string | number]: EvolutionChainResponse.Root} : PokemonDataTypes[K]
 };
 
-type GetKeysOfUnion<T> = T extends any ? GetStringOrNumberKey<Required<T>> : never;
+type GetStringOrNumberKeysOfUnion<T> = T extends any ? GetStringOrNumberKey<Required<T>> : never;
 export type GetReturnedDataType<T extends EndPointRequest, K> = K extends (number | string)[] ? T extends keyof PokemonDataResponseType ? PokemonDataResponseType[T] : {[name: string]: PokemonForm.Root} : T extends keyof PokemonDataResponseType ? PokemonDataResponseType[T][number] : PokemonForm.Root;
 
 export async function getData<T extends EndPointRequest, S extends number | string>(dataType: T, dataToFetch: S): Promise<GetReturnedDataType<T, S>>;
 export async function getData<T extends EndPointRequest, S extends number | string, K extends GetStringOrNumberKey<Required<GetReturnedDataType<T, undefined>>>>(dataType: T, dataToFetch: S[], resultKey: K): Promise<GetReturnedDataType<T, S[]>>;
 export async function getData<T extends EndPointRequest, S extends number | string, K extends GetStringOrNumberKey<Required<GetReturnedDataType<T, undefined>>>>(dataType: T, dataToFetch: S | S[], resultKey?: K): Promise<GetReturnedDataType<T, S>>;
-export async function getData(dataType: EndPointRequest, dataToFetch: (number | string) | (number | string)[], resultKey?: GetKeysOfUnion<GetReturnedDataType<EndPointRequest, undefined>>): Promise<GetReturnedDataType<EndPointRequest, (number | string) | (number | string)[]>> {
+export async function getData(dataType: EndPointRequest, dataToFetch: (number | string) | (number | string)[], resultKey?: GetStringOrNumberKeysOfUnion<GetReturnedDataType<EndPointRequest, undefined>>): Promise<GetReturnedDataType<EndPointRequest, (number | string) | (number | string)[]>> {
 	let request: (number | string)[] = [];
 	if (Array.isArray(dataToFetch)) {
 		request = dataToFetch.map(element => {
@@ -93,7 +93,7 @@ export const getAbilities = async (pokemonData: Pokemon.Root | Pokemon.Root[], c
 
 type GetSortField<T extends SortOption> = T extends `${infer A}Asc` ? A : SortOption extends `${infer B}Desc` ? B : never;
 type SortField = GetSortField<SortOption>;
-type Stat = Exclude<SortField, "number" | "height" | "name" | "weight" >
+export type Stat = Exclude<SortField, "number" | "height" | "name" | "weight" >
 
 const sortPokemons = (allPokemons: CachedPokemon, sortOption: SortOption, allPokemonNamesAndIds: CachedAllPokemonNamesAndIds, request: number[]) => {
 	const sortPokemonsByName = () => {

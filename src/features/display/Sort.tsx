@@ -1,7 +1,6 @@
 import { memo } from 'react'
-import { useSelector } from "react-redux";
 import { selectSortBy, tableInfoChanged, sortPokemons } from './displaySlice';
-import { useAppDispatch } from '../../app/hooks';
+import { useAppDispatch, useAppSelector } from '../../app/hooks';
 
 export const sortOptions = [
 	{text:'Number(low - high)', value: 'numberAsc'},
@@ -29,7 +28,7 @@ export const sortOptions = [
 ] as const;
 
 const Sort = memo(function Sort() {
-	const sortBy = useSelector(selectSortBy);
+	const sortBy = useAppSelector(selectSortBy);
 	const dispatch = useAppDispatch();
 
 	const handleClick = async (sortOption: typeof sortBy) => {

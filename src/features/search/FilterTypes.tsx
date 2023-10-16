@@ -1,20 +1,20 @@
 import { memo, useCallback } from 'react';
-import { useSelector } from "react-redux";
 import { Switch, Stack, Typography, FormControlLabel } from '@mui/material';
 import { selectTypes } from '../pokemonData/pokemonDataSlice';
 import { selectLanguage } from '../display/displaySlice';
 import { getNameByLanguage } from '../../util';
 import pokeBall from '../../assets/ball.svg';
 import type { SelectedTypes } from './searchSlice';
+import { useAppSelector } from '../../app/hooks';
 
 type FilterTypesProps = {
 	selectedTypes: SelectedTypes
 	setSelectedTypes: React.Dispatch<React.SetStateAction<SelectedTypes>>,
 	setMatchMethod: React.Dispatch<React.SetStateAction<"all" | "part">>
-}
+};
 
 const FilterTypes = memo<FilterTypesProps>(function FilterTypes ({selectedTypes, setSelectedTypes, setMatchMethod}) {
-	const types = useSelector(selectTypes);
+	const types = useAppSelector(selectTypes);
 
 	const handleSelectType = useCallback((type: string) => {
 		setSelectedTypes(st => {
@@ -53,8 +53,8 @@ type TypeProps = {
 }
 
 const Type = memo<TypeProps>(function Type({type, isTypeSelected, onSelectType}) {
-	const types = useSelector(selectTypes);
-	const language = useSelector(selectLanguage);
+	const types = useAppSelector(selectTypes);
+	const language = useAppSelector(selectLanguage);
 
 	return (
 		<li

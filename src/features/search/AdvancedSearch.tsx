@@ -1,20 +1,18 @@
-import { memo } from "react"
-import { useDispatch } from "react-redux";
+import { memo } from "react";
 import { advancedSearchReset, type SelectedTypes, type SelectedGenerations } from "./searchSlice";
 import FilterGeneration from "./FilterGeneration";
 import FilterTypes from "./FilterTypes";
+import { useAppDispatch } from "../../app/hooks";
 
-
-// do we really have to re declare the type here even though we just did it in the Seach component?
 type AdvancedSearchProps = {
 	setSearchParam: React.Dispatch<React.SetStateAction<string>>,
 	selectedTypes: SelectedTypes,
 	setSelectedTypes: React.Dispatch<React.SetStateAction<SelectedTypes>>,
 	selectedGenerations: SelectedGenerations,
 	setSelectedGenerations: React.Dispatch<React.SetStateAction<SelectedGenerations>>,
-	setMatchMethod: React.Dispatch<React.SetStateAction<"all" | "part">>
+	setMatchMethod: React.Dispatch<React.SetStateAction<"all" | "part">>,
 	collapseId: string
-}
+};
 
 const AdvancedSearch = memo<AdvancedSearchProps>(function AdvancedSearch({
 	setSearchParam,
@@ -25,7 +23,7 @@ const AdvancedSearch = memo<AdvancedSearchProps>(function AdvancedSearch({
 	setMatchMethod,
 	collapseId
 }) {
-	const dispatch = useDispatch();
+	const dispatch = useAppDispatch();
 	const handleReset = () => {
 		// if no state update needed, return the same state to prevent re-render.
 		setSelectedTypes(st => !st.length ? st : []);

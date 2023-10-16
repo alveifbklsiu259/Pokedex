@@ -1,5 +1,4 @@
 import { useState, memo } from 'react';
-import { useSelector } from 'react-redux';
 import { flushSync } from 'react-dom';
 import { selectAbilities, abilityLoaded, type CachedAbility } from './pokemonDataSlice';
 import { selectLanguage } from '../display/displaySlice';
@@ -8,7 +7,7 @@ import Modal from '../../components/Modal';
 import { transformToKeyName, transformToDash, getNameByLanguage, getTextByLanguage } from '../../util';
 import { getAbilitiesToDisplay, getData } from '../../api';
 import type { Pokemon, Ability } from '../../../typeModule';
-import { useAppDispatch } from '../../app/hooks';
+import { useAppDispatch, useAppSelector } from '../../app/hooks';
 
 type AbilitiesProps = {
 	pokemon: Pokemon.Root
@@ -16,16 +15,16 @@ type AbilitiesProps = {
 
 const Abilities = memo<AbilitiesProps>(function Abilities({pokemon}) {
 	const dispatch = useAppDispatch();
-	const abilities = useSelector(selectAbilities);
-	const language = useSelector(selectLanguage);
+	const abilities = useAppSelector(selectAbilities);
+	const language = useAppSelector(selectLanguage);
 	const [isModalShown, setIsModalShown] = useState(false);
 	const [isDetail, setIsDetail] = useState(false);
 	const [abilityData, setAbilityData] = useState<Ability.Root | null>(null);
 	const abilitiesToDisplay = getAbilitiesToDisplay(pokemon).map(ability => transformToDash(ability));
 
-	const showModal = async (ability: string) => {
+	const handleShowModal = async (ability: string) => {
 		const abilityKey = transformToKeyName(ability);
-		let fetchedAbility: CachedAbility | undefined;
+		let fetchedAbility: CachedAbility;
 
 		// for spinner to show
 		if (abilityData?.name !== ability) {
@@ -35,17 +34,17 @@ const Abilities = memo<AbilitiesProps>(function Abilities({pokemon}) {
 		setIsModalShown(true);
 		if (!abilities[abilityKey]) {
 			fetchedAbility = await getData('ability', [ability], 'name');
-			// for some reason redux's state update and local state update will not be batched if in the current component it's listening for the redux state that's gonna be updated and there's any await expression before the state updates, I just found out that flushSynch will help solve this problem, so use it to batch the state updates.
+			// for some reason Redux's state update and the local state update will not be batched if the state the current component is listening for will be updated and there's any await expression before the state updates, I just found out that flushSynch will help solve this problem, so use it to batch the state updates.
 			flushSync(() => {
-				dispatch(abilityLoaded(fetchedAbility!));
-				setAbilityData(fetchedAbility![abilityKey]);
+				dispatch(abilityLoaded(fetchedAbility));
+				setAbilityData(fetchedAbility[abilityKey]);
 			});
 		} else {
 			setAbilityData(abilities[abilityKey]);
 		};
 	};
 
-	const showModalDetail = () => {
+	const handleShowModalDetail = () => {
 		setIsDetail(!isDetail);
 	};
 
@@ -61,8 +60,8 @@ const Abilities = memo<AbilitiesProps>(function Abilities({pokemon}) {
 		<>
 			{abilitiesToDisplay.map(ability => (
 			<div key={ability}>
-				<span className='me-2'>{getNameByLanguage(ability, language, abilities[transformToKeyName(ability)])}</span>
-				<i onClick={() => {showModal(ability)}} className="fa-solid fa-circle-question"></i>
+				<span className='me-2'>{getNameByLanguage(ability.replace('-',' '), language, abilities[transformToKeyName(ability)]).toLowerCase()}</span>
+				<i onClick={() => {handleShowModal(ability)}} className="fa-solid fa-circle-question"></i>
 				<br />
 			</div>
 			))}
@@ -78,14 +77,10 @@ const Abilities = memo<AbilitiesProps>(function Abilities({pokemon}) {
 							<>
 								<h1 className='abilityName my-2'>{getNameByLanguage(abilityData.name, language, abilityData)}</h1>
 								<div className='abilityDescription p-3'>
-									<p>
-										{
-											isDetail ? (detail ? detail : (brief ? brief : 'No data to show')) : brief ? brief : 'No data to show'
-										}
-									</p>
+									<p>{isDetail ? detail : brief}</p>
 								</div>
 								<div className='modalBtnContainer'>
-									<button onClick={showModalDetail} className="btn btn-warning">Show {isDetail ? 'Brief' : 'Detail'}</button>
+									<button onClick={handleShowModalDetail} className="btn btn-warning">Show {isDetail ? 'Brief' : 'Detail'}</button>
 								</div>
 							</>
 						) : (

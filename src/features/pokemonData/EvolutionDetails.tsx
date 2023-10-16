@@ -48,8 +48,7 @@ const EvolutionDetails = memo<EvolutionDetailsProps>(function EvolutionDetails({
 		selectedDetail = chainDetails[1];
 	};
 
-	type Details = NonNullable<typeof selectedDetail>
-	type Requirements = Partial<GetKeys<Omit<Details, 'trigger'>>>
+	type Requirements = Partial<GetKeys<Omit<typeof selectedDetail, 'trigger'>>>
 
 	let requirements: Requirements,
 		trigger: string, 
@@ -149,11 +148,8 @@ const EvolutionDetails = memo<EvolutionDetailsProps>(function EvolutionDetails({
 			case 'shed' : 
 				mainText = 'Level 20, Empty spot in party, Pokeball in bag';
 				break;
-			case 'other' :
-				mainText = 'No Data'
-				break;
 			default : 
-				mainText = '';
+				mainText = 'No Data';
 		};
 		
 		otherRequirements = (

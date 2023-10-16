@@ -18,7 +18,12 @@ export type TableInfoRefTypes = {
 	rowsPerPage?: number
 };
 
-export default function Pokemons() {
+type PokemonProps = {
+	viewModeRef: React.RefObject<HTMLDivElement>
+}
+
+
+export default function Pokemons({viewModeRef}: PokemonProps) {
 	const dispatch = useAppDispatch();
 	const navigateToPokemon = useNavigateToPokemon();
 	const [unresolvedDataRef, prefetch] = usePrefetch('scroll');
@@ -28,9 +33,9 @@ export default function Pokemons() {
 	const nextRequest = useAppSelector(selectNextRequest, shallowEqual);
 	const status = useAppSelector(selectStatus);
 	const viewMode = useAppSelector(selectViewMode);
-	const tableInfoRef = useRef<TableInfoRefTypes>({});
 	const intersection = useAppSelector(selectIntersection, shallowEqual);
 	const language = useAppSelector(selectLanguage);
+	const tableInfoRef = useRef<TableInfoRefTypes>({});
 
 	const cachedDispaly = useMemo(() => {
 		return display.map(id => pokemons[id]);
@@ -73,7 +78,7 @@ export default function Pokemons() {
 							<div 
 								key={pokemon.id}
 								className="col-6 col-md-4 col-lg-3 card pb-3 pokemonCard"
-								onClick={() => navigateToPokemon(navigateIds,['pokemon', 'pokemonSpecies', 'evolutionChain','ability', 'item'])}
+								onClick={() => navigateToPokemon(navigateIds,['pokemon', 'pokemonSpecies', 'evolutionChain', 'ability', 'item'])}
 							>
 								<BasicInfo pokeId={String(pokemon.id)} />
 							</div>
@@ -91,13 +96,16 @@ export default function Pokemons() {
 	if (status === 'loading') {
 		tableContent = <Spinner />;
 	} else {
-		tableContent = <PokemonTable key={JSON.stringify(intersection)} tableInfoRef={tableInfoRef}/>;
+		tableContent = <PokemonTable key={JSON.stringify(intersection)} tableInfoRef={tableInfoRef} viewModeRef={viewModeRef}/>;
 	};
 
 	return (
 		<>
 			<div className="container">
-			<ViewMode tableInfoRef={tableInfoRef} />
+			<div ref={viewModeRef} className="viewModeContainer">
+				<ViewMode tableInfoRef={tableInfoRef} />
+			</div>
+			
 				{
 					viewMode === 'module' ? (
 						<>

@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { useAppDispatch } from '../../app/hooks';
+import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { selectLanguage, changeLanguage } from './displaySlice';
 
 export const languageOptions = {
@@ -98,7 +97,7 @@ type ItemProprs = {
 
 const Item = memo<ItemProprs>(function Item({option, handleClose}) {
 	const dispatch = useAppDispatch();
-	const language = useSelector(selectLanguage);
+	const language = useAppSelector(selectLanguage);
 	const {pokeId} = useParams();
 
 	const handleChangeLanguage = () => {

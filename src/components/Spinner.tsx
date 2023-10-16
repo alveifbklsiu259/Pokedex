@@ -1,6 +1,7 @@
+import { memo } from 'react'
 import spinner from '../assets/spinner.gif'
 
-export default function Spinner() {
+const Spinner = memo(function Spinner() {
 	return (
 		<div>
 			<img
@@ -10,4 +11,6 @@ export default function Spinner() {
 			/>
 		</div>
 	)
-};
+});
+
+export default Spinner;

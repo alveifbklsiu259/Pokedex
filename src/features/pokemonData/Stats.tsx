@@ -10,7 +10,7 @@ type StatsProps = {
 
 const Stats = memo<StatsProps>(function Stats({pokeId}) {
 	const pokemon = useAppSelector(state => selectPokemonById(state, pokeId))!;
-	const stat = useAppSelector(selectStat);
+	const stats = useAppSelector(selectStat);
 	const language = useAppSelector(selectLanguage);
 	return (
 		<div className="col-12 mt-5 stats">
@@ -21,12 +21,15 @@ const Stats = memo<StatsProps>(function Stats({pokeId}) {
 						pokemon.stats.map(entry => (
 							<tr key={entry.stat.name}>
 								<td className='text-capitalize text-center' width='30%'>
-									{getNameByLanguage(entry.stat.name, language, stat[transformToKeyName(entry.stat.name)])}
+									{getNameByLanguage(entry.stat.name, language, stats[transformToKeyName(entry.stat.name)])}
 								</td>
 								<td width='10%'>{entry.base_stat}</td>
 								<td width='255px'>
 									<div className="stat-bar-bg">
-										<div className={`stat-bar stat-${entry.stat.name}`} style={{width: `${entry.base_stat / 255 * 100}%`}}></div>
+										<div style={{width: `${entry.base_stat / 255 * 100}%`}}>
+											{/* key is used to retrigger animation */}
+											<div key={pokeId} className={`stat-bar stat-${entry.stat.name} progressAnimation`}></div>
+										</div>
 									</div>
 								</td>
 							</tr>

@@ -36,7 +36,7 @@ export const getNameByLanguage: GetNameByLanguage = (defaultName, language, entr
 	};
 };
 
-export const getFormName = (speciesData: PokemonSpecies.Root, language: LanguageOption, pokemonData: Pokemon.Root) => {
+export const getFormName = (speciesData: PokemonSpecies.Root | undefined, language: LanguageOption, pokemonData: Pokemon.Root) => {
 	let pokemonName = getNameByLanguage(pokemonData.name, language, speciesData);
 	let formName: string;
 

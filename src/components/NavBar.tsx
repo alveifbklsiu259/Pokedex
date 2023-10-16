@@ -1,5 +1,4 @@
 import React, { useState, memo, useCallback, type ReactElement } from 'react';
-import { useSelector } from 'react-redux';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
@@ -12,7 +11,7 @@ import { useNavigateNoUpdates } from './RouterUtils';
 import LanguageMenu from '../features/display/LanguageMenu';
 import Modal from './Modal';
 import Search from '../features/search/Search';
-import { useAppDispatch } from '../app/hooks';
+import { useAppDispatch, useAppSelector } from '../app/hooks';
 
 type HideOnScrollProps = {
 	children: ReactElement
@@ -44,7 +43,7 @@ export default function NavBar() {
 					setIsModalShown={setIsModalShown}
 					customClass='modalBody searchModal'
 				>
-					<Search closeModal={handleCloseModal}/>
+					<Search onCloseModal={handleCloseModal}/>
 				</Modal>
 			)}
 		</div>
@@ -83,7 +82,7 @@ const MainBar = memo<MainBarProps>(function MainBar({setIsModalShown}) {
 
 const BackToRootBtn = memo(function BackToRootBtn() {
 	const dispatch = useAppDispatch();
-	const status = useSelector(selectStatus);
+	const status = useAppSelector(selectStatus);
 	const navigateNoUpdates = useNavigateNoUpdates();
 	const handleBackToRoot = () => {
 		dispatch(backToRoot());

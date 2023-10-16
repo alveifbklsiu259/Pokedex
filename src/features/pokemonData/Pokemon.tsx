@@ -1,6 +1,6 @@
 import React, { useEffect, memo, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { selectPokemonById, selectSpeciesById, selectChainDataByChainId, selectAllIdsAndNames, selectPokemonCount, getRequiredDataThunk } from "./pokemonDataSlice";
+import { selectSpeciesById, selectChainDataByChainId, selectAllIdsAndNames, selectPokemonCount, getRequiredDataThunk, selectPokemons } from "./pokemonDataSlice";
 import { selectStatus, error } from "../display/displaySlice";
 import BasicInfo from "./BasicInfo";
 import Detail from "./Detail";
@@ -15,6 +15,7 @@ import PrefetchOnNavigation from "../../components/PrefetchOnNavigation";
 import { getIdFromURL } from "../../util";
 import { useNavigateNoUpdates } from "../../components/RouterUtils";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { Pokemon as PokemonType } from "../../../typeModule";
 
 type PokemonParams = {
 	pokeId: string
@@ -27,44 +28,43 @@ export default function Pokemon() {
 	const status = useAppSelector(selectStatus);
 	const namesAndIds = useAppSelector(selectAllIdsAndNames);
 	const pokemonCount = useAppSelector(selectPokemonCount);
-	
-
+	const pokemons = useAppSelector(selectPokemons)
 	// enable searching pokemon name in url bar in English.
-	let urlParam = pokeId;
-	if (isNaN(Number(pokeId))) {
-		/*	namesAndIds will always have the english names.
-			if we can't find the corresponding id, use what it is. */
-		const id = namesAndIds[pokeId.toLowerCase()];
-		urlParam = id ? String(id) : pokeId;
+	let id = pokeId;
+	if (isNaN(Number(id))) {
+		// namesAndIds will always have the english names.
+		// if we can't find the corresponding id, use what it is. 
+		id = String(namesAndIds[id.toLowerCase()] || Object.values(pokemons).find(pokemon => pokemon.name.toLowerCase() === id.toLowerCase())?.id);
 	};
 	
-	const pokemon = useAppSelector(state => selectPokemonById(state, urlParam));
-	const speciesData = useAppSelector(state => selectSpeciesById(state, urlParam));
+	const pokemon = pokemons[id] as PokemonType.Root | undefined;
+	const speciesData = useAppSelector(state => selectSpeciesById(state, id));
 	const chainId = getIdFromURL(speciesData?.evolution_chain?.url);
 	const chainData = useAppSelector(state => selectChainDataByChainId(state, chainId));
 	const isDataReady = [pokemon, speciesData, chainData].every(Boolean);
 
 	useEffect(() => {
 		if (!isDataReady && status === 'idle') {
-			const getIndividualPokemonData = async () => {
+			const getPokemonData = async () => {
 				try {
 					await dispatch(getRequiredDataThunk({
-						requestPokemonIds: [urlParam],
+						requestPokemonIds: [id],
 						requests: ['pokemon', 'pokemonSpecies', 'evolutionChain', 'ability', 'item']
 					})).unwrap();
 				} catch(err) {
-					console.log(err)
+					console.error(err)
 					dispatch(error());
 				};
 			}
-			getIndividualPokemonData();
+			getPokemonData();
 		};
-	}, [dispatch, isDataReady, urlParam, status]);
+	}, [dispatch, isDataReady, id, status]);
 
 	const rootLink = useMemo(() => <div onClick={() => navigateNoUpdates('/')} className="w-50 m-3 btn btn-block btn-secondary">Explore More Pokemons</div>, [navigateNoUpdates]);
+
 	let content;
 	if (status === 'idle' && isDataReady) {
-		const nationalNumber = getIdFromURL(pokemon!.species?.url);
+		const nationalNumber = getIdFromURL(pokemon!.species.url);
 		const nextPokemonId = nationalNumber === pokemonCount ? 1 : nationalNumber + 1;
 		const previousPokemonId = nationalNumber === 1 ? pokemonCount! : nationalNumber - 1;
 		content = (
@@ -74,17 +74,18 @@ export default function Pokemon() {
 				<div className={`container p-0 ${speciesData!.varieties.length > 1 ? "marginWithVarieties" : 'marginWithoutVarieties'} `}>
 					<div className="row justify-content-center">
 						{speciesData!.varieties.length > 1 && (
-							<Varieties pokeId={urlParam} />
+							<Varieties pokeId={id} />
 						)}
 						<div className='basicInfoContainer row col-8 col-sm-6 justify-content-center'>
-							<BasicInfo pokeId={urlParam} />
+							<BasicInfo pokeId={id} />
 						</div>
-						<Detail pokeId={urlParam} />
-						<Stats pokeId={urlParam} />
+						<Detail pokeId={id} />
+						<Stats pokeId={id} />
 						<EvolutionChains chainId={chainId!} />
 						<Moves
-							pokeId={urlParam}
+							pokeId={id}
 							chainId={chainId!}
+							// reset Moves' states when navigating to pokemon through chains or varieties when the target pokemon's data is cached.
 							key={pokemon!.id}
 						/>
 						<div className="row justify-content-center">

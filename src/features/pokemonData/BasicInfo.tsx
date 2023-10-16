@@ -6,17 +6,16 @@ import { useAppSelector } from "../../app/hooks";
 
 type BasicInfoProps = {
 	pokeId: string
-}
+};
 
 const BasicInfo = memo<BasicInfoProps>(function BasicInfo({pokeId}) {
 	const pokemon = useAppSelector(state => selectPokemonById(state, pokeId))!;
-	const speciesData = useAppSelector(state => selectSpeciesById(state, pokeId))!;
+	const speciesData = useAppSelector(state => selectSpeciesById(state, pokeId));
 	const language = useAppSelector(selectLanguage);
 	const types = useAppSelector(selectTypes)
 	const nationalNumber = getIdFromURL(pokemon.species.url);
-
 	const formName = getFormName(speciesData, language, pokemon);
-	let newName;
+	let newName: undefined | React.JSX.Element;
 	if (formName.includes('(')) {
 		const pokemonName = formName.split('(')[0];
 		const form = `(${formName.split('(')[1]}`;
@@ -28,12 +27,6 @@ const BasicInfo = memo<BasicInfoProps>(function BasicInfo({pokeId}) {
 		)
 	};
 
-	// search pokemon with name will have some error (change language)
-
-	// what should be the render name, also consider when searching (search bar nar url bar...)
-	//rayquaza-mega is the search name, but I want to display Mega rayquaza...
-	// now when searching, color matching is not working on rayquaza
-	
 	return (
 		<div className="basicInfo d-flex flex-column align-items-center text-center p-0 h-100">
 			{/* width/heigh attributes are important for ScrollRestoration */}
@@ -54,5 +47,3 @@ const BasicInfo = memo<BasicInfoProps>(function BasicInfo({pokeId}) {
 	)
 });
 export default BasicInfo;
-
-// if I extrat name and types to their own component, when changing language, instead of the whole BasicInfo to re-render, just those two components re-render, is it gonna save a lot of time?

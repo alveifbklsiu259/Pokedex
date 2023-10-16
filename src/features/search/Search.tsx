@@ -1,37 +1,36 @@
 import { useState, useLayoutEffect, useRef, useId, memo } from 'react';
-import { useSelector } from 'react-redux';
 import { selectStatus } from '../display/displaySlice';
-import { selectSearchParam, selectAdvancedSearch, searchPokemon, type SelectedGenerations, type SelectedTypes } from './searchSlice';
+import { selectSearchParam, selectAdvancedSearch, searchPokemon } from './searchSlice';
 import { useNavigateNoUpdates } from '../../components/RouterUtils';
 import AdvancedSearch from './AdvancedSearch';
 import Input from './Input';
 import pokeBall from '../../assets//pokeBall.png';
-import { useAppDispatch } from '../../app/hooks';
+import { useAppDispatch, useAppSelector } from '../../app/hooks';
 
 type SearchProps = {
-	closeModal?: () => void;
+	onCloseModal?: () => void;
+	viewModeRef?: React.RefObject<HTMLDivElement>
 };
 
-export default function Search({closeModal} : SearchProps) {
+export default function Search({onCloseModal, viewModeRef} : SearchProps) {
 	const dispatch = useAppDispatch();
-	const advancedSearch = useSelector(selectAdvancedSearch);
-	const cachedSearchParam = useSelector(selectSearchParam);
+	const advancedSearch = useAppSelector(selectAdvancedSearch);
+	const cachedSearchParam = useAppSelector(selectSearchParam);
 	const [searchParam, setSearchParam] = useState(cachedSearchParam);
-	const [selectedGenerations, setSelectedGenerations] = useState<SelectedGenerations>(advancedSearch.generations);
-	const [selectedTypes, setSelectedTypes] = useState<SelectedTypes>(advancedSearch.types);
+	const [selectedGenerations, setSelectedGenerations] = useState(advancedSearch.generations);
+	const [selectedTypes, setSelectedTypes] = useState(advancedSearch.types);
 	const [matchMethod, setMatchMethod] = useState<'all' | 'part'>('all');
 	const collapseBtnRef = useRef<HTMLButtonElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const collapseId = useId();
 	const navigateNoUpdates = useNavigateNoUpdates();
 
-	// auto focus when open modal.
+	// auto focus when modal is opened.
 	useLayoutEffect(() => {
-		if (closeModal) {
-			// can we be sure that by the time Effect runs, the ref is already bound to the DOM element?
-			inputRef.current?.focus();
+		if (onCloseModal) {
+			inputRef.current!.focus();
 		};
-	}, [closeModal]);
+	}, [onCloseModal]);
 
 	const handleIconChange = () => {
 		if (collapseBtnRef.current?.closest('button')?.getAttribute('aria-expanded') === 'true') {
@@ -47,20 +46,20 @@ export default function Search({closeModal} : SearchProps) {
 		e.preventDefault();
 
 		// for search modal.
-		if (closeModal) {
-			closeModal();
+		if (onCloseModal) {
+			onCloseModal();
 		};
-
-		if (document.querySelector('.sort')) {
-			document.querySelector('.sort')!.scrollIntoView();
+		
+		if (viewModeRef?.current) {
+			// search from root
+			viewModeRef.current.scrollIntoView();
 		} else {
-			// could be displaying table or at pokemons/xxx.
-			if (!document.querySelector('.viewMode')) {
-				// at pokemons/xxx
+			// search from navbar, could be at root or /pokemons/xxx.
+			if (!document.querySelector('.viewModeContainer')) {
 				navigateNoUpdates('/', {state: 'resetPosition'});
 			};
 			setTimeout(() => {
-				document.querySelector('.viewMode')?.scrollIntoView();
+				document.querySelector('.viewModeContainer')?.scrollIntoView();
 			}, 10);
 		};
 		dispatch(searchPokemon({searchParam, selectedGenerations, selectedTypes, matchMethod}));
@@ -79,7 +78,7 @@ export default function Search({closeModal} : SearchProps) {
 				<img className='pokeBall' src={pokeBall} alt="pokeBall" width='46px' height='46px' /> Search For Pokemons
 			</h1>
 			<p className="lead text-center">By Name or the National Pokedex number</p>
-			<form onSubmit={(e) => handleSubmit(e)}>
+			<form onSubmit={handleSubmit}>
 				<Input
 					searchParam={searchParam} 
 					setSearchParam={setSearchParam}
@@ -106,7 +105,7 @@ export default function Search({closeModal} : SearchProps) {
 };
 
 const SubmitBtn = memo(function SubmitBtn() {
-	const status = useSelector(selectStatus);
+	const status = useAppSelector(selectStatus);
 	return (
 		<button
 			disabled={status === 'loading' ? true : false}

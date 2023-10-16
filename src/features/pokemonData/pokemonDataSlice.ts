@@ -22,7 +22,7 @@ export type CachedAbility = {
 export type CachedMachine = {
 	[name: string]: {
 		version_groups: {
-			[name: string]: string
+			[name: string]: string | undefined
 		}
 	}
 };
@@ -70,13 +70,13 @@ export type PokemonDataTypes = {
 	ability: CachedAbility,
 	type: CachedType,
 	move: CachedMove,
-	machine: CachedMachine
-	stat: CachedStat
-	moveDamageClass: CachedMoveDamageClass
-	version: CachedVersion
-	generation: CachedGeneration
-	evolutionChain: CachedEvolutionChain
-	item: CachedItem
+	machine: CachedMachine,
+	stat: CachedStat,
+	moveDamageClass: CachedMoveDamageClass,
+	version: CachedVersion,
+	generation: CachedGeneration,
+	evolutionChain: CachedEvolutionChain,
+	item: CachedItem,
 	allPokemonNamesAndIds: CachedAllPokemonNamesAndIds
 };
 
@@ -167,7 +167,7 @@ const pokemonDataSlice = createSlice({
 					// intentionally do nothing.
 					console.log('multiple requests while data is loading')
 				} else if (action?.error?.message === 'Rejected') {
-					// handle fetch error
+					// handle fetch error...
 				}
 			})
 	}
@@ -301,17 +301,3 @@ export function selectChainDataByChainId(state: RootState, chainId: number | und
 		return undefined;
 	};
 };
-
-// when passing props down to another React component, you'll have to describe the shape of the props again in the child component, what if the props passed down is an object with tons of properties, is there other workaround than re-creating the shape again? (e.g. pass the props also?)
-
-// To do:
-// 1. check performance of each component.
-// 3. use shallowEqual, createSelector, createEntityAdapter, RTKQ.
-
-// maybe prefetch pokemon on scrolling
-// html title...
-// show navbar when visiting undefined route, e.g. localhost:3000/ddd
-
-
-
-// optimize: reorder table, change viewMode (pokemons will re-renders twice because of sortPokemons's pending + sortPokemons's fulfilled + changeViewMode's pending) (but this will not be trigger that often.)
