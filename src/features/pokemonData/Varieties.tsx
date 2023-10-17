@@ -15,6 +15,12 @@ const Varieties = memo<VarietiesProps>(function Varieties({pokeId}) {
 	const speciesData = useAppSelector(state => selectSpeciesById(state, pokeId))!;
 	const language = useAppSelector(selectLanguage);
 	const pokemons = useAppSelector(selectPokemons);
+	const handleClick = (id: number ) => {
+		const varietyIds = speciesData.varieties.map(entry => getIdFromURL(entry.pokemon.url));
+		const requestPokemonIds = language !== 'en' ? [...new Set([id, ...varietyIds])] : [id];
+		console.log(requestPokemonIds)
+		navigateToPokemon(requestPokemonIds, ['ability']);
+	};
 
 	return (
 		<div className='col-12 varieties'>
@@ -24,7 +30,7 @@ const Varieties = memo<VarietiesProps>(function Varieties({pokeId}) {
 						<li className={pokemon.name === variety.pokemon.name ? 'active' : ''}>
 							<button 
 								className='text-capitalize' 
-								onClick={() => navigateToPokemon([getIdFromURL(variety.pokemon.url)], ['ability'])}
+								onClick={() => handleClick(getIdFromURL(variety.pokemon.url))}
 							>
 								{getFormName(speciesData, language, pokemons[getIdFromURL(variety.pokemon.url)])}
 							</button>
