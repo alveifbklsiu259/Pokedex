@@ -18,7 +18,6 @@ const Varieties = memo<VarietiesProps>(function Varieties({pokeId}) {
 	const handleClick = (id: number ) => {
 		const varietyIds = speciesData.varieties.map(entry => getIdFromURL(entry.pokemon.url));
 		const requestPokemonIds = language !== 'en' ? [...new Set([id, ...varietyIds])] : [id];
-		console.log(requestPokemonIds)
 		navigateToPokemon(requestPokemonIds, ['ability']);
 	};
 
