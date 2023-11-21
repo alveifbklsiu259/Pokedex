@@ -57,10 +57,12 @@ export default function Search({onCloseModal, viewModeRef} : SearchProps) {
 			// search from navbar, could be at root or /pokemons/xxx.
 			if (!document.querySelector('.viewModeContainer')) {
 				navigateNoUpdates('/', {state: 'resetPosition'});
+				setTimeout(() => {
+					document.querySelector('.viewModeContainer')?.scrollIntoView();
+				}, 10);
+			} else {
+				window.scrollTo(0, 0)
 			};
-			setTimeout(() => {
-				document.querySelector('.viewModeContainer')?.scrollIntoView();
-			}, 10);
 		};
 		dispatch(searchPokemon({searchParam, selectedGenerations, selectedTypes, matchMethod}));
 	};
@@ -84,20 +86,20 @@ export default function Search({onCloseModal, viewModeRef} : SearchProps) {
 					setSearchParam={setSearchParam}
 					ref={inputRef}
 				/>
-					<div className="advancedSearch text-center mt-3">
-						<button type="button" data-bs-toggle="collapse" data-bs-target={`#${collapseId}`} aria-expanded='false' aria-controls={collapseId} onClick={handleIconChange}>
-							Show Advanced Search <i ref={collapseBtnRef} className="fa-solid fa-caret-down"></i>
-						</button>
-						<AdvancedSearch
-							setSearchParam={setSearchParam}
-							selectedTypes={selectedTypes}
-							setSelectedTypes={setSelectedTypes}
-							selectedGenerations={selectedGenerations}
-							setSelectedGenerations={setSelectedGenerations}
-							setMatchMethod={setMatchMethod}
-							collapseId={collapseId}
-						/>
-					</div>
+				<div className="advancedSearch text-center mt-3">
+					<button type="button" data-bs-toggle="collapse" data-bs-target={`#${collapseId}`} aria-expanded='false' aria-controls={collapseId} onClick={handleIconChange}>
+						Show Advanced Search <i ref={collapseBtnRef} className="fa-solid fa-caret-down"></i>
+					</button>
+					<AdvancedSearch
+						setSearchParam={setSearchParam}
+						selectedTypes={selectedTypes}
+						setSelectedTypes={setSelectedTypes}
+						selectedGenerations={selectedGenerations}
+						setSelectedGenerations={setSelectedGenerations}
+						setMatchMethod={setMatchMethod}
+						collapseId={collapseId}
+					/>
+				</div>
 				<SubmitBtn />
 			</form>
 		</div>

@@ -54,11 +54,14 @@ export default function Pokemons({viewModeRef}: PokemonProps) {
 		
 				if (window.innerHeight + document.documentElement.scrollTop > document.documentElement.offsetHeight * 0.98 && status === 'idle' && nextRequest !== null) {
 					dispatch(getPokemonsOnScroll({unresolvedData: unresolvedDataRef.current}));
-					unresolvedDataRef.current = null;
 				};
 			};
 			window.addEventListener('scroll', handleScroll);
-			return () => window.removeEventListener('scroll', handleScroll);
+			return () => {
+				window.removeEventListener('scroll', handleScroll);
+				// prevent stale data when search pokemons after scrolling.
+				unresolvedDataRef.current = null;
+			};
 		};
 	}, [nextRequest, status, viewMode, pokemons, unresolvedDataRef, dispatch, prefetch]);
 
