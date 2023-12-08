@@ -8,7 +8,7 @@ It'd be appreciated if you can spend some time going through my code and let me 
 ## Features
 - Search Pokemon through type, generation, id or name.
 - Sort Pokemon through multiple ways.
-- Support Multiple languages.
+- Support multiple languages.
 - Displayed as table or cards.
 - Rich information, including evolution chains, moves...
 - Infinite scroll.
@@ -40,7 +40,7 @@ live demo: [https://react-pokedex-app-murex.vercel.app/](https://react-pokedex-a
 ![Evolutions](/src/assets/demo_5.jpg)
 ![multi Language](/src/assets/demo_6.jpg)
 
-## Image credits:
+## Image credits
 
 [https://freepngimg.com/png/37466-pokeball-image](https://freepngimg.com/png/37466-pokeball-image)  
 [https://en.wikipedia.org/wiki/File:Pok%C3%A9_Ball_icon.svg](https://en.wikipedia.org/wiki/File:Pok%C3%A9_Ball_icon.svg)  
